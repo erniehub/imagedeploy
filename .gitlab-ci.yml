@@ -1,0 +1,45 @@
+variables:
+  DOCKER_DRIVER: overlay2
+
+  BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
+
+services:
+  - docker:stable-dind
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  image: docker:stable
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - docker build --tag "$BUILD_IMAGE_NAME" .
+    - docker push "$BUILD_IMAGE_NAME"
+
+test_kube_domain:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  variables:
+    KUBE_INGRESS_BASE_DOMAIN: example.com
+  script:
+    - source /build/deploy-helpers.sh
+    - check_kube_domain
+
+test_kube_domain_legacy:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  variables:
+    AUTO_DEVOPS_DOMAIN: example.com
+  script:
+    - source /build/deploy-helpers.sh
+    - check_kube_domain || echo "Did not error as expected"
+
+test_kube_domain_error:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  script:
+    - source /build/deploy-helpers.sh
+    - check_kube_domain || echo "Did not error as expected"

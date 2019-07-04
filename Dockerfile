@@ -5,4 +5,4 @@ ARG KUBERNETES_VERSION
 
 COPY src/ build/
 
-RUN build/install_dependencies.sh
+RUN /build/install_dependencies.sh

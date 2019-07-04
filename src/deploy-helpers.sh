@@ -12,3 +12,27 @@ function check_kube_domain() {
     true
   fi
 }
+
+function download_chart() {
+  if [[ ! -d chart ]]; then
+    auto_chart=${AUTO_DEVOPS_CHART:-gitlab/auto-deploy-app}
+    auto_chart_name=$(basename $auto_chart)
+    auto_chart_name=${auto_chart_name%.tgz}
+    auto_chart_name=${auto_chart_name%.tar.gz}
+  else
+    auto_chart="chart"
+    auto_chart_name="chart"
+  fi
+
+  helm init --client-only
+  helm repo add ${AUTO_DEVOPS_CHART_REPOSITORY_NAME:-gitlab} ${AUTO_DEVOPS_CHART_REPOSITORY:-https://charts.gitlab.io} ${AUTO_DEVOPS_CHART_REPOSITORY_USERNAME:+"--username" "$AUTO_DEVOPS_CHART_REPOSITORY_USERNAME"} ${AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD:+"--password" "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD"}
+  if [[ ! -d "$auto_chart" ]]; then
+    helm fetch ${auto_chart} --untar
+  fi
+  if [ "$auto_chart_name" != "chart" ]; then
+    mv ${auto_chart_name} chart
+  fi
+
+  helm dependency update chart/
+  helm dependency build chart/
+}

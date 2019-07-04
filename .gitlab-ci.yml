@@ -54,3 +54,10 @@ test_kube_domain_error:
   script:
     - source /build/deploy-helpers.sh
     - check_kube_domain || echo "Did not error as expected"
+
+test_download_chart:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  script:
+    - source /build/deploy-helpers.sh
+    - download_chart

@@ -36,3 +36,7 @@ function download_chart() {
   helm dependency update chart/
   helm dependency build chart/
 }
+
+function ensure_namespace() {
+  kubectl get namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
+}

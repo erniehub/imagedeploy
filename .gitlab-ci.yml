@@ -2,7 +2,8 @@ variables:
   DOCKER_DRIVER: overlay2
 
   HELM_VERSION: 2.14.0
-  KUBERNETES_VERSION: 1.11.10
+  KUBERNETES_VERSION: 1.11.9
+  # There is an issue with logging into k3s with kubectl 1.11.10
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
 
@@ -22,7 +23,7 @@ build:
     - docker build --build-arg "HELM_VERSION=$HELM_VERSION" --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION" --tag "$BUILD_IMAGE_NAME" .
     - docker push "$BUILD_IMAGE_NAME"
 
-test_dependencies:
+test-dependencies:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   script:
@@ -30,7 +31,7 @@ test_dependencies:
     - tiller -version
     - kubectl version --client
 
-test_kube_domain:
+test-kube-domain:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   variables:
@@ -39,7 +40,7 @@ test_kube_domain:
     - source /build/deploy-helpers.sh
     - check_kube_domain
 
-test_kube_domain_legacy:
+test-kube-domain-legacy:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   variables:
@@ -48,16 +49,36 @@ test_kube_domain_legacy:
     - source /build/deploy-helpers.sh
     - check_kube_domain || echo "Did not error as expected"
 
-test_kube_domain_error:
+test-kube-domain_error:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   script:
     - source /build/deploy-helpers.sh
     - check_kube_domain || echo "Did not error as expected"
 
-test_download_chart:
+test-download-chart:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   script:
     - source /build/deploy-helpers.sh
     - download_chart
+
+.k3s-services: &k3s-services
+  services:
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.5.0
+      alias: k3s
+      command: ["server", "--cluster-secret", "some-secret"]
+
+test-ensure-namespace:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  <<: *k3s-services
+  variables:
+    KUBE_NAMESPACE: project-123456
+  script:
+    - source /build/deploy-helpers.sh
+    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-context k3s --cluster=k3s
+    - kubectl config use-context k3s
+    - kubectl version
+    - ensure_namespace

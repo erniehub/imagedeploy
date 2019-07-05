@@ -78,6 +78,40 @@ function persist_environment_url() {
 
 ## Helper functions
 
+# Extracts variables prefixed with K8S_SECRET_
+# and creates a Kubernetes secret.
+#
+# e.g. If we have the following environment variables:
+#   K8S_SECRET_A=value1
+#   K8S_SECRET_B=multi\ word\ value
+#
+# Then we will create a secret with the following key-value pairs:
+#   data:
+#     A: dmFsdWUxCg==
+#     B: bXVsdGkgd29yZCB2YWx1ZQo=
+function create_application_secret() {
+  track="${1-stable}"
+  export APPLICATION_SECRET_NAME=$(application_secret_name "$track")
+
+  env | sed -n "s/^K8S_SECRET_\(.*\)$/\1/p" > k8s_prefixed_variables
+
+  kubectl create secret \
+    -n "$KUBE_NAMESPACE" generic "$APPLICATION_SECRET_NAME" \
+    --from-env-file k8s_prefixed_variables -o yaml --dry-run |
+    kubectl replace -n "$KUBE_NAMESPACE" --force -f -
+
+  export APPLICATION_SECRET_CHECKSUM=$(cat k8s_prefixed_variables | sha256sum | cut -d ' ' -f 1)
+
+  rm k8s_prefixed_variables
+}
+
+function application_secret_name() {
+  track="${1-stable}"
+  name=$(deploy_name "$track")
+
+  echo "${name}-secret"
+}
+
 function deploy_name() {
   name="$CI_ENVIRONMENT_SLUG"
   track="${1-stable}"

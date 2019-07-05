@@ -143,6 +143,24 @@ test-persist-environment-url:
     - persist_environment_url
     - grep review-app.example.com environment_url.txt
 
+test-create-application-secret:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  <<: *k3s-services
+  variables:
+    KUBE_NAMESPACE: default
+    CI_ENVIRONMENT_SLUG: production
+    K8S_SECRET_CODE: 12345
+  script:
+    - source /build/deploy-helpers.sh
+    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-context k3s --cluster=k3s
+    - kubectl config use-context k3s
+    - kubectl version
+    - create_application_secret "stable"
+    - kubectl get secrets -n $KUBE_NAMESPACE
+    - kubectl get secrets production-secret -n $KUBE_NAMESPACE
+
 test-deploy-name:
   stage: test
   image: "$BUILD_IMAGE_NAME"

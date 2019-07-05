@@ -143,6 +143,37 @@ test-persist-environment-url:
     - persist_environment_url
     - grep review-app.example.com environment_url.txt
 
+# disabled, k3s does not support helm charts
+.test-deploy:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  <<: *k3s-services
+  variables:
+    CI_APPLICATION_REPOSITORY: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image/master/test-dockerfile"
+    CI_APPLICATION_TAG: "b359d01bc8c611a2f7b14283cc878dea4a5f85d7"
+    CI_ENVIRONMENT_SLUG: production
+    CI_ENVIRONMENT_URL: example.com
+    CI_PROJECT_PATH_SLUG: "gitlab-org/cluster-integration/auto-build-image"
+    CI_PROJECT_VISIBILITY: public
+    KUBE_NAMESPACE: default
+    KUBE_INGRESS_BASE_DOMAIN: example.com
+    POSTGRES_ENABLED: true
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: testing-password
+    POSTGRES_ENABLED: "true"
+    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
+    POSTGRES_VERSION: 9.6.2
+  script:
+    - source /build/deploy-helpers.sh
+    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-context k3s --cluster=k3s
+    - kubectl config use-context k3s
+    - kubectl version
+    - initialize_tiller
+    - download_chart
+    - deploy
+    - helm ls
+
 test-create-application-secret:
   stage: test
   image: "$BUILD_IMAGE_NAME"

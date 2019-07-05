@@ -1,5 +1,7 @@
 #! /bin/sh
 
+auto_database_url=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${CI_ENVIRONMENT_SLUG}-postgres:5432/${POSTGRES_DB}
+export DATABASE_URL=${DATABASE_URL-$auto_database_url}
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
 
 function check_kube_domain() {
@@ -74,6 +76,126 @@ function create_secret() {
 
 function persist_environment_url() {
   echo $CI_ENVIRONMENT_URL > environment_url.txt
+}
+
+function deploy() {
+  track="${1-stable}"
+  percentage="${2:-100}"
+  name=$(deploy_name "$track")
+
+  if [[ -z "$CI_COMMIT_TAG" ]]; then
+    image_repository=${CI_APPLICATION_REPOSITORY:-$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG}
+    image_tag=${CI_APPLICATION_TAG:-$CI_COMMIT_SHA}
+  else
+    image_repository=${CI_APPLICATION_REPOSITORY:-$CI_REGISTRY_IMAGE}
+    image_tag=${CI_APPLICATION_TAG:-$CI_COMMIT_TAG}
+  fi
+
+  service_enabled="true"
+  postgres_enabled="$POSTGRES_ENABLED"
+
+  # if track is different than stable,
+  # re-use all attached resources
+  if [[ "$track" != "stable" ]]; then
+    service_enabled="false"
+    postgres_enabled="false"
+  fi
+
+  replicas=$(get_replicas "$track" "$percentage")
+
+  if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
+    secret_name='gitlab-registry'
+  else
+    secret_name=''
+  fi
+
+  create_application_secret "$track"
+
+  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s '[:lower:]' '[:upper:]')
+  eval env_ADDITIONAL_HOSTS=\$${env_slug}_ADDITIONAL_HOSTS
+  if [ -n "$env_ADDITIONAL_HOSTS" ]; then
+    additional_hosts="{$env_ADDITIONAL_HOSTS}"
+  elif [ -n "$ADDITIONAL_HOSTS" ]; then
+    additional_hosts="{$ADDITIONAL_HOSTS}"
+  fi
+
+  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$name$")" ]]; then
+    echo "Deploying first release with database initialization..."
+    helm upgrade --install \
+      --wait \
+      --set service.enabled="$service_enabled" \
+      --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
+      --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
+      --set releaseOverride="$CI_ENVIRONMENT_SLUG" \
+      --set image.repository="$image_repository" \
+      --set image.tag="$image_tag" \
+      --set image.pullPolicy=IfNotPresent \
+      --set image.secrets[0].name="$secret_name" \
+      --set application.track="$track" \
+      --set application.database_url="$DATABASE_URL" \
+      --set application.secretName="$APPLICATION_SECRET_NAME" \
+      --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
+      --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
+      --set service.url="$CI_ENVIRONMENT_URL" \
+      --set service.additionalHosts="$additional_hosts" \
+      --set replicaCount="$replicas" \
+      --set postgresql.enabled="$postgres_enabled" \
+      --set postgresql.nameOverride="postgres" \
+      --set postgresql.postgresUser="$POSTGRES_USER" \
+      --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
+      --set postgresql.postgresDatabase="$POSTGRES_DB" \
+      --set postgresql.imageTag="$POSTGRES_VERSION" \
+      --set application.initializeCommand="$DB_INITIALIZE" \
+      $HELM_UPGRADE_EXTRA_ARGS \
+      --namespace="$KUBE_NAMESPACE" \
+      "$name" \
+      chart/
+
+    echo "Deploying second release..."
+    helm upgrade --reuse-values \
+      --wait \
+      --set application.initializeCommand="" \
+      --set application.migrateCommand="$DB_MIGRATE" \
+      $HELM_UPGRADE_EXTRA_ARGS \
+      --namespace="$KUBE_NAMESPACE" \
+      "$name" \
+      chart/
+  else
+    echo "Deploying new release..."
+    helm upgrade --install \
+      --wait \
+      --set service.enabled="$service_enabled" \
+      --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
+      --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
+      --set releaseOverride="$CI_ENVIRONMENT_SLUG" \
+      --set image.repository="$image_repository" \
+      --set image.tag="$image_tag" \
+      --set image.pullPolicy=IfNotPresent \
+      --set image.secrets[0].name="$secret_name" \
+      --set application.track="$track" \
+      --set application.database_url="$DATABASE_URL" \
+      --set application.secretName="$APPLICATION_SECRET_NAME" \
+      --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
+      --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
+      --set service.url="$CI_ENVIRONMENT_URL" \
+      --set service.additionalHosts="$additional_hosts" \
+      --set replicaCount="$replicas" \
+      --set postgresql.enabled="$postgres_enabled" \
+      --set postgresql.nameOverride="postgres" \
+      --set postgresql.postgresUser="$POSTGRES_USER" \
+      --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
+      --set postgresql.postgresDatabase="$POSTGRES_DB" \
+      --set postgresql.imageTag="$POSTGRES_VERSION" \
+      --set application.migrateCommand="$DB_MIGRATE" \
+      $HELM_UPGRADE_EXTRA_ARGS \
+      --namespace="$KUBE_NAMESPACE" \
+      "$name" \
+      chart/
+  fi
+
+  if [[ -z "$ROLLOUT_STATUS_DISABLED" ]]; then
+    kubectl rollout status -n "$KUBE_NAMESPACE" -w "$ROLLOUT_RESOURCE_TYPE/$name"
+  fi
 }
 
 ## Helper functions

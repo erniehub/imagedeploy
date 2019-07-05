@@ -96,3 +96,24 @@ test-initialize-tiller:
     - kubectl config use-context k3s
     - kubectl version
     - initialize_tiller
+
+test-create-secret:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  <<: *k3s-services
+  variables:
+    KUBE_NAMESPACE: default
+    CI_REGISTRY: example.com
+    CI_DEPLOY_USER: ci-deploy-user
+    CI_DEPLOY_PASSWORD: ci-deploy-password
+    GITLAB_USER_EMAIL: user@example.com
+  script:
+    - source /build/deploy-helpers.sh
+    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-context k3s --cluster=k3s
+    - kubectl config use-context k3s
+    - kubectl version
+    - create_secret
+    - kubectl get secret -n $KUBE_NAMESPACE
+    - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
+

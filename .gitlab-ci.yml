@@ -133,6 +133,16 @@ test-create-secret-public-project:
     - create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
+test-persist-environment-url:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  variables:
+    CI_ENVIRONMENT_URL: review-app.example.com
+  script:
+    - source /build/deploy-helpers.sh
+    - persist_environment_url
+    - grep review-app.example.com environment_url.txt
+
 before_script:
   - |
     function expected_error() {

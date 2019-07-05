@@ -71,3 +71,7 @@ function create_secret() {
     --docker-email="$GITLAB_USER_EMAIL" \
     -o yaml --dry-run | kubectl replace -n "$KUBE_NAMESPACE" --force -f -
 }
+
+function persist_environment_url() {
+  echo $CI_ENVIRONMENT_URL > environment_url.txt
+}

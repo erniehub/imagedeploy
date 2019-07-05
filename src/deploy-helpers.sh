@@ -88,3 +88,35 @@ function deploy_name() {
 
   echo $name
 }
+
+function get_replicas() {
+  track="${1:-stable}"
+  percentage="${2:-100}"
+
+  env_track=$( echo $track | tr -s  '[:lower:]'  '[:upper:]' )
+  env_slug=$( echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s  '[:lower:]'  '[:upper:]' )
+
+  if [[ "$track" == "stable" ]] || [[ "$track" == "rollout" ]]; then
+    # for stable track get number of replicas from `PRODUCTION_REPLICAS`
+    eval new_replicas=\$${env_slug}_REPLICAS
+    if [[ -z "$new_replicas" ]]; then
+      new_replicas=$REPLICAS
+    fi
+  else
+    # for all tracks get number of replicas from `CANARY_PRODUCTION_REPLICAS`
+    eval new_replicas=\$${env_track}_${env_slug}_REPLICAS
+    if [[ -z "$new_replicas" ]]; then
+      eval new_replicas=\${env_track}_REPLICAS
+    fi
+  fi
+
+  replicas="${new_replicas:-1}"
+  replicas="$(($replicas * $percentage / 100))"
+
+  # always return at least one replicas
+  if [[ $replicas -gt 0 ]]; then
+    echo "$replicas"
+  else
+    echo 1
+  fi
+}

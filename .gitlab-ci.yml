@@ -163,6 +163,20 @@ test-deploy-name:
         exit 1
       fi
 
+test-get-replicas:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  variables:
+    CI_ENVIRONMENT_SLUG: production
+  script:
+    - source /build/deploy-helpers.sh
+    - replicas=$(get_replicas "stable" "100")
+    - |
+      if [[ $replicas != 1 ]]; then
+        echo "$replicas should equal 1"
+        exit 1
+      fi
+
 before_script:
   - |
     function expected_error() {

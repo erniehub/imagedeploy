@@ -1,5 +1,7 @@
 #! /bin/sh
 
+export TILLER_NAMESPACE=$KUBE_NAMESPACE
+
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
     echo "In order to deploy or use Review Apps,"
@@ -39,4 +41,18 @@ function download_chart() {
 
 function ensure_namespace() {
   kubectl get namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
+}
+
+function initialize_tiller() {
+  echo "Checking Tiller..."
+
+  export HELM_HOST="localhost:44134"
+  tiller -listen ${HELM_HOST} -alsologtostderr > /dev/null 2>&1 &
+  echo "Tiller is listening on ${HELM_HOST}"
+
+  if ! helm version --debug; then
+    echo "Failed to init Tiller."
+    return 1
+  fi
+  echo ""
 }

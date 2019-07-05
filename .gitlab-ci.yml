@@ -82,3 +82,17 @@ test-ensure-namespace:
     - kubectl config use-context k3s
     - kubectl version
     - ensure_namespace
+
+test-initialize-tiller:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  <<: *k3s-services
+  variables:
+    KUBE_NAMESPACE: default
+  script:
+    - source /build/deploy-helpers.sh
+    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-context k3s --cluster=k3s
+    - kubectl config use-context k3s
+    - kubectl version
+    - initialize_tiller

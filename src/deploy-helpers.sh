@@ -62,7 +62,6 @@ function create_secret() {
   if [[ "$CI_PROJECT_VISIBILITY" == "public" ]]; then
     return
   fi
-  echo "Creating secret..."
 
   kubectl create secret -n "$KUBE_NAMESPACE" \
     docker-registry gitlab-registry \

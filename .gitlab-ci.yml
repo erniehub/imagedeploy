@@ -47,14 +47,14 @@ test-kube-domain-legacy:
     AUTO_DEVOPS_DOMAIN: example.com
   script:
     - source /build/deploy-helpers.sh
-    - check_kube_domain || echo "Did not error as expected"
+    - check_kube_domain && expected_error || failed_as_expected
 
 test-kube-domain_error:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   script:
     - source /build/deploy-helpers.sh
-    - check_kube_domain || echo "Did not error as expected"
+    - check_kube_domain && expected_error || failed_as_expected
 
 test-download-chart:
   stage: test
@@ -97,7 +97,8 @@ test-initialize-tiller:
     - kubectl version
     - initialize_tiller
 
-test-create-secret:
+# disabled, doesn't look like k3s supports docker-registry secret
+.test-create-secret:
   stage: test
   image: "$BUILD_IMAGE_NAME"
   <<: *k3s-services
@@ -114,6 +115,31 @@ test-create-secret:
     - kubectl config use-context k3s
     - kubectl version
     - create_secret
-    - kubectl get secret -n $KUBE_NAMESPACE
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
+test-create-secret-public-project:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  <<: *k3s-services
+  variables:
+    CI_PROJECT_VISIBILITY: public
+    KUBE_NAMESPACE: default
+  script:
+    - source /build/deploy-helpers.sh
+    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-context k3s --cluster=k3s
+    - kubectl config use-context k3s
+    - kubectl version
+    - create_secret
+    - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
+
+before_script:
+  - |
+    function expected_error() {
+      echo "Expected error but exited with $?, failing build!"
+      exit 1
+    }
+
+    function failed_as_expected() {
+      echo "Failed as expected and exited with $?"
+    }

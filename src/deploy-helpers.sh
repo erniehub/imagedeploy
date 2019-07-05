@@ -198,6 +198,35 @@ function deploy() {
   fi
 }
 
+function scale() {
+  track="${1-stable}"
+  percentage="${2-100}"
+  name=$(deploy_name "$track")
+
+  replicas=$(get_replicas "$track" "$percentage")
+
+  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+    helm upgrade --reuse-values \
+      --wait \
+      --set replicaCount="$replicas" \
+      --namespace="$KUBE_NAMESPACE" \
+      "$name" \
+      chart/
+  fi
+}
+
+function delete() {
+  track="${1-stable}"
+  name=$(deploy_name "$track")
+
+  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+    helm delete --purge "$name"
+  fi
+
+  secret_name=$(application_secret_name "$track")
+  kubectl delete secret --ignore-not-found -n "$KUBE_NAMESPACE" "$secret_name"
+}
+
 ## Helper functions
 
 # Extracts variables prefixed with K8S_SECRET_

@@ -143,6 +143,26 @@ test-persist-environment-url:
     - persist_environment_url
     - grep review-app.example.com environment_url.txt
 
+test-deploy-name:
+  stage: test
+  image: "$BUILD_IMAGE_NAME"
+  variables:
+    CI_ENVIRONMENT_SLUG: production
+  script:
+    - source /build/deploy-helpers.sh
+    - name=$(deploy_name "stable")
+    - |
+      if [[ $name != "production" ]]; then
+        echo "$name should equal 'production'"
+        exit 1
+      fi
+    - name=$(deploy_name "canary")
+    - |
+      if [[ $name != "production-canary" ]]; then
+        echo "$name should equal 'production-canary'"
+        exit 1
+      fi
+
 before_script:
   - |
     function expected_error() {

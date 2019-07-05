@@ -75,3 +75,16 @@ function create_secret() {
 function persist_environment_url() {
   echo $CI_ENVIRONMENT_URL > environment_url.txt
 }
+
+## Helper functions
+
+function deploy_name() {
+  name="$CI_ENVIRONMENT_SLUG"
+  track="${1-stable}"
+
+  if [[ "$track" != "stable" ]]; then
+    name="$name-$track"
+  fi
+
+  echo $name
+}

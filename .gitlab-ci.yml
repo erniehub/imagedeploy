@@ -5,17 +5,18 @@ variables:
   KUBERNETES_VERSION: 1.11.10
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
-
-services:
-  - docker:stable-dind
+  RELEASE_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:stable"
 
 stages:
   - build
   - test
+  - release
 
 build:
   stage: build
   image: docker:stable
+  services:
+    - docker:stable-dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
@@ -200,6 +201,18 @@ test-get-replicas:
         echo "$replicas should equal 1"
         exit 1
       fi
+
+release:
+  stage: release
+  image: docker:stable
+  services:
+    - docker:stable-dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - docker pull "$BUILD_IMAGE_NAME"
+    - docker tag "$BUILD_IMAGE_NAME" "$RELEASE_IMAGE_NAME"
+    - docker push "$RELEASE_IMAGE_NAME"
 
 before_script:
   - |

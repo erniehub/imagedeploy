@@ -23,50 +23,91 @@ build:
     - docker build --build-arg "HELM_VERSION=$HELM_VERSION" --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION" --tag "$BUILD_IMAGE_NAME" .
     - docker push "$BUILD_IMAGE_NAME"
 
-test-dependencies:
+.test-job: &test-job
   stage: test
   image: "$BUILD_IMAGE_NAME"
+
+test-dependencies:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
   script:
     - helm version --client
     - tiller -version
     - kubectl version --client
 
 test-kube-domain:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     KUBE_INGRESS_BASE_DOMAIN: example.com
   script:
     - source /build/deploy-helpers.sh
     - check_kube_domain
 
 test-kube-domain-legacy:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     AUTO_DEVOPS_DOMAIN: example.com
   script:
     - source /build/deploy-helpers.sh
     - check_kube_domain && expected_error || failed_as_expected
 
 test-kube-domain_error:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
   script:
     - source /build/deploy-helpers.sh
     - check_kube_domain && expected_error || failed_as_expected
 
 test-download-chart:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
   script:
     - source /build/deploy-helpers.sh
     - download_chart
 
-test-ensure-namespace:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+test-deploy-name:
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
+    CI_ENVIRONMENT_SLUG: production
+  script:
+    - source /build/deploy-helpers.sh
+    - name=$(deploy_name "stable")
+    - |
+      if [[ $name != "production" ]]; then
+        echo "$name should equal 'production'"
+        exit 1
+      fi
+    - name=$(deploy_name "canary")
+    - |
+      if [[ $name != "production-canary" ]]; then
+        echo "$name should equal 'production-canary'"
+        exit 1
+      fi
+
+test-get-replicas:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
+    CI_ENVIRONMENT_SLUG: production
+  script:
+    - source /build/deploy-helpers.sh
+    - replicas=$(get_replicas "stable" "100")
+    - |
+      if [[ $replicas != 1 ]]; then
+        echo "$replicas should equal 1"
+        exit 1
+      fi
+
+test-ensure-namespace:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
     KUBE_NAMESPACE: project-123456
   script:
     - download_k3s
@@ -75,9 +116,9 @@ test-ensure-namespace:
     - ensure_namespace
 
 test-initialize-tiller:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     KUBE_NAMESPACE: default
   script:
     - download_k3s
@@ -87,9 +128,9 @@ test-initialize-tiller:
 
 # disabled, doesn't look like k3s supports docker-registry secret
 .test-create-secret:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     KUBE_NAMESPACE: default
     CI_REGISTRY: example.com
     CI_DEPLOY_USER: ci-deploy-user
@@ -103,9 +144,9 @@ test-initialize-tiller:
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
 test-create-secret-public-project:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     CI_PROJECT_VISIBILITY: public
     KUBE_NAMESPACE: default
   script:
@@ -116,9 +157,9 @@ test-create-secret-public-project:
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
 test-persist-environment-url:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     CI_ENVIRONMENT_URL: review-app.example.com
   script:
     - source /build/deploy-helpers.sh
@@ -127,9 +168,9 @@ test-persist-environment-url:
 
 # disabled, k3s does not support helm charts
 .test-deploy:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     CI_APPLICATION_REPOSITORY: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image/master/test-dockerfile"
     CI_APPLICATION_TAG: "b359d01bc8c611a2f7b14283cc878dea4a5f85d7"
     CI_ENVIRONMENT_SLUG: production
@@ -154,9 +195,9 @@ test-persist-environment-url:
     - helm ls
 
 test-create-application-secret:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
+  <<: *test-job
   variables:
+    GIT_STRATEGY: none
     KUBE_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345
@@ -167,40 +208,6 @@ test-create-application-secret:
     - create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
-
-test-deploy-name:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
-  variables:
-    CI_ENVIRONMENT_SLUG: production
-  script:
-    - source /build/deploy-helpers.sh
-    - name=$(deploy_name "stable")
-    - |
-      if [[ $name != "production" ]]; then
-        echo "$name should equal 'production'"
-        exit 1
-      fi
-    - name=$(deploy_name "canary")
-    - |
-      if [[ $name != "production-canary" ]]; then
-        echo "$name should equal 'production-canary'"
-        exit 1
-      fi
-
-test-get-replicas:
-  stage: test
-  image: "$BUILD_IMAGE_NAME"
-  variables:
-    CI_ENVIRONMENT_SLUG: production
-  script:
-    - source /build/deploy-helpers.sh
-    - replicas=$(get_replicas "stable" "100")
-    - |
-      if [[ $replicas != 1 ]]; then
-        echo "$replicas should equal 1"
-        exit 1
-      fi
 
 release:
   stage: release

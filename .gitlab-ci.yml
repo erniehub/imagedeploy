@@ -2,8 +2,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
   HELM_VERSION: 2.14.0
-  KUBERNETES_VERSION: 1.11.9
-  # There is an issue with logging into k3s with kubectl 1.11.10
+  KUBERNETES_VERSION: 1.11.10
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
 
@@ -63,45 +62,32 @@ test-download-chart:
     - source /build/deploy-helpers.sh
     - download_chart
 
-.k3s-services: &k3s-services
-  services:
-    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.5.0
-      alias: k3s
-      command: ["server", "--cluster-secret", "some-secret"]
-
 test-ensure-namespace:
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  <<: *k3s-services
   variables:
     KUBE_NAMESPACE: project-123456
   script:
+    - download_k3s
+    - start_k3s
     - source /build/deploy-helpers.sh
-    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-context k3s --cluster=k3s
-    - kubectl config use-context k3s
-    - kubectl version
     - ensure_namespace
 
 test-initialize-tiller:
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  <<: *k3s-services
   variables:
     KUBE_NAMESPACE: default
   script:
+    - download_k3s
+    - start_k3s
     - source /build/deploy-helpers.sh
-    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-context k3s --cluster=k3s
-    - kubectl config use-context k3s
-    - kubectl version
     - initialize_tiller
 
 # disabled, doesn't look like k3s supports docker-registry secret
 .test-create-secret:
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  <<: *k3s-services
   variables:
     KUBE_NAMESPACE: default
     CI_REGISTRY: example.com
@@ -109,27 +95,22 @@ test-initialize-tiller:
     CI_DEPLOY_PASSWORD: ci-deploy-password
     GITLAB_USER_EMAIL: user@example.com
   script:
+    - download_k3s
+    - start_k3s
     - source /build/deploy-helpers.sh
-    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-context k3s --cluster=k3s
-    - kubectl config use-context k3s
-    - kubectl version
     - create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
 test-create-secret-public-project:
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  <<: *k3s-services
   variables:
     CI_PROJECT_VISIBILITY: public
     KUBE_NAMESPACE: default
   script:
+    - download_k3s
+    - start_k3s
     - source /build/deploy-helpers.sh
-    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-context k3s --cluster=k3s
-    - kubectl config use-context k3s
-    - kubectl version
     - create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
@@ -147,7 +128,6 @@ test-persist-environment-url:
 .test-deploy:
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  <<: *k3s-services
   variables:
     CI_APPLICATION_REPOSITORY: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image/master/test-dockerfile"
     CI_APPLICATION_TAG: "b359d01bc8c611a2f7b14283cc878dea4a5f85d7"
@@ -164,11 +144,9 @@ test-persist-environment-url:
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
     POSTGRES_VERSION: 9.6.2
   script:
+    - download_k3s
+    - start_k3s
     - source /build/deploy-helpers.sh
-    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-context k3s --cluster=k3s
-    - kubectl config use-context k3s
-    - kubectl version
     - initialize_tiller
     - download_chart
     - deploy
@@ -177,17 +155,14 @@ test-persist-environment-url:
 test-create-application-secret:
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  <<: *k3s-services
   variables:
     KUBE_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345
   script:
+    - download_k3s
+    - start_k3s
     - source /build/deploy-helpers.sh
-    - kubectl config set-cluster k3s --server https://node:some-secret@k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-context k3s --cluster=k3s
-    - kubectl config use-context k3s
-    - kubectl version
     - create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
@@ -235,4 +210,21 @@ before_script:
 
     function failed_as_expected() {
       echo "Failed as expected and exited with $?"
+    }
+
+    function download_k3s() {
+      wget https://github.com/rancher/k3s/releases/download/v0.5.0/k3s
+      chmod +x k3s
+    }
+
+    function start_k3s() {
+      ./k3s server > k3s.log 2>&1 &
+
+      until [ -f /etc/rancher/k3s/k3s.yaml ]; do
+        sleep 1
+        echo -n .
+      done
+
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+      kubectl version
     }

@@ -1,5 +1,7 @@
 #! /bin/sh
 
+[[ "$TRACE" ]] && set -x
+
 auto_database_url=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${CI_ENVIRONMENT_SLUG}-postgres:5432/${POSTGRES_DB}
 export DATABASE_URL=${DATABASE_URL-$auto_database_url}
 export TILLER_NAMESPACE=$KUBE_NAMESPACE

@@ -64,7 +64,6 @@ test-download-chart:
   variables:
     GIT_STRATEGY: none
   script:
-    - source /build/deploy-helpers.sh
     - download_chart
 
 test-deploy-name:

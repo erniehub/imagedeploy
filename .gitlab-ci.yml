@@ -42,7 +42,6 @@ test-kube-domain:
     GIT_STRATEGY: none
     KUBE_INGRESS_BASE_DOMAIN: example.com
   script:
-    - source /build/deploy-helpers.sh
     - check_kube_domain
 
 test-kube-domain-legacy:
@@ -51,7 +50,6 @@ test-kube-domain-legacy:
     GIT_STRATEGY: none
     AUTO_DEVOPS_DOMAIN: example.com
   script:
-    - source /build/deploy-helpers.sh
     - check_kube_domain && expected_error || failed_as_expected
 
 test-kube-domain_error:
@@ -59,7 +57,6 @@ test-kube-domain_error:
   variables:
     GIT_STRATEGY: none
   script:
-    - source /build/deploy-helpers.sh
     - check_kube_domain && expected_error || failed_as_expected
 
 test-download-chart:
@@ -197,7 +194,6 @@ test-persist-environment-url:
 test-create-application-secret:
   <<: *test-job
   variables:
-    GIT_STRATEGY: none
     KUBE_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345

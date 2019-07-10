@@ -42,7 +42,7 @@ test-kube-domain:
     GIT_STRATEGY: none
     KUBE_INGRESS_BASE_DOMAIN: example.com
   script:
-    - check_kube_domain
+    - auto-deploy check_kube_domain
 
 test-kube-domain-legacy:
   <<: *test-job
@@ -50,21 +50,21 @@ test-kube-domain-legacy:
     GIT_STRATEGY: none
     AUTO_DEVOPS_DOMAIN: example.com
   script:
-    - check_kube_domain && expected_error || failed_as_expected
+    - auto-deploy check_kube_domain && expected_error || failed_as_expected
 
 test-kube-domain_error:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
   script:
-    - check_kube_domain && expected_error || failed_as_expected
+    - auto-deploy check_kube_domain && expected_error || failed_as_expected
 
 test-download-chart:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
   script:
-    - download_chart
+    - auto-deploy download_chart
 
 test-deploy-name:
   <<: *test-job
@@ -108,8 +108,7 @@ test-ensure-namespace:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - ensure_namespace
+    - auto-deploy ensure_namespace
 
 test-initialize-tiller:
   <<: *test-job
@@ -119,8 +118,7 @@ test-initialize-tiller:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - initialize_tiller
+    - auto-deploy initialize_tiller
 
 # disabled, doesn't look like k3s supports docker-registry secret
 .test-create-secret:
@@ -135,8 +133,7 @@ test-initialize-tiller:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - create_secret
+    - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
 test-create-secret-public-project:
@@ -148,8 +145,7 @@ test-create-secret-public-project:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - create_secret
+    - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
 test-persist-environment-url:
@@ -158,8 +154,7 @@ test-persist-environment-url:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_URL: review-app.example.com
   script:
-    - source /build/deploy-helpers.sh
-    - persist_environment_url
+    - auto-deploy persist_environment_url
     - grep review-app.example.com environment_url.txt
 
 # disabled, k3s does not support helm charts
@@ -184,10 +179,9 @@ test-persist-environment-url:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - initialize_tiller
-    - download_chart
-    - deploy
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
     - helm ls
 
 test-create-application-secret:

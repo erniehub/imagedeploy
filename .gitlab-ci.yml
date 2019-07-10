@@ -72,14 +72,13 @@ test-deploy-name:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
   script:
-    - source /build/deploy-helpers.sh
-    - name=$(deploy_name "stable")
+    - name=$(auto-deploy deploy_name "stable")
     - |
       if [[ $name != "production" ]]; then
         echo "$name should equal 'production'"
         exit 1
       fi
-    - name=$(deploy_name "canary")
+    - name=$(auto-deploy deploy_name "canary")
     - |
       if [[ $name != "production-canary" ]]; then
         echo "$name should equal 'production-canary'"
@@ -92,8 +91,7 @@ test-get-replicas:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
   script:
-    - source /build/deploy-helpers.sh
-    - replicas=$(get_replicas "stable" "100")
+    - replicas=$(auto-deploy get_replicas "stable" "100")
     - |
       if [[ $replicas != 1 ]]; then
         echo "$replicas should equal 1"
@@ -193,8 +191,7 @@ test-create-application-secret:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - create_application_secret "stable"
+    - auto-deploy create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
 

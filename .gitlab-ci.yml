@@ -207,6 +207,8 @@ test-create-application-secret:
     - docker pull "$BUILD_IMAGE_NAME"
     - docker tag "$BUILD_IMAGE_NAME" "$RELEASE_IMAGE_NAME"
     - docker push "$RELEASE_IMAGE_NAME"
+  only:
+    - tags
 
 12-1-stable:
   extends: .release

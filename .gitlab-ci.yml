@@ -42,8 +42,7 @@ test-kube-domain:
     GIT_STRATEGY: none
     KUBE_INGRESS_BASE_DOMAIN: example.com
   script:
-    - source /build/deploy-helpers.sh
-    - check_kube_domain
+    - auto-deploy check_kube_domain
 
 test-kube-domain-legacy:
   <<: *test-job
@@ -51,24 +50,21 @@ test-kube-domain-legacy:
     GIT_STRATEGY: none
     AUTO_DEVOPS_DOMAIN: example.com
   script:
-    - source /build/deploy-helpers.sh
-    - check_kube_domain && expected_error || failed_as_expected
+    - auto-deploy check_kube_domain && expected_error || failed_as_expected
 
 test-kube-domain_error:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
   script:
-    - source /build/deploy-helpers.sh
-    - check_kube_domain && expected_error || failed_as_expected
+    - auto-deploy check_kube_domain && expected_error || failed_as_expected
 
 test-download-chart:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
   script:
-    - source /build/deploy-helpers.sh
-    - download_chart
+    - auto-deploy download_chart
 
 test-deploy-name:
   <<: *test-job
@@ -76,14 +72,13 @@ test-deploy-name:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
   script:
-    - source /build/deploy-helpers.sh
-    - name=$(deploy_name "stable")
+    - name=$(auto-deploy deploy_name "stable")
     - |
       if [[ $name != "production" ]]; then
         echo "$name should equal 'production'"
         exit 1
       fi
-    - name=$(deploy_name "canary")
+    - name=$(auto-deploy deploy_name "canary")
     - |
       if [[ $name != "production-canary" ]]; then
         echo "$name should equal 'production-canary'"
@@ -96,8 +91,7 @@ test-get-replicas:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
   script:
-    - source /build/deploy-helpers.sh
-    - replicas=$(get_replicas "stable" "100")
+    - replicas=$(auto-deploy get_replicas "stable" "100")
     - |
       if [[ $replicas != 1 ]]; then
         echo "$replicas should equal 1"
@@ -112,8 +106,7 @@ test-ensure-namespace:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - ensure_namespace
+    - auto-deploy ensure_namespace
 
 test-initialize-tiller:
   <<: *test-job
@@ -123,8 +116,7 @@ test-initialize-tiller:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - initialize_tiller
+    - auto-deploy initialize_tiller
 
 # disabled, doesn't look like k3s supports docker-registry secret
 .test-create-secret:
@@ -139,8 +131,7 @@ test-initialize-tiller:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - create_secret
+    - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
 test-create-secret-public-project:
@@ -152,8 +143,7 @@ test-create-secret-public-project:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - create_secret
+    - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
 test-persist-environment-url:
@@ -162,8 +152,7 @@ test-persist-environment-url:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_URL: review-app.example.com
   script:
-    - source /build/deploy-helpers.sh
-    - persist_environment_url
+    - auto-deploy persist_environment_url
     - grep review-app.example.com environment_url.txt
 
 # disabled, k3s does not support helm charts
@@ -188,24 +177,21 @@ test-persist-environment-url:
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - initialize_tiller
-    - download_chart
-    - deploy
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
     - helm ls
 
 test-create-application-secret:
   <<: *test-job
   variables:
-    GIT_STRATEGY: none
     KUBE_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345
   script:
     - download_k3s
     - start_k3s
-    - source /build/deploy-helpers.sh
-    - create_application_secret "stable"
+    - auto-deploy create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
 

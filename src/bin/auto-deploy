@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 [[ "$TRACE" ]] && set -x
 
@@ -230,6 +230,7 @@ function delete() {
 }
 
 ## Helper functions
+##
 
 # Extracts variables prefixed with K8S_SECRET_
 # and creates a Kubernetes secret.
@@ -307,3 +308,24 @@ function get_replicas() {
     echo 1
   fi
 }
+
+##
+## End Helper functions
+
+option=$1
+case $option
+in
+  check_kube_domain) check_kube_domain ;;
+  download_chart) download_chart ;;
+  ensure_namespace) ensure_namespace ;;
+  initialize_tiller) initialize_tiller ;;
+  create_secret) create_secret ;;
+  persist_environment_url) persist_environment_url ;;
+  deploy) deploy "${@:2}" ;;
+  scale) scale "${@:2}" ;;
+  delete) delete "${@:2}" ;;
+  create_application_secret) create_application_secret "${@:2}" ;;
+  deploy_name) deploy_name "${@:2}" ;;
+  get_replicas) get_replicas "${@:2}" ;;
+  *) exit 1 ;;
+esac

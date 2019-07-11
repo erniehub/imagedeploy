@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 apk add -U openssl curl tar gzip bash ca-certificates git
 curl -sSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub

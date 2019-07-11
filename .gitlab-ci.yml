@@ -116,6 +116,8 @@ test-initialize-tiller:
     - download_k3s
     - start_k3s
     - auto-deploy initialize_tiller
+    - ps aufx
+    - helm ls --host "localhost:44134"
 
 # disabled, doesn't look like k3s supports docker-registry secret
 .test-create-secret:
@@ -179,7 +181,7 @@ test-persist-environment-url:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm ls
+    - helm ls --host "localhost:44134"
 
 test-create-application-secret:
   <<: *test-job
@@ -212,7 +214,7 @@ test-create-application-secret:
 
 12-1-stable:
   extends: .release
-  
+
 12-2-stable:
   extends: .release
 

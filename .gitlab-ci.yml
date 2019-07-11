@@ -116,6 +116,7 @@ test-initialize-tiller:
     - download_k3s
     - start_k3s
     - auto-deploy initialize_tiller
+    - helm ls
 
 # disabled, doesn't look like k3s supports docker-registry secret
 .test-create-secret:
@@ -212,7 +213,7 @@ test-create-application-secret:
 
 12-1-stable:
   extends: .release
-  
+
 12-2-stable:
   extends: .release
 

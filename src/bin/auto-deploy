@@ -5,6 +5,7 @@
 auto_database_url=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${CI_ENVIRONMENT_SLUG}-postgres:5432/${POSTGRES_DB}
 export DATABASE_URL=${DATABASE_URL-$auto_database_url}
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
+export HELM_HOST="localhost:44134"
 
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
@@ -50,7 +51,6 @@ function ensure_namespace() {
 function initialize_tiller() {
   echo "Checking Tiller..."
 
-  export HELM_HOST="localhost:44134"
   nohup tiller -listen ${HELM_HOST} -alsologtostderr > /dev/null 2>&1 &
   echo "Tiller is listening on ${HELM_HOST}"
 

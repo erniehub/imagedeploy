@@ -26,6 +26,12 @@ build:
   stage: test
   image: "$BUILD_IMAGE_NAME"
 
+test-shellcheck:
+  stage: test
+  image: koalaman/shellcheck-alpine
+  script:
+    - shellcheck src/bin/auto-deploy
+
 test-dependencies:
   <<: *test-job
   variables:

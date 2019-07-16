@@ -23,6 +23,7 @@ function check_kube_domain() {
 function download_chart() {
   if [[ ! -d chart ]]; then
     auto_chart=${AUTO_DEVOPS_CHART:-gitlab/auto-deploy-app}
+    # shellcheck disable=SC2086 # double quote variables to prevent globbing
     auto_chart_name=$(basename $auto_chart)
     auto_chart_name=${auto_chart_name%.tgz}
     auto_chart_name=${auto_chart_name%.tar.gz}
@@ -32,6 +33,8 @@ function download_chart() {
   fi
 
   helm init --client-only
+  # shellcheck disable=SC2086 # double quote variables to prevent globbing
+  # shellcheck disable=SC2140 # ambiguous quoting warning
   helm repo add ${AUTO_DEVOPS_CHART_REPOSITORY_NAME:-gitlab} ${AUTO_DEVOPS_CHART_REPOSITORY:-https://charts.gitlab.io} ${AUTO_DEVOPS_CHART_REPOSITORY_USERNAME:+"--username" "$AUTO_DEVOPS_CHART_REPOSITORY_USERNAME"} ${AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD:+"--password" "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD"}
   if [[ ! -d "$auto_chart" ]]; then
     helm fetch ${auto_chart} --untar
@@ -76,10 +79,13 @@ function create_secret() {
     -o yaml --dry-run | kubectl replace -n "$KUBE_NAMESPACE" --force -f -
 }
 
+# shellcheck disable=SC2086
 function persist_environment_url() {
   echo $CI_ENVIRONMENT_URL > environment_url.txt
 }
 
+# shellcheck disable=SC2153 # warns that my_var vs MY_VAR is a possible misspelling
+# shellcheck disable=SC2154 # env_ADDITIONAL_HOSTS eval assignment is not recognized
 function deploy() {
   track="${1-stable}"
   percentage="${2:-100}"
@@ -113,7 +119,10 @@ function deploy() {
 
   create_application_secret "$track"
 
+  # shellcheck disable=SC2086 # double quote variables to prevent globbing
   env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s '[:lower:]' '[:upper:]')
+
+  # shellcheck disable=SC2086 # double quote variables to prevent globbing
   eval env_ADDITIONAL_HOSTS=\$${env_slug}_ADDITIONAL_HOSTS
   if [ -n "$env_ADDITIONAL_HOSTS" ]; then
     additional_hosts="{$env_ADDITIONAL_HOSTS}"
@@ -121,6 +130,7 @@ function deploy() {
     additional_hosts="{$ADDITIONAL_HOSTS}"
   fi
 
+  # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$name$")" ]]; then
     echo "Deploying first release with database initialization..."
     helm upgrade --install \
@@ -243,8 +253,10 @@ function delete() {
 #   data:
 #     A: dmFsdWUxCg==
 #     B: bXVsdGkgd29yZCB2YWx1ZQo=
+#
 function create_application_secret() {
   track="${1-stable}"
+  # shellcheck disable=SC2155 # declare and assign separately to avoid masking return values.
   export APPLICATION_SECRET_NAME=$(application_secret_name "$track")
 
   env | sed -n "s/^K8S_SECRET_\(.*\)$/\1/p" > k8s_prefixed_variables
@@ -254,6 +266,8 @@ function create_application_secret() {
     --from-env-file k8s_prefixed_variables -o yaml --dry-run |
     kubectl replace -n "$KUBE_NAMESPACE" --force -f -
 
+  # shellcheck disable=SC2002 # useless cat, prefer cmd < file
+  # shellcheck disable=SC2155 # declare and assign separately to avoid masking return values.
   export APPLICATION_SECRET_CHECKSUM=$(cat k8s_prefixed_variables | sha256sum | cut -d ' ' -f 1)
 
   rm k8s_prefixed_variables
@@ -266,6 +280,7 @@ function application_secret_name() {
   echo "${name}-secret"
 }
 
+# shellcheck disable=SC2086
 function deploy_name() {
   name="$CI_ENVIRONMENT_SLUG"
   track="${1-stable}"
@@ -277,6 +292,9 @@ function deploy_name() {
   echo $name
 }
 
+# shellcheck disable=SC2004 # $/${} is unnecessary on arithmetic variables.
+# shellcheck disable=SC2086 # double quote to prevent globbing
+# shellcheck disable=SC2153 # incorrectly thinks replicas vs REPLICAS is a misspelling
 function get_replicas() {
   track="${1:-stable}"
   percentage="${2:-100}"
@@ -294,7 +312,7 @@ function get_replicas() {
     # for all tracks get number of replicas from `CANARY_PRODUCTION_REPLICAS`
     eval new_replicas=\$${env_track}_${env_slug}_REPLICAS
     if [[ -z "$new_replicas" ]]; then
-      eval new_replicas=\${env_track}_REPLICAS
+      eval new_replicas=\$${env_track}_REPLICAS
     fi
   fi
 

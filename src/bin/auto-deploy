@@ -2,7 +2,8 @@
 
 [[ "$TRACE" ]] && set -x
 
-auto_database_url=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${CI_ENVIRONMENT_SLUG}-postgres:5432/${POSTGRES_DB}
+export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
+auto_database_url=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}
 export DATABASE_URL=${DATABASE_URL-$auto_database_url}
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
 export HELM_HOST="localhost:44134"
@@ -138,7 +139,7 @@ function deploy() {
       --set service.enabled="$service_enabled" \
       --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
-      --set releaseOverride="$CI_ENVIRONMENT_SLUG" \
+      --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
       --set image.tag="$image_tag" \
       --set image.pullPolicy=IfNotPresent \
@@ -179,7 +180,7 @@ function deploy() {
       --set service.enabled="$service_enabled" \
       --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
-      --set releaseOverride="$CI_ENVIRONMENT_SLUG" \
+      --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
       --set image.tag="$image_tag" \
       --set image.pullPolicy=IfNotPresent \
@@ -282,7 +283,7 @@ function application_secret_name() {
 
 # shellcheck disable=SC2086
 function deploy_name() {
-  name="$CI_ENVIRONMENT_SLUG"
+  name="$RELEASE_NAME"
   track="${1-stable}"
 
   if [[ "$track" != "stable" ]]; then

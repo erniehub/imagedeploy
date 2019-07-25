@@ -205,9 +205,12 @@ test-create-application-secret:
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
 
-.release:
+release-tag:
   stage: release
   image: docker:stable
+  variables:
+    # e.g. auto-deploy-image:v1.0.0
+    RELEASE_IMAGE_NAME: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   services:
     - docker:stable-dind
   before_script:
@@ -218,12 +221,6 @@ test-create-application-secret:
     - docker push "$RELEASE_IMAGE_NAME"
   only:
     - tags
-
-release-tag:
-  extends: .release
-  variables:
-    # e.g. auto-deploy-image:v1.0.0
-    RELEASE_IMAGE_NAME: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
 
 before_script:
   - |

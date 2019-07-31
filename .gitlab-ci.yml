@@ -166,7 +166,7 @@ test-persist-environment-url:
     - grep review-app.example.com environment_url.txt
 
 # disabled, k3s does not support helm charts
-.test-deploy:
+test-deploy:
   <<: *test-job
   variables:
     GIT_STRATEGY: none

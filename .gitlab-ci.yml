@@ -166,7 +166,7 @@ test-persist-environment-url:
     - grep review-app.example.com environment_url.txt
 
 # disabled, k3s does not support helm charts
-.test-deploy:
+test-deploy:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
@@ -184,9 +184,16 @@ test-persist-environment-url:
     POSTGRES_ENABLED: "true"
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
     POSTGRES_VERSION: 9.6.2
+  services:
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.5.0
+      alias: k3s
+      command: ["server", "--cluster-secret", "some-secret"]
   script:
-    - download_k3s
-    - start_k3s
+    - kubectl config set-cluster k3s --server https://k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-credentials default --username=node --password=some-secret
+    - kubectl config set-context k3s --cluster=k3s --user=default
+    - kubectl config use-context k3s
+    - kubectl version
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy

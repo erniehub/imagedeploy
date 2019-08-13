@@ -35,6 +35,14 @@ test-shellcheck:
   script:
     - shellcheck src/bin/auto-deploy
 
+test-shfmt:
+  stage: test
+  image:
+    name: peterdavehello/shfmt:2.6.4
+    entrypoint: ["/bin/sh", "-c"]
+  script:
+    - shfmt -i 2 -ci -l -d src/bin/*
+
 test-dependencies:
   <<: *test-job
   variables:

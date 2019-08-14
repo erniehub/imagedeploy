@@ -55,7 +55,7 @@ function ensure_namespace() {
 function initialize_tiller() {
   echo "Checking Tiller..."
 
-  nohup tiller -listen ${HELM_HOST} -alsologtostderr > /dev/null 2>&1 &
+  nohup tiller -listen ${HELM_HOST} -alsologtostderr >/dev/null 2>&1 &
   echo "Tiller is listening on ${HELM_HOST}"
 
   if ! helm version --debug; then
@@ -82,7 +82,7 @@ function create_secret() {
 
 # shellcheck disable=SC2086
 function persist_environment_url() {
-  echo $CI_ENVIRONMENT_URL > environment_url.txt
+  echo $CI_ENVIRONMENT_URL >environment_url.txt
 }
 
 # shellcheck disable=SC2153 # warns that my_var vs MY_VAR is a possible misspelling
@@ -264,7 +264,7 @@ function create_application_secret() {
   # shellcheck disable=SC2155 # declare and assign separately to avoid masking return values.
   export APPLICATION_SECRET_NAME=$(application_secret_name "$track")
 
-  env | sed -n "s/^K8S_SECRET_\(.*\)$/\1/p" > k8s_prefixed_variables
+  env | sed -n "s/^K8S_SECRET_\(.*\)$/\1/p" >k8s_prefixed_variables
 
   kubectl create secret \
     -n "$KUBE_NAMESPACE" generic "$APPLICATION_SECRET_NAME" \
@@ -304,8 +304,8 @@ function get_replicas() {
   track="${1:-stable}"
   percentage="${2:-100}"
 
-  env_track=$( echo $track | tr -s  '[:lower:]'  '[:upper:]' )
-  env_slug=$( echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s  '[:lower:]'  '[:upper:]' )
+  env_track=$(echo $track | tr -s '[:lower:]' '[:upper:]')
+  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s '[:lower:]' '[:upper:]')
 
   if [[ "$track" == "stable" ]] || [[ "$track" == "rollout" ]]; then
     # for stable track get number of replicas from `PRODUCTION_REPLICAS`
@@ -336,8 +336,8 @@ function get_replicas() {
 ## End Helper functions
 
 option=$1
-case $option
-in
+case $option in
+
   check_kube_domain) check_kube_domain ;;
   download_chart) download_chart ;;
   ensure_namespace) ensure_namespace ;;

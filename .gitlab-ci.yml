@@ -152,6 +152,24 @@ test-initialize-tiller:
     - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
+# This template is used for the publish jobs, which do the following:
+#   * Check to see if there is a version bump based on
+#     [Conventional Commits (v1.0.0-beta.2)](https://www.conventionalcommits.org/en/v1.0.0-beta.2/)
+#     See README.md for more information
+#   * If there is a new release it will tag the repository with the new release as the `ops-gitlab-net`
+#     user
+
+.semantic-release:
+  image: node:12
+  stage: release
+  before_script:
+    - npm install -g semantic-release @semantic-release/gitlab
+  script:
+    - semantic-release $DRY_RUN_OPT -b $CI_COMMIT_REF_NAME
+  only:
+    variables:
+      - $CI_API_V4_URL == "https://gitlab.com/api/v4"
+
 test-create-secret-public-project:
   <<: *test-job
   variables:
@@ -216,17 +234,19 @@ test-create-application-secret:
 release-tag:
   stage: release
   image: docker:stable
-  variables:
-    # e.g. auto-deploy-image:v1.0.0
-    RELEASE_IMAGE_NAME: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
   services:
     - docker:stable-dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
-    - docker pull "$BUILD_IMAGE_NAME"
-    - docker tag "$BUILD_IMAGE_NAME" "$RELEASE_IMAGE_NAME"
-    - docker push "$RELEASE_IMAGE_NAME"
+    - 'echo ${CI_JOB_TOKEN} | docker login --password-stdin -u $CI_REGISTRY_USER $CI_REGISTRY'
+    - export ci_image="${CI_REGISTRY_IMAGE}"
+    - export ci_image_tag=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - echo "Using tag $ci_image_tag for image"
+    - docker build --cache-from ${ci_image}:latest
+      --tag ${ci_image}:$ci_image_tag
+      --tag ${ci_image}:latest
+      -f Dockerfile-ci .
+    - docker push $ci_image:latest
+    - docker push $ci_image:$ci_image_tag
   only:
     - tags
 
@@ -257,3 +277,17 @@ before_script:
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
       kubectl version
     }
+
+publish:
+  extends: .semantic-release
+  only:
+    refs:
+      - master
+
+public-dryrun:
+  extends: .semantic-release
+  variables:
+    DRY_RUN_OPT: '-d'
+  only:
+    refs:
+      - branches

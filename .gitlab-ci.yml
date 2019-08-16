@@ -244,7 +244,7 @@ release-tag:
     - docker build --cache-from ${ci_image}:latest
       --tag ${ci_image}:$ci_image_tag
       --tag ${ci_image}:latest
-      -f Dockerfile-ci .
+      -f Dockerfile .
     - docker push $ci_image:latest
     - docker push $ci_image:$ci_image_tag
   only:

@@ -283,10 +283,10 @@ publish:
     refs:
       - master
 
-public-dryrun:
+publish-dryrun:
   extends: .semantic-release
   variables:
     DRY_RUN_OPT: '-d'
-  only:
+  except:
     refs:
-      - branches
+      - master

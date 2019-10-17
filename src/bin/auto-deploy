@@ -118,6 +118,10 @@ function deploy() {
     secret_name=''
   fi
 
+  if [[ -n "$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" ]]; then
+    modsecurity_enabled="true"
+  fi
+
   create_application_secret "$track"
 
   # shellcheck disable=SC2086 # double quote variables to prevent globbing
@@ -161,6 +165,8 @@ function deploy() {
       --set postgresql.postgresDatabase="$POSTGRES_DB" \
       --set postgresql.imageTag="$POSTGRES_VERSION" \
       --set application.initializeCommand="$DB_INITIALIZE" \
+      --set ingress.modSecurity.enabled="$modsecurity_enabled" \
+      --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \
@@ -204,6 +210,8 @@ function deploy() {
       --set postgresql.postgresDatabase="$POSTGRES_DB" \
       --set postgresql.imageTag="$POSTGRES_VERSION" \
       --set application.migrateCommand="$DB_MIGRATE" \
+      --set ingress.modSecurity.enabled="$modsecurity_enabled" \
+      --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \

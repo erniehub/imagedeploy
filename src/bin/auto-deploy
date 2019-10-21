@@ -168,6 +168,7 @@ function deploy() {
       --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
       --set postgresql.postgresDatabase="$POSTGRES_DB" \
       --set postgresql.imageTag="$POSTGRES_VERSION" \
+      --set prometheus.metrics="$AUTO_DEVOPS_PROMETHEUS_METRICS" \
       --set application.initializeCommand="$DB_INITIALIZE" \
       --set ingress.modSecurity.enabled="$modsecurity_enabled" \
       --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
@@ -215,6 +216,7 @@ function deploy() {
       --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
       --set postgresql.postgresDatabase="$POSTGRES_DB" \
       --set postgresql.imageTag="$POSTGRES_VERSION" \
+      --set prometheus.metrics="$AUTO_DEVOPS_PROMETHEUS_METRICS" \
       --set application.migrateCommand="$DB_MIGRATE" \
       --set ingress.modSecurity.enabled="$modsecurity_enabled" \
       --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \

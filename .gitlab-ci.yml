@@ -1,8 +1,9 @@
 variables:
   DOCKER_DRIVER: overlay2
 
-  HELM_VERSION: 2.14.0
-  KUBERNETES_VERSION: 1.11.10
+  HELM_VERSION: 2.15.1
+  KUBERNETES_VERSION: 1.13.12
+  GLIBC_VERSION: 2.28-r0
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
 
@@ -19,7 +20,12 @@ build:
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
-    - docker build --build-arg "HELM_VERSION=$HELM_VERSION" --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION" --tag "$BUILD_IMAGE_NAME" .
+    - >-
+       docker build
+       --build-arg "HELM_VERSION=$HELM_VERSION"
+       --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION"
+       --build-arg "GLIBC_VERSION=$GLIBC_VERSION"
+       --tag "$BUILD_IMAGE_NAME" .
     - docker push "$BUILD_IMAGE_NAME"
 
 .test-job: &test-job

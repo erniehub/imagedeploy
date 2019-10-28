@@ -102,6 +102,8 @@ function deploy() {
 
   service_enabled="true"
   postgres_enabled="$POSTGRES_ENABLED"
+  postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
+  postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
 
   # if track is different than stable,
   # re-use all attached resources
@@ -159,6 +161,8 @@ function deploy() {
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
       --set postgresql.enabled="$postgres_enabled" \
+      --set postgresql.managed="$postgres_managed" \
+      --set postgresql.managedClassSelector="$postgres_managed_selector" \
       --set postgresql.nameOverride="postgres" \
       --set postgresql.postgresUser="$POSTGRES_USER" \
       --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
@@ -204,6 +208,8 @@ function deploy() {
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
       --set postgresql.enabled="$postgres_enabled" \
+      --set postgresql.managed="$postgres_managed" \
+      --set postgresql.managedClassSelector="$postgres_managed_selector" \
       --set postgresql.nameOverride="postgres" \
       --set postgresql.postgresUser="$POSTGRES_USER" \
       --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \

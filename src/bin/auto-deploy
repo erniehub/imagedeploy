@@ -137,6 +137,14 @@ function deploy() {
     additional_hosts="{$ADDITIONAL_HOSTS}"
   fi
 
+  helm_values_file=${HELM_UPGRADE_VALUES_FILE:-.gitlab/auto-deploy-values.yaml}
+  if [[ -f "${helm_values_file}" ]]; then
+    echo "Using helm values file ${helm_values_file@Q}"
+    helm_values_args=(--values "${helm_values_file}")
+  else
+    echo "No helm values file found at ${helm_values_file@Q}"
+  fi
+
   # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$name$")" ]]; then
     echo "Deploying first release with database initialization..."
@@ -171,6 +179,7 @@ function deploy() {
       --set application.initializeCommand="$DB_INITIALIZE" \
       --set ingress.modSecurity.enabled="$modsecurity_enabled" \
       --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
+      "${helm_values_args[@]}" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \
@@ -181,6 +190,7 @@ function deploy() {
       --wait \
       --set application.initializeCommand="" \
       --set application.migrateCommand="$DB_MIGRATE" \
+      "${helm_values_args[@]}" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \
@@ -218,6 +228,7 @@ function deploy() {
       --set application.migrateCommand="$DB_MIGRATE" \
       --set ingress.modSecurity.enabled="$modsecurity_enabled" \
       --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
+      "${helm_values_args[@]}" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \

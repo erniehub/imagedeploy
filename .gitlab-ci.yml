@@ -37,7 +37,7 @@ build:
 
 test-shellcheck:
   stage: test
-  image: koalaman/shellcheck-alpine
+  image: koalaman/shellcheck-alpine:stable
   script:
     - shellcheck src/bin/auto-deploy
 

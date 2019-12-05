@@ -31,9 +31,16 @@ build:
 .test-job: &test-job
   stage: test
   image: "$BUILD_IMAGE_NAME"
-  artifacts:
-    paths:
-      - k3s.log
+  services:
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.6.1
+      alias: k3s
+      command: ["server", "--cluster-secret", "some-secret"]
+  before_script:
+    - kubectl config set-cluster k3s --server https://k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-credentials default --username=node --password=some-secret
+    - kubectl config set-context k3s --cluster=k3s --user=default
+    - kubectl config use-context k3s
+    - kubectl version
 
 test-shellcheck:
   stage: test
@@ -126,8 +133,6 @@ test-ensure-namespace:
     GIT_STRATEGY: none
     KUBE_NAMESPACE: project-123456
   script:
-    - download_k3s
-    - start_k3s
     - auto-deploy ensure_namespace
 
 test-initialize-tiller:
@@ -136,8 +141,6 @@ test-initialize-tiller:
     GIT_STRATEGY: none
     KUBE_NAMESPACE: default
   script:
-    - download_k3s
-    - start_k3s
     - auto-deploy initialize_tiller
     - ps aufx
     - helm ls --host "localhost:44134"
@@ -153,8 +156,6 @@ test-initialize-tiller:
     CI_DEPLOY_PASSWORD: ci-deploy-password
     GITLAB_USER_EMAIL: user@example.com
   script:
-    - download_k3s
-    - start_k3s
     - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
 
@@ -183,8 +184,6 @@ test-create-secret-public-project:
     CI_PROJECT_VISIBILITY: public
     KUBE_NAMESPACE: default
   script:
-    - download_k3s
-    - start_k3s
     - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
@@ -210,7 +209,6 @@ test-persist-environment-url:
     CI_PROJECT_VISIBILITY: public
     KUBE_NAMESPACE: default
     KUBE_INGRESS_BASE_DOMAIN: example.com
-    POSTGRES_ENABLED: true
     POSTGRES_USER: user
     POSTGRES_PASSWORD: testing-password
     POSTGRES_ENABLED: "true"
@@ -231,8 +229,6 @@ test-create-application-secret:
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345
   script:
-    - download_k3s
-    - start_k3s
     - auto-deploy create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
@@ -264,23 +260,6 @@ before_script:
 
     function failed_as_expected() {
       echo "Failed as expected and exited with $?"
-    }
-
-    function download_k3s() {
-      wget https://github.com/rancher/k3s/releases/download/v0.7.0/k3s
-      chmod +x k3s
-    }
-
-    function start_k3s() {
-      ./k3s server > k3s.log 2>&1 &
-
-      until [ -f /etc/rancher/k3s/k3s.yaml ]; do
-        sleep 1
-        echo -n .
-      done
-
-      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-      kubectl version
     }
 
 publish:

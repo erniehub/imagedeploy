@@ -91,6 +91,7 @@ function deploy() {
   track="${1-stable}"
   percentage="${2:-100}"
   name=$(deploy_name "$track")
+  stable_name=$(deploy_name stable)
 
   if [[ -z "$CI_COMMIT_TAG" ]]; then
     image_repository=${CI_APPLICATION_REPOSITORY:-$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG}
@@ -145,12 +146,12 @@ function deploy() {
     echo "No helm values file found at ${helm_values_file@Q}"
   fi
 
-  # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
-  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$name$")" ]]; then
-    echo "Deploying first release with database initialization..."
+  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$stable_name$")" ]]; then
+    echo "Initializing service URL and database. No deployment will be created"
+    # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
     helm upgrade --install \
       --wait \
-      --set service.enabled="$service_enabled" \
+      --set service.enabled="true" \
       --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
       --set gitlab.envName="$CI_ENVIRONMENT_NAME" \
@@ -160,7 +161,7 @@ function deploy() {
       --set image.tag="$image_tag" \
       --set image.pullPolicy=IfNotPresent \
       --set image.secrets[0].name="$secret_name" \
-      --set application.track="$track" \
+      --set application.track="stable" \
       --set application.database_url="$DATABASE_URL" \
       --set application.secretName="$APPLICATION_SECRET_NAME" \
       --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
@@ -168,7 +169,7 @@ function deploy() {
       --set service.url="$CI_ENVIRONMENT_URL" \
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
-      --set postgresql.enabled="$postgres_enabled" \
+      --set postgresql.enabled="$POSTGRES_ENABLED" \
       --set postgresql.managed="$postgres_managed" \
       --set postgresql.managedClassSelector="$postgres_managed_selector" \
       --set postgresql.nameOverride="postgres" \
@@ -182,58 +183,49 @@ function deploy() {
       "${helm_values_args[@]}" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
-      "$name" \
-      chart/
-
-    echo "Deploying second release..."
-    helm upgrade --reuse-values \
-      --wait \
-      --set application.initializeCommand="" \
-      --set application.migrateCommand="$DB_MIGRATE" \
-      "${helm_values_args[@]}" \
-      $HELM_UPGRADE_EXTRA_ARGS \
-      --namespace="$KUBE_NAMESPACE" \
-      "$name" \
-      chart/
-  else
-    echo "Deploying new release..."
-    helm upgrade --install \
-      --wait \
-      --set service.enabled="$service_enabled" \
-      --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
-      --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
-      --set gitlab.envName="$CI_ENVIRONMENT_NAME" \
-      --set gitlab.envURL="$CI_ENVIRONMENT_URL" \
-      --set releaseOverride="$RELEASE_NAME" \
-      --set image.repository="$image_repository" \
-      --set image.tag="$image_tag" \
-      --set image.pullPolicy=IfNotPresent \
-      --set image.secrets[0].name="$secret_name" \
-      --set application.track="$track" \
-      --set application.database_url="$DATABASE_URL" \
-      --set application.secretName="$APPLICATION_SECRET_NAME" \
-      --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
-      --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
-      --set service.url="$CI_ENVIRONMENT_URL" \
-      --set service.additionalHosts="$additional_hosts" \
-      --set replicaCount="$replicas" \
-      --set postgresql.enabled="$postgres_enabled" \
-      --set postgresql.managed="$postgres_managed" \
-      --set postgresql.managedClassSelector="$postgres_managed_selector" \
-      --set postgresql.nameOverride="postgres" \
-      --set postgresql.postgresUser="$POSTGRES_USER" \
-      --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
-      --set postgresql.postgresDatabase="$POSTGRES_DB" \
-      --set postgresql.imageTag="$POSTGRES_VERSION" \
-      --set application.migrateCommand="$DB_MIGRATE" \
-      --set ingress.modSecurity.enabled="$modsecurity_enabled" \
-      --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
-      "${helm_values_args[@]}" \
-      $HELM_UPGRADE_EXTRA_ARGS \
-      --namespace="$KUBE_NAMESPACE" \
-      "$name" \
+      "$stable_name" \
       chart/
   fi
+
+  echo "Deploying new $track release..."
+  # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
+  helm upgrade --install \
+    --wait \
+    --set service.enabled="$service_enabled" \
+    --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
+    --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
+    --set gitlab.envName="$CI_ENVIRONMENT_NAME" \
+    --set gitlab.envURL="$CI_ENVIRONMENT_URL" \
+    --set releaseOverride="$RELEASE_NAME" \
+    --set image.repository="$image_repository" \
+    --set image.tag="$image_tag" \
+    --set image.pullPolicy=IfNotPresent \
+    --set image.secrets[0].name="$secret_name" \
+    --set application.track="$track" \
+    --set application.database_url="$DATABASE_URL" \
+    --set application.secretName="$APPLICATION_SECRET_NAME" \
+    --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
+    --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
+    --set service.url="$CI_ENVIRONMENT_URL" \
+    --set service.additionalHosts="$additional_hosts" \
+    --set replicaCount="$replicas" \
+    --set postgresql.enabled="$postgres_enabled" \
+    --set postgresql.managed="$postgres_managed" \
+    --set postgresql.managedClassSelector="$postgres_managed_selector" \
+    --set postgresql.nameOverride="postgres" \
+    --set postgresql.postgresUser="$POSTGRES_USER" \
+    --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
+    --set postgresql.postgresDatabase="$POSTGRES_DB" \
+    --set postgresql.imageTag="$POSTGRES_VERSION" \
+    --set application.initializeCommand="" \
+    --set application.migrateCommand="$DB_MIGRATE" \
+    --set ingress.modSecurity.enabled="$modsecurity_enabled" \
+    --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
+    "${helm_values_args[@]}" \
+    $HELM_UPGRADE_EXTRA_ARGS \
+    --namespace="$KUBE_NAMESPACE" \
+    "$name" \
+    chart/
 
   if [[ -z "$ROLLOUT_STATUS_DISABLED" ]]; then
     kubectl rollout status -n "$KUBE_NAMESPACE" -w "$ROLLOUT_RESOURCE_TYPE/$name"

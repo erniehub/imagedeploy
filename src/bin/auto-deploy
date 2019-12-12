@@ -128,7 +128,7 @@ function deploy() {
   create_application_secret "$track"
 
   # shellcheck disable=SC2086 # double quote variables to prevent globbing
-  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s '[:lower:]' '[:upper:]')
+  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr '[:lower:]' '[:upper:]')
 
   # shellcheck disable=SC2086 # double quote variables to prevent globbing
   eval env_ADDITIONAL_HOSTS=\$${env_slug}_ADDITIONAL_HOSTS
@@ -321,8 +321,8 @@ function get_replicas() {
   track="${1:-stable}"
   percentage="${2:-100}"
 
-  env_track=$(echo $track | tr -s '[:lower:]' '[:upper:]')
-  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr -s '[:lower:]' '[:upper:]')
+  env_track=$(echo $track | tr '[:lower:]' '[:upper:]')
+  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr '[:lower:]' '[:upper:]')
 
   if [[ "$track" == "stable" ]] || [[ "$track" == "rollout" ]]; then
     # for stable track get number of replicas from `PRODUCTION_REPLICAS`

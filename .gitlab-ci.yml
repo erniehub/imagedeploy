@@ -293,6 +293,8 @@ publish-dryrun:
   extends: .semantic-release
   variables:
     DRY_RUN_OPT: '-d'
+  only:
+    - branches@gitlab-org/cluster-integration/auto-deploy-image
   except:
     refs:
       - master

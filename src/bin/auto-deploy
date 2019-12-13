@@ -22,6 +22,8 @@ function check_kube_domain() {
 }
 
 function download_chart() {
+  local auto_chart
+  local auto_chart_name
   if [[ ! -d chart ]]; then
     auto_chart=${AUTO_DEVOPS_CHART:-gitlab/auto-deploy-app}
     # shellcheck disable=SC2086 # double quote variables to prevent globbing
@@ -88,10 +90,17 @@ function persist_environment_url() {
 # shellcheck disable=SC2153 # warns that my_var vs MY_VAR is a possible misspelling
 # shellcheck disable=SC2154 # env_ADDITIONAL_HOSTS eval assignment is not recognized
 function deploy() {
-  track="${1-stable}"
-  percentage="${2:-100}"
+  local track="${1-stable}"
+  local percentage="${2:-100}"
+
+  local name
   name=$(deploy_name "$track")
+
+  local stable_name
   stable_name=$(deploy_name stable)
+
+  local image_repository
+  local image_tag
 
   if [[ -z "$CI_COMMIT_TAG" ]]; then
     image_repository=${CI_APPLICATION_REPOSITORY:-$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG}
@@ -101,10 +110,10 @@ function deploy() {
     image_tag=${CI_APPLICATION_TAG:-$CI_COMMIT_TAG}
   fi
 
-  service_enabled="true"
-  postgres_enabled="$POSTGRES_ENABLED"
-  postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
-  postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
+  local service_enabled="true"
+  local postgres_enabled="$POSTGRES_ENABLED"
+  local postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
+  local postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
 
   # if track is different than stable,
   # re-use all attached resources
@@ -113,8 +122,10 @@ function deploy() {
     postgres_enabled="false"
   fi
 
+  local replicas
   replicas=$(get_replicas "$track" "$percentage")
 
+  local secret_name
   if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
     secret_name='gitlab-registry'
   else
@@ -127,18 +138,19 @@ function deploy() {
 
   create_application_secret "$track"
 
-  # shellcheck disable=SC2086 # double quote variables to prevent globbing
-  env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr '[:lower:]' '[:upper:]')
+  local env_slug
+  env_slug=$(echo "${CI_ENVIRONMENT_SLUG//-/_}" | tr '[:lower:]' '[:upper:]')
 
-  # shellcheck disable=SC2086 # double quote variables to prevent globbing
-  eval env_ADDITIONAL_HOSTS=\$${env_slug}_ADDITIONAL_HOSTS
+  local additional_hosts
+  eval local env_ADDITIONAL_HOSTS="\$${env_slug}_ADDITIONAL_HOSTS"
   if [ -n "$env_ADDITIONAL_HOSTS" ]; then
     additional_hosts="{$env_ADDITIONAL_HOSTS}"
   elif [ -n "$ADDITIONAL_HOSTS" ]; then
     additional_hosts="{$ADDITIONAL_HOSTS}"
   fi
 
-  helm_values_file=${HELM_UPGRADE_VALUES_FILE:-.gitlab/auto-deploy-values.yaml}
+  local helm_values_args=()
+  local helm_values_file=${HELM_UPGRADE_VALUES_FILE:-.gitlab/auto-deploy-values.yaml}
   if [[ -f "${helm_values_file}" ]]; then
     echo "Using helm values file ${helm_values_file@Q}"
     helm_values_args=(--values "${helm_values_file}")
@@ -233,10 +245,12 @@ function deploy() {
 }
 
 function scale() {
-  track="${1-stable}"
-  percentage="${2-100}"
+  local track="${1-stable}"
+  local percentage="${2-100}"
+  local name
   name=$(deploy_name "$track")
 
+  local replicas
   replicas=$(get_replicas "$track" "$percentage")
 
   if [[ -n "$(helm ls -q "^$name$")" ]]; then
@@ -250,14 +264,17 @@ function scale() {
 }
 
 function delete() {
-  track="${1-stable}"
+  local track="${1-stable}"
+  local name
   name=$(deploy_name "$track")
 
   if [[ -n "$(helm ls -q "^$name$")" ]]; then
     helm delete --purge "$name"
   fi
 
+  local secret_name
   secret_name=$(application_secret_name "$track")
+
   kubectl delete secret --ignore-not-found -n "$KUBE_NAMESPACE" "$secret_name"
 }
 
@@ -277,7 +294,8 @@ function delete() {
 #     B: bXVsdGkgd29yZCB2YWx1ZQo=
 #
 function create_application_secret() {
-  track="${1-stable}"
+  local track="${1-stable}"
+
   # shellcheck disable=SC2155 # declare and assign separately to avoid masking return values.
   export APPLICATION_SECRET_NAME=$(application_secret_name "$track")
 
@@ -296,7 +314,8 @@ function create_application_secret() {
 }
 
 function application_secret_name() {
-  track="${1-stable}"
+  local track="${1-stable}"
+  local name
   name=$(deploy_name "$track")
 
   echo "${name}-secret"
@@ -304,8 +323,8 @@ function application_secret_name() {
 
 # shellcheck disable=SC2086
 function deploy_name() {
-  name="$RELEASE_NAME"
-  track="${1-stable}"
+  local name="$RELEASE_NAME"
+  local track="${1-stable}"
 
   if [[ "$track" != "stable" ]]; then
     name="$name-$track"
@@ -318,12 +337,16 @@ function deploy_name() {
 # shellcheck disable=SC2086 # double quote to prevent globbing
 # shellcheck disable=SC2153 # incorrectly thinks replicas vs REPLICAS is a misspelling
 function get_replicas() {
-  track="${1:-stable}"
-  percentage="${2:-100}"
+  local track="${1:-stable}"
+  local percentage="${2:-100}"
 
+  local env_track
   env_track=$(echo $track | tr '[:lower:]' '[:upper:]')
+
+  local env_slug
   env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr '[:lower:]' '[:upper:]')
 
+  local new_replicas
   if [[ "$track" == "stable" ]] || [[ "$track" == "rollout" ]]; then
     # for stable track get number of replicas from `PRODUCTION_REPLICAS`
     eval new_replicas=\$${env_slug}_REPLICAS
@@ -338,7 +361,7 @@ function get_replicas() {
     fi
   fi
 
-  replicas="${new_replicas:-1}"
+  local replicas="${new_replicas:-1}"
   replicas="$(($replicas * $percentage / 100))"
 
   # always return at least one replicas

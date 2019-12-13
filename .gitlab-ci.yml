@@ -41,6 +41,15 @@ build:
     - kubectl config set-context k3s --cluster=k3s --user=default
     - kubectl config use-context k3s
     - kubectl version
+    - |
+        function expected_error() {
+          echo "Expected error but exited with $?, failing build!"
+          exit 1
+        }
+
+        function failed_as_expected() {
+          echo "Failed as expected and exited with $?"
+        }
 
 test-shellcheck:
   stage: test
@@ -250,17 +259,6 @@ release-tag:
     - docker push $ci_image:$ci_image_tag
   only:
     - tags
-
-before_script:
-  - |
-    function expected_error() {
-      echo "Expected error but exited with $?, failing build!"
-      exit 1
-    }
-
-    function failed_as_expected() {
-      echo "Failed as expected and exited with $?"
-    }
 
 publish:
   extends: .semantic-release

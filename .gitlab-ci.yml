@@ -154,8 +154,7 @@ test-initialize-tiller:
     - ps aufx
     - helm ls --host "localhost:44134"
 
-# disabled, doesn't look like k3s supports docker-registry secret
-.test-create-secret:
+test-create-secret:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
@@ -164,6 +163,7 @@ test-initialize-tiller:
     CI_DEPLOY_USER: ci-deploy-user
     CI_DEPLOY_PASSWORD: ci-deploy-password
     GITLAB_USER_EMAIL: user@example.com
+    CI_PROJECT_VISIBILITY: private
   script:
     - auto-deploy create_secret
     - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE

@@ -74,7 +74,7 @@ function create_secret() {
   fi
 
   kubectl create secret -n "$KUBE_NAMESPACE" \
-    docker-registry gitlab-registry \
+    docker-registry "gitlab-registry-${CI_PROJECT_PATH_SLUG}" \
     --docker-server="$CI_REGISTRY" \
     --docker-username="${CI_DEPLOY_USER:-$CI_REGISTRY_USER}" \
     --docker-password="${CI_DEPLOY_PASSWORD:-$CI_REGISTRY_PASSWORD}" \
@@ -127,7 +127,7 @@ function deploy() {
 
   local secret_name
   if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
-    secret_name='gitlab-registry'
+    secret_name="gitlab-registry-${CI_PROJECT_PATH_SLUG}"
   else
     secret_name=''
   fi

@@ -169,7 +169,7 @@ test-create-secret:
     CI_PROJECT_VISIBILITY: private
   script:
     - auto-deploy create_secret
-    - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE
+    - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $KUBE_NAMESPACE
 
 # This template is used for the publish jobs, which do the following:
 #   * Check to see if there is a version bump based on
@@ -197,7 +197,7 @@ test-create-secret-public-project:
     KUBE_NAMESPACE: default
   script:
     - auto-deploy create_secret
-    - kubectl get secret gitlab-registry -n $KUBE_NAMESPACE && expected_error || failed_as_expected
+    - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
 test-persist-environment-url:
   <<: *test-job

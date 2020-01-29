@@ -132,8 +132,9 @@ function deploy() {
     secret_name=''
   fi
 
+  local modsecurity_set_args=()
   if [[ -n "$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" ]]; then
-    modsecurity_enabled="true"
+    modsecurity_set_args=("--set" "ingress.modSecurity.enabled=true,ingress.modSecurity.secRuleEngine=$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE")
   fi
 
   create_application_secret "$track"
@@ -190,8 +191,7 @@ function deploy() {
       --set postgresql.postgresDatabase="$POSTGRES_DB" \
       --set postgresql.imageTag="$POSTGRES_VERSION" \
       --set application.initializeCommand="$DB_INITIALIZE" \
-      --set ingress.modSecurity.enabled="$modsecurity_enabled" \
-      --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
+      "${modsecurity_set_args[@]}" \
       "${helm_values_args[@]}" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
@@ -231,8 +231,7 @@ function deploy() {
     --set postgresql.imageTag="$POSTGRES_VERSION" \
     --set application.initializeCommand="" \
     --set application.migrateCommand="$DB_MIGRATE" \
-    --set ingress.modSecurity.enabled="$modsecurity_enabled" \
-    --set ingress.modSecurity.secRuleEngine="$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" \
+    "${modsecurity_set_args[@]}" \
     "${helm_values_args[@]}" \
     $HELM_UPGRADE_EXTRA_ARGS \
     --namespace="$KUBE_NAMESPACE" \

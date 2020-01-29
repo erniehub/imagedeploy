@@ -210,7 +210,7 @@ test-persist-environment-url:
 
 test-deploy:
   <<: *test-job
-  variables:
+  variables: &deploy-variables
     GIT_STRATEGY: none
     CI_APPLICATION_REPOSITORY: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image/master/test-dockerfile"
     CI_APPLICATION_TAG: "b359d01bc8c611a2f7b14283cc878dea4a5f85d7"
@@ -226,12 +226,22 @@ test-deploy:
     POSTGRES_ENABLED: "true"
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
     POSTGRES_VERSION: 9.6.2
-
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
     - helm ls --host "localhost:44134"
+
+test-deploy-modsecurity:
+  extends: test-deploy
+  variables:
+    <<: *deploy-variables
+    AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE: "On"
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - $([[ $(kubectl get ingress production-auto-deploy -n $KUBE_NAMESPACE --no-headers=true -o custom-columns=:"metadata.annotations.nginx\.ingress\.kubernetes\.io/modsecurity-snippet") != "<none>" ]])
 
 test-create-application-secret:
   <<: *test-job

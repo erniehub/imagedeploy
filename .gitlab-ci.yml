@@ -126,6 +126,30 @@ test-deploy-name:
         exit 1
       fi
 
+test-auto_database_url:
+  <<: *test-job
+  variables:
+    CI_ENVIRONMENT_SLUG: production
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: testing-password
+    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
+  script:
+    - auto_database_url=$(auto-deploy auto_database_url)
+    - export expected_url="postgres://user:testing-password@production-postgres:5432/production"
+    - |
+      if [[ $auto_database_url != $expected_url ]]; then
+        echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
+        exit 1
+      fi
+    - export AUTO_DEVOPS_POSTGRES_CHANNEL=2
+    - auto_database_url=$(auto-deploy auto_database_url)
+    - export expected_url="postgres://user:testing-password@production-postgresql:5432/production"
+    - |
+      if [[ $auto_database_url != $expected_url ]]; then
+        echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
+        exit 1
+      fi
+
 test-get-replicas:
   <<: *test-job
   variables:
@@ -250,6 +274,23 @@ test-persist-environment-url:
     - auto-deploy persist_environment_url
     - grep review-app.example.com environment_url.txt
 
+test-install-postgres:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
+    CI_ENVIRONMENT_SLUG: production
+    KUBE_NAMESPACE: default
+    AUTO_DEVOPS_POSTGRES_CHANNEL: 2
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: testing-password
+    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
+    POSTGRES_VERSION: 9.6.16
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy install_postgresql
+    - kubectl get statefulset production-postgresql -n $KUBE_NAMESPACE
+
 test-deploy:
   <<: *test-job
   variables: &deploy-variables
@@ -275,6 +316,20 @@ test-deploy:
     - helm get production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
     - ./test/verify-deployment-database production production-postgres
+
+test-deploy-postgresql-beta:
+  extends: test-deploy
+  variables:
+    <<: *deploy-variables
+    AUTO_DEVOPS_POSTGRES_CHANNEL: 2
+    POSTGRES_VERSION: 9.6.16
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - helm get production
+    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
+    - ./test/verify-deployment-database production postgresql
 
 test-deploy-modsecurity:
   extends: test-deploy

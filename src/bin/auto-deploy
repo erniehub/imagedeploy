@@ -2,11 +2,10 @@
 
 [[ "$TRACE" ]] && set -x
 
-export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
-auto_database_url=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}
-export DATABASE_URL=${DATABASE_URL-$auto_database_url}
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
 export HELM_HOST="localhost:44134"
+export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
+export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"1"}
 
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
@@ -87,6 +86,40 @@ function persist_environment_url() {
   echo $CI_ENVIRONMENT_URL >environment_url.txt
 }
 
+function auto_database_url() {
+  local auto_database_url
+  if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
+    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgresql:5432/${POSTGRES_DB}"
+  elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
+    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}"
+  fi
+
+  echo "${DATABASE_URL-$auto_database_url}"
+}
+
+function install_postgresql() {
+  if [[ "$POSTGRES_VERSION" == "9.6.2" ]]; then
+    echo "The minimum supported image tag for AUTO_DEVOPS_POSTGRES_CHANNEL:2 is 9.6.16"
+
+    exit 1
+  fi
+
+  local name="${RELEASE_NAME}-postgresql"
+
+  helm upgrade --install \
+    --atomic \
+    --wait \
+    --version 8.2.1 \
+    --set fullnameOverride="$name" \
+    --set postgresqlUsername="$POSTGRES_USER" \
+    --set postgresqlPassword="$POSTGRES_PASSWORD" \
+    --set postgresqlDatabase="$POSTGRES_DB" \
+    --set image.tag="$POSTGRES_VERSION" \
+    --namespace="$KUBE_NAMESPACE" \
+    "$name" \
+    stable/postgresql
+}
+
 # shellcheck disable=SC2153 # warns that my_var vs MY_VAR is a possible misspelling
 # shellcheck disable=SC2154 # env_ADDITIONAL_HOSTS eval assignment is not recognized
 function deploy() {
@@ -95,6 +128,19 @@ function deploy() {
 
   local name
   name=$(deploy_name "$track")
+
+  local old_postgres_enabled
+  if [[ "$POSTGRES_ENABLED" == "true" && "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
+    install_postgresql
+
+    # Do not install the older 0.7.1 postgresql sub-chart
+    old_postgres_enabled="false"
+  else
+    old_postgres_enabled="$POSTGRES_ENABLED"
+  fi
+
+  local database_url
+  database_url=$(auto_database_url)
 
   local stable_name
   stable_name=$(deploy_name stable)
@@ -111,7 +157,7 @@ function deploy() {
   fi
 
   local service_enabled="true"
-  local postgres_enabled="$POSTGRES_ENABLED"
+  local old_postgres_enabled_stable_track="$old_postgres_enabled"
   local postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
   local postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
 
@@ -119,7 +165,7 @@ function deploy() {
   # re-use all attached resources
   if [[ "$track" != "stable" ]]; then
     service_enabled="false"
-    postgres_enabled="false"
+    old_postgres_enabled_stable_track="false"
   fi
 
   local replicas
@@ -174,14 +220,14 @@ function deploy() {
       --set image.tag="$image_tag" \
       --set image.secrets[0].name="$secret_name" \
       --set application.track="stable" \
-      --set application.database_url="$DATABASE_URL" \
+      --set application.database_url="$database_url" \
       --set application.secretName="$APPLICATION_SECRET_NAME" \
       --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
       --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
       --set service.url="$CI_ENVIRONMENT_URL" \
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
-      --set postgresql.enabled="$POSTGRES_ENABLED" \
+      --set postgresql.enabled="$old_postgres_enabled" \
       --set postgresql.managed="$postgres_managed" \
       --set postgresql.managedClassSelector="$postgres_managed_selector" \
       --set postgresql.nameOverride="postgres" \
@@ -212,14 +258,14 @@ function deploy() {
     --set image.tag="$image_tag" \
     --set image.secrets[0].name="$secret_name" \
     --set application.track="$track" \
-    --set application.database_url="$DATABASE_URL" \
+    --set application.database_url="$database_url" \
     --set application.secretName="$APPLICATION_SECRET_NAME" \
     --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
     --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
     --set service.url="$CI_ENVIRONMENT_URL" \
     --set service.additionalHosts="$additional_hosts" \
     --set replicaCount="$replicas" \
-    --set postgresql.enabled="$postgres_enabled" \
+    --set postgresql.enabled="$old_postgres_enabled_stable_track" \
     --set postgresql.managed="$postgres_managed" \
     --set postgresql.managedClassSelector="$postgres_managed_selector" \
     --set postgresql.nameOverride="postgres" \
@@ -384,6 +430,8 @@ case $option in
   initialize_tiller) initialize_tiller ;;
   create_secret) create_secret ;;
   persist_environment_url) persist_environment_url ;;
+  auto_database_url) auto_database_url ;;
+  install_postgresql) install_postgresql "${@:2}" ;;
   deploy) deploy "${@:2}" ;;
   scale) scale "${@:2}" ;;
   delete) delete "${@:2}" ;;

@@ -172,7 +172,6 @@ function deploy() {
       --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
       --set image.tag="$image_tag" \
-      --set image.pullPolicy=IfNotPresent \
       --set image.secrets[0].name="$secret_name" \
       --set application.track="stable" \
       --set application.database_url="$DATABASE_URL" \
@@ -211,7 +210,6 @@ function deploy() {
     --set releaseOverride="$RELEASE_NAME" \
     --set image.repository="$image_repository" \
     --set image.tag="$image_tag" \
-    --set image.pullPolicy=IfNotPresent \
     --set image.secrets[0].name="$secret_name" \
     --set application.track="$track" \
     --set application.database_url="$DATABASE_URL" \

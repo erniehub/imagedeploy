@@ -14,9 +14,9 @@ stages:
 
 build:
   stage: build
-  image: docker:stable
+  image: docker:19.03.5
   services:
-    - docker:stable-dind
+    - docker:19.03.5-dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
@@ -258,9 +258,9 @@ test-create-application-secret:
 
 release-tag:
   stage: release
-  image: docker:stable
+  image: docker:19.03.5
   services:
-    - docker:stable-dind
+    - docker:19.03.5-dind
   script:
     - 'echo ${CI_JOB_TOKEN} | docker login --password-stdin -u $CI_REGISTRY_USER $CI_REGISTRY'
     - export ci_image="${CI_REGISTRY_IMAGE}"

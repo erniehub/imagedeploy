@@ -330,7 +330,6 @@ function deploy_name() {
   echo $name
 }
 
-# shellcheck disable=SC2004 # $/${} is unnecessary on arithmetic variables.
 # shellcheck disable=SC2086 # double quote to prevent globbing
 # shellcheck disable=SC2153 # incorrectly thinks replicas vs REPLICAS is a misspelling
 function get_replicas() {
@@ -359,12 +358,16 @@ function get_replicas() {
   fi
 
   local replicas="${new_replicas:-1}"
-  replicas="$(($replicas * $percentage / 100))"
+  replicas="$((replicas * percentage / 100))"
 
-  # always return at least one replicas
-  if [[ $replicas -gt 0 ]]; then
+  if [[ $new_replicas == 0 ]]; then
+    # If zero replicas requested, then return 0
+    echo "$new_replicas"
+  elif [[ $replicas -gt 0 ]]; then
     echo "$replicas"
   else
+    # Return one if calculated replicas is zero
+    # E.g. 25% of 2 replicas is 0 (integer division)
     echo 1
   fi
 }

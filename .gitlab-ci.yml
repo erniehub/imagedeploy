@@ -153,6 +153,34 @@ test-get-replicas-multiple:
         exit 1
       fi
 
+test-get-replicas-fraction:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
+    CI_ENVIRONMENT_SLUG: production
+    REPLICAS: "2"
+  script:
+    - replicas=$(auto-deploy get_replicas "stable" "25")
+    - |
+      if [[ $replicas != 1 ]]; then
+        echo "$replicas should 1, (25% of 2 is 0.5, so set a floor of 1)"
+        exit 1
+      fi
+
+test-get-replicas-zero:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
+    CI_ENVIRONMENT_SLUG: production
+    REPLICAS: "0"
+  script:
+    - replicas=$(auto-deploy get_replicas "stable" "100")
+    - |
+      if [[ $replicas != 0 ]]; then
+        echo "$replicas should equal 0, as requested"
+        exit 1
+      fi
+
 test-ensure-namespace:
   <<: *test-job
   variables:

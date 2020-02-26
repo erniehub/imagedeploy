@@ -139,6 +139,20 @@ test-get-replicas:
         exit 1
       fi
 
+test-get-replicas-multiple:
+  <<: *test-job
+  variables:
+    GIT_STRATEGY: none
+    CI_ENVIRONMENT_SLUG: production
+    REPLICAS: "2"
+  script:
+    - replicas=$(auto-deploy get_replicas "stable" "100")
+    - |
+      if [[ $replicas != 2 ]]; then
+        echo "$replicas should equal 2"
+        exit 1
+      fi
+
 test-ensure-namespace:
   <<: *test-job
   variables:

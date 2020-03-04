@@ -298,3 +298,13 @@ test-create-application-secret:
     - auto-deploy create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
+
+test-delete:
+  extends: test-deploy
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - helm get production
+    - auto-deploy delete
+    - helm get production && expected_error || failed_as_expected

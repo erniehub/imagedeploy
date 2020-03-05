@@ -5,6 +5,7 @@
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
 export HELM_HOST="localhost:44134"
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
+export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
 export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"1"}
 
 function check_kube_domain() {
@@ -89,7 +90,7 @@ function persist_environment_url() {
 function auto_database_url() {
   local auto_database_url
   if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
-    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgresql:5432/${POSTGRES_DB}"
+    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
   elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
     auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}"
   fi
@@ -104,7 +105,7 @@ function install_postgresql() {
     exit 1
   fi
 
-  local name="${RELEASE_NAME}-postgresql"
+  local name="$POSTGRESQL_RELEASE_NAME"
 
   helm upgrade --install \
     --atomic \
@@ -306,6 +307,14 @@ function scale() {
   fi
 }
 
+function delete_postgresql() {
+  local name="$POSTGRESQL_RELEASE_NAME"
+
+  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+    helm delete --purge "$name"
+  fi
+}
+
 function delete() {
   local track="${1-stable}"
   local name
@@ -313,6 +322,10 @@ function delete() {
 
   if [[ -n "$(helm ls -q "^$name$")" ]]; then
     helm delete --purge "$name"
+  fi
+
+  if [[ "$track" == "stable" ]]; then
+    delete_postgresql
   fi
 
   local secret_name

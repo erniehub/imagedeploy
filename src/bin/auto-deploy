@@ -93,6 +93,10 @@ function auto_database_url() {
     auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
   elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
     auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}"
+  else
+    echo "Un-recognized \$AUTO_DEVOPS_POSTGRES_CHANNEL variable '${AUTO_DEVOPS_POSTGRES_CHANNEL}'. Accepted values are '1' and '2'"
+
+    exit 1
   fi
 
   echo "${DATABASE_URL-$auto_database_url}"

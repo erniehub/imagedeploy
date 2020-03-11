@@ -105,6 +105,8 @@ test-auto_database_url:
         echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
         exit 1
       fi
+    - export AUTO_DEVOPS_POSTGRES_CHANNEL=a
+    - auto-deploy auto_database_url && expected_error || failed_as_expected
 
 test-get-replicas:
   <<: *test-job

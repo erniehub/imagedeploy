@@ -158,7 +158,7 @@ function deploy() {
   fi
 
   local service_enabled="true"
-  local old_postgres_enabled_stable_track="$old_postgres_enabled"
+  local old_postgres_enabled_for_track="$old_postgres_enabled"
   local postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
   local postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
 
@@ -166,7 +166,7 @@ function deploy() {
   # re-use all attached resources
   if [[ "$track" != "stable" ]]; then
     service_enabled="false"
-    old_postgres_enabled_stable_track="false"
+    old_postgres_enabled_for_track="false"
   fi
 
   local replicas
@@ -266,7 +266,7 @@ function deploy() {
     --set service.url="$CI_ENVIRONMENT_URL" \
     --set service.additionalHosts="$additional_hosts" \
     --set replicaCount="$replicas" \
-    --set postgresql.enabled="$old_postgres_enabled_stable_track" \
+    --set postgresql.enabled="$old_postgres_enabled_for_track" \
     --set postgresql.managed="$postgres_managed" \
     --set postgresql.managedClassSelector="$postgres_managed_selector" \
     --set postgresql.nameOverride="postgres" \

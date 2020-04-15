@@ -208,10 +208,16 @@ function deploy() {
     echo "No helm values file found at ${helm_values_file@Q}"
   fi
 
+  local atomic_flag=()
+  if [[ "$AUTO_DEVOPS_ATOMIC_RELEASE" != "false" ]]; then
+    atomic_flag=('--atomic')
+  fi
+
   if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$stable_name$")" ]]; then
     echo "Initializing service URL and database. No deployment will be created"
     # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
     helm upgrade --install \
+      "${atomic_flag[@]}" \
       --wait \
       --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
@@ -249,6 +255,7 @@ function deploy() {
   echo "Deploying new $track release..."
   # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
+    "${atomic_flag[@]}" \
     --wait \
     --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
     --set gitlab.env="$CI_ENVIRONMENT_SLUG" \

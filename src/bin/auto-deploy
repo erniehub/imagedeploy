@@ -134,8 +134,18 @@ function deploy() {
   local name
   name=$(deploy_name "$track")
 
+  local stable_name
+  stable_name=$(deploy_name stable)
+
+  local old_postgres_already_enabled
   local old_postgres_enabled
   if [[ "$POSTGRES_ENABLED" == "true" && "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
+    old_postgres_already_enabled=$( (helm get values --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
+    if [[ -z "$AUTO_DEVOPS_POSTGRES_DELETE_V1" ]] && [[ "$old_postgres_already_enabled" == "true" ]]; then
+      echo 'Detected an existing V1 PostgreSQL database that would have been deleted. To proceed and delete this V1 PostgreSQL database, set AUTO_DEVOPS_POSTGRES_DELETE_V1 to a non-empty value and redeploy.'
+      exit 1
+    fi
+
     install_postgresql
 
     # Do not install the older 0.7.1 postgresql sub-chart
@@ -146,9 +156,6 @@ function deploy() {
 
   local database_url
   database_url=$(auto_database_url)
-
-  local stable_name
-  stable_name=$(deploy_name stable)
 
   local image_repository
   local image_tag

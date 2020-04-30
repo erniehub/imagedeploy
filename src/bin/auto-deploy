@@ -7,6 +7,7 @@ export HELM_HOST="localhost:44134"
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
 export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
 export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"1"}
+export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
@@ -65,6 +66,10 @@ function initialize_tiller() {
     return 1
   fi
   echo ""
+}
+
+function write_environment_values_file() {
+  echo "deploymentApiVersion: apps/v1" >"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
 }
 
 function create_secret() {
@@ -220,6 +225,9 @@ function deploy() {
     atomic_flag=('--atomic')
   fi
 
+  # TODO: Over time, migrate all --set values to this file, see https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/issues/31
+  write_environment_values_file
+
   if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$stable_name$")" ]]; then
     echo "Initializing service URL and database. No deployment will be created"
     # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
@@ -252,6 +260,7 @@ function deploy() {
       --set postgresql.imageTag="$POSTGRES_VERSION" \
       --set application.initializeCommand="$DB_INITIALIZE" \
       "${modsecurity_set_args[@]}" \
+      --values "$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE" \
       "${helm_values_args[@]}" \
       $HELM_UPGRADE_EXTRA_ARGS \
       --namespace="$KUBE_NAMESPACE" \
@@ -291,6 +300,7 @@ function deploy() {
     --set application.initializeCommand="" \
     --set application.migrateCommand="$DB_MIGRATE" \
     "${modsecurity_set_args[@]}" \
+    --values "$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE" \
     "${helm_values_args[@]}" \
     $HELM_UPGRADE_EXTRA_ARGS \
     --namespace="$KUBE_NAMESPACE" \

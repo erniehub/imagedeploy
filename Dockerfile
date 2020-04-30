@@ -9,7 +9,7 @@ ARG GLIBC_VERSION
 COPY src/ build/
 
 # Install Dependencies
-RUN apk add --no-cache openssl curl tar gzip bash \
+RUN apk add --no-cache openssl curl tar gzip bash jq \
   && curl -sSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
   && curl -sSL -O https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk \
   && apk add glibc-${GLIBC_VERSION}.apk \

@@ -3,7 +3,7 @@
 appLabel=$1
 dbLabel=$2
 
-pod_name=$(kubectl get pod -l "app=$appLabel" -n "$KUBE_NAMESPACE" -o custom-columns=:metadata.name --no-headers)
+pod_name=$(kubectl get pod -l "app=$appLabel" -n "$KUBE_NAMESPACE" --sort-by '{.metadata.creationTimestamp}' -o custom-columns=:metadata.name --no-headers | tail -n 1)
 
 # Wait for DB pod to be ready
 count=0

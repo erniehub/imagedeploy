@@ -331,6 +331,27 @@ test-deploy-deletes-old-postgres-if-opt-in:
     # test that the new postgres is up
     - ./test/verify-deployment-database production postgresql
 
+test-deploy-k8s-1.16:
+  extends: test-deploy
+  services:
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
+      alias: k3s
+  variables:
+    AUTO_DEVOPS_POSTGRES_CHANNEL: 2
+    POSTGRES_VERSION: 9.6.16
+  before_script:
+    - curl k3s:8081?service=k3s > k3s.yaml
+    - export KUBECONFIG=$(pwd)/k3s.yaml
+    - kubectl version
+    - kubectl cluster-info
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - helm get production
+    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
+    - ./test/verify-deployment-database production postgresql
+
 test-deploy-canary:
   extends: test-deploy
   script:

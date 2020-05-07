@@ -269,6 +269,8 @@ function deploy() {
   fi
 
   echo "Deploying new $track release..."
+  export
+
   # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
     "${atomic_flag[@]}" \

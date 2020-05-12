@@ -90,6 +90,18 @@ test-auto_database_url:
     POSTGRES_PASSWORD: testing-password
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
   script:
+    # default is channel 2
+    - auto_database_url=$(auto-deploy auto_database_url)
+    - export expected_url="postgres://user:testing-password@production-postgresql:5432/production"
+    - |
+      if [[ $auto_database_url != $expected_url ]]; then
+        echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
+        exit 1
+      fi
+    - export AUTO_DEVOPS_POSTGRES_CHANNEL=a
+    - auto-deploy auto_database_url && expected_error || failed_as_expected
+    # test that channel 1 still works
+    - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
     - auto_database_url=$(auto-deploy auto_database_url)
     - export expected_url="postgres://user:testing-password@production-postgres:5432/production"
     - |
@@ -97,6 +109,7 @@ test-auto_database_url:
         echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
         exit 1
       fi
+    # test explicit channel 2 just in case
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=2
     - auto_database_url=$(auto-deploy auto_database_url)
     - export expected_url="postgres://user:testing-password@production-postgresql:5432/production"
@@ -224,7 +237,6 @@ test-install-postgres:
     POSTGRES_USER: user
     POSTGRES_PASSWORD: testing-password
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
-    POSTGRES_VERSION: 9.6.16
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -247,15 +259,14 @@ test-deploy:
     POSTGRES_PASSWORD: testing-password
     POSTGRES_ENABLED: "true"
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
-    POSTGRES_VERSION: 9.6.2
     HELM_HOST: "localhost:44134"
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
     - helm get production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
-    - ./test/verify-deployment-database production production-postgres
+    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
+    - ./test/verify-deployment-database production postgresql
 
 test-deploy-atomic:
   extends: test-deploy
@@ -284,19 +295,18 @@ test-deploy-non-atomic:
     - export KUBE_INGRESS_BASE_DOMAIN=example.com
     - auto-deploy deploy && exit 1 || echo "Second release failed as expected"
 
-test-deploy-postgresql-beta:
+test-deploy-postgresql-channel-1:
   extends: test-deploy
   variables:
     <<: *deploy-variables
-    AUTO_DEVOPS_POSTGRES_CHANNEL: 2
-    POSTGRES_VERSION: 9.6.16
+    AUTO_DEVOPS_POSTGRES_CHANNEL: 1
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
     - helm get production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
-    - ./test/verify-deployment-database production postgresql
+    - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
+    - ./test/verify-deployment-database production production-postgres
 
 test-deploy-does-not-delete-old-postgres-by-default:
   extends: test-deploy
@@ -307,9 +317,8 @@ test-deploy-does-not-delete-old-postgres-by-default:
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
     - auto-deploy deploy
     - ./test/verify-deployment-database production production-postgres
-    # test that the deploy job fails
-    - export POSTGRES_VERSION='9.6.16'
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=2
+    # test that the deploy job fails with default channel:2
+    - unset AUTO_DEVOPS_POSTGRES_CHANNEL
     - auto-deploy deploy && expected_error || failed_as_expected
     # assert that postgres still exists
     - ./test/verify-deployment-database production production-postgres
@@ -338,7 +347,6 @@ test-deploy-k8s-1.16:
       alias: k3s
   variables:
     AUTO_DEVOPS_POSTGRES_CHANNEL: 2
-    POSTGRES_VERSION: 9.6.16
   before_script:
     - curl k3s:8081?service=k3s > k3s.yaml
     - export KUBECONFIG=$(pwd)/k3s.yaml
@@ -392,8 +400,8 @@ test-delete:
     - auto-deploy delete
     - helm get production && expected_error || failed_as_expected
 
-test-delete-postgresql-beta:
-  extends: test-deploy-postgresql-beta
+test-delete-postgresql:
+  extends: test-deploy
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -404,8 +412,8 @@ test-delete-postgresql-beta:
     - helm get production && expected_error || failed_as_expected
     - helm get production-postgresql && expected_error || failed_as_expected
 
-test-delete-canary-postgresql-beta:
-  extends: test-deploy-postgresql-beta
+test-delete-canary-postgresql:
+  extends: test-deploy
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart

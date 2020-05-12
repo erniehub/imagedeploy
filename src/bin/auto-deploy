@@ -4,10 +4,15 @@
 
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
 export HELM_HOST="localhost:44134"
+export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
 export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
-export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"1"}
-export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
+export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"2"}
+if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
+  export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
+elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
+  export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.2"}"
+fi
 
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
@@ -108,6 +113,12 @@ function auto_database_url() {
 }
 
 function install_postgresql() {
+  if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" != "2" ]]; then
+    echo "Separate postgres chart is only supported for AUTO_DEVOPS_POSTGRES_CHANNEL:2"
+
+    exit 1
+  fi
+
   if [[ "$POSTGRES_VERSION" == "9.6.2" ]]; then
     echo "The minimum supported image tag for AUTO_DEVOPS_POSTGRES_CHANNEL:2 is 9.6.16"
 
@@ -147,7 +158,22 @@ function deploy() {
   if [[ "$POSTGRES_ENABLED" == "true" && "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
     old_postgres_already_enabled=$( (helm get values --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
     if [[ -z "$AUTO_DEVOPS_POSTGRES_DELETE_V1" ]] && [[ "$old_postgres_already_enabled" == "true" ]]; then
-      echo 'Detected an existing V1 PostgreSQL database that would have been deleted. To proceed and delete this V1 PostgreSQL database, set AUTO_DEVOPS_POSTGRES_DELETE_V1 to a non-empty value and redeploy.'
+      echo 'Detected an existing PostgreSQL database installed on the
+deprecated channel 1, but the current channel is set to 2. The default
+channel changed to 2 in of GitLab 13.0.
+
+- To continue using the channel 1 PostgreSQL database, set
+  AUTO_DEVOPS_POSTGRES_CHANNEL to 1 and redeploy
+
+- OR, to proceed with deleting the channel 1 PostgreSQL database
+  and install a fresh channel 2 database, set AUTO_DEVOPS_POSTGRES_DELETE_V1
+  to a non-empty value and redeploy.
+
+  WARNING: This will PERMANENTLY DELETE the existing channel 1 database.
+
+  For details on backing up your database and upgrading channels, see
+  https://docs.gitlab.com/ee/topics/autodevops/upgrading_postgresql.html'
+
       exit 1
     fi
 

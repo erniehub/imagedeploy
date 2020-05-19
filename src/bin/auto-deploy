@@ -63,7 +63,11 @@ function ensure_namespace() {
 function initialize_tiller() {
   echo "Checking Tiller..."
 
-  nohup tiller -listen ${HELM_HOST} -alsologtostderr >/dev/null 2>&1 &
+  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
+    nohup tiller -listen "${HELM_HOST}" >tiller.log 2>&1 &
+  else
+    nohup tiller -listen "${HELM_HOST}" >/dev/null 2>&1 &
+  fi
   echo "Tiller is listening on ${HELM_HOST}"
 
   if ! helm version --debug; then
@@ -127,8 +131,14 @@ function install_postgresql() {
 
   local name="$POSTGRESQL_RELEASE_NAME"
 
+  local debug_flag=()
+  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
+    debug_flag=('--debug')
+  fi
+
   helm upgrade --install \
     --atomic \
+    "${debug_flag[@]}" \
     --wait \
     --version 8.2.1 \
     --set fullnameOverride="$name" \
@@ -251,6 +261,11 @@ channel changed to 2 in of GitLab 13.0.
     atomic_flag=('--atomic')
   fi
 
+  local debug_flag=()
+  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
+    debug_flag=('--debug')
+  fi
+
   # TODO: Over time, migrate all --set values to this file, see https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/issues/31
   write_environment_values_file
 
@@ -259,6 +274,7 @@ channel changed to 2 in of GitLab 13.0.
     # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
     helm upgrade --install \
       "${atomic_flag[@]}" \
+      "${debug_flag[@]}" \
       --wait \
       --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
@@ -298,6 +314,7 @@ channel changed to 2 in of GitLab 13.0.
   # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
     "${atomic_flag[@]}" \
+    "${debug_flag[@]}" \
     --wait \
     --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
     --set gitlab.env="$CI_ENVIRONMENT_SLUG" \

@@ -295,6 +295,11 @@ test-deploy-non-atomic:
     - export KUBE_INGRESS_BASE_DOMAIN=example.com
     - auto-deploy deploy && exit 1 || echo "Second release failed as expected"
 
+test-deploy-debug:
+  extends: test-deploy
+  variables:
+    AUTO_DEVOPS_DEPLOY_DEBUG: "1"
+
 test-deploy-postgresql-channel-1:
   extends: test-deploy
   variables:

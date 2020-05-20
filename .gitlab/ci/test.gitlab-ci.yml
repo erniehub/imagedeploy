@@ -299,6 +299,11 @@ test-deploy-debug:
   extends: test-deploy
   variables:
     AUTO_DEVOPS_DEPLOY_DEBUG: "1"
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - cat tiller.log
 
 test-deploy-postgresql-channel-1:
   extends: test-deploy

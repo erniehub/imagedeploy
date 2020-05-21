@@ -124,7 +124,7 @@ function install_postgresql() {
   fi
 
   if [[ "$POSTGRES_VERSION" == "9.6.2" ]]; then
-    echo "The minimum supported image tag for AUTO_DEVOPS_POSTGRES_CHANNEL:2 is 9.6.16"
+    echo "The minimum supported POSTGRES_VERSION for AUTO_DEVOPS_POSTGRES_CHANNEL:2 is 9.6.16"
 
     exit 1
   fi

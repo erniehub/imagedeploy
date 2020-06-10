@@ -379,9 +379,11 @@ function delete_postgresql() {
 
   if [[ -n "$(helm ls -q "^$name$")" ]]; then
     helm delete --purge "$name"
+    kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
 }
 
+# This deletes the PVC for the database if the track is stable
 function delete() {
   local track="${1-stable}"
   local name

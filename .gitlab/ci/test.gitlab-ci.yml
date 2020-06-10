@@ -418,9 +418,13 @@ test-delete-postgresql:
     - auto-deploy deploy
     - helm get production
     - helm get production-postgresql
+    - pvc_before_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
+    - if [[ -z "$pvc_before_delete" ]]; then "expected to find a postgresql pvc"; exit 1; fi
     - auto-deploy delete
     - helm get production && expected_error || failed_as_expected
     - helm get production-postgresql && expected_error || failed_as_expected
+    - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
+    - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
 test-delete-canary-postgresql:
   extends: test-deploy

@@ -182,7 +182,15 @@ channel changed to 2 in of GitLab 13.0.
   WARNING: This will PERMANENTLY DELETE the existing channel 1 database.
 
   For details on backing up your database and upgrading channels, see
-  https://docs.gitlab.com/ee/topics/autodevops/upgrading_postgresql.html'
+  https://docs.gitlab.com/ee/topics/autodevops/upgrading_postgresql.html
+
+NOTE: This detection is based on the postgresql.enabled Helm value for your
+release, which is controlled by the POSTGRES_ENABLED CI variable. If you are
+not using the in-cluster PostgreSQL database at all, you can also set the CI
+variable POSTGRES_ENABLED to false.
+
+WARNING: Setting POSTGRES_ENABLED to false will permanently delete any existing
+channel 1 database.'
 
       exit 1
     fi

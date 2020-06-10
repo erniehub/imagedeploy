@@ -428,22 +428,22 @@ function delete() {
 #
 function create_application_secret() {
   local track="${1-stable}"
+  local k8s_secrets_file
 
   # shellcheck disable=SC2155 # declare and assign separately to avoid masking return values.
   export APPLICATION_SECRET_NAME=$(application_secret_name "$track")
 
-  env | sed -n "s/^K8S_SECRET_\(.*\)$/\1/p" >k8s_prefixed_variables
+  k8s_secrets_file=$(mktemp)
 
-  kubectl create secret \
-    -n "$KUBE_NAMESPACE" generic "$APPLICATION_SECRET_NAME" \
-    --from-env-file k8s_prefixed_variables -o yaml --dry-run |
-    kubectl replace -n "$KUBE_NAMESPACE" --force -f -
+  /build/bin/auto-deploy-application-secrets-yaml "$k8s_secrets_file"
+
+  kubectl replace -f "$k8s_secrets_file" -n "$KUBE_NAMESPACE" --force
 
   # shellcheck disable=SC2002 # useless cat, prefer cmd < file
   # shellcheck disable=SC2155 # declare and assign separately to avoid masking return values.
-  export APPLICATION_SECRET_CHECKSUM=$(cat k8s_prefixed_variables | sha256sum | cut -d ' ' -f 1)
+  export APPLICATION_SECRET_CHECKSUM=$(cat "$k8s_secrets_file" | sha256sum | cut -d ' ' -f 1)
 
-  rm k8s_prefixed_variables
+  rm "$k8s_secrets_file"
 }
 
 function application_secret_name() {

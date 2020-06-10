@@ -7,8 +7,7 @@ pod_name=$(kubectl get pod -l "app=$appLabel" -n "$KUBE_NAMESPACE" --sort-by '{.
 
 # Wait for DB pod to be ready
 count=0
-while [[ $(kubectl get pods -l "app=$dbLabel" -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]
-do
+while [[ $(kubectl get pods -l "app=$dbLabel" -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do
   [[ $count -lt 30 ]] || exit 1
 
   echo "waiting for pod" && sleep 1

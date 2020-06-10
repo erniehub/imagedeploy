@@ -395,10 +395,13 @@ test-create-application-secret:
     KUBE_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345
+    K8S_SECRET_CODE_MULTILINE: "12345
+    NEW LINE"
   script:
     - auto-deploy create_application_secret "stable"
     - kubectl get secrets -n $KUBE_NAMESPACE
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
+    - ./test/verify-application-secret
 
 test-delete:
   extends: test-deploy

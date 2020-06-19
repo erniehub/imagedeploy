@@ -1,7 +1,7 @@
 variables:
   DOCKER_DRIVER: overlay2
 
-  HELM_VERSION: 2.16.7
+  HELM_VERSION: 3.2.4 # just for show on this branch -- we actually override the base image in the Dockerfile because the helm 3 image hasn't been published
   KUBERNETES_VERSION: 1.13.12
   GLIBC_VERSION: 2.31-r0
 

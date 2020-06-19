@@ -2,8 +2,6 @@
 
 [[ "$TRACE" ]] && set -x
 
-export TILLER_NAMESPACE=$KUBE_NAMESPACE
-export HELM_HOST="localhost:44134"
 export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
 export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
@@ -61,20 +59,7 @@ function ensure_namespace() {
 }
 
 function initialize_tiller() {
-  echo "Checking Tiller..."
-
-  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
-    nohup tiller -listen "${HELM_HOST}" >tiller.log 2>&1 &
-  else
-    nohup tiller -listen "${HELM_HOST}" >/dev/null 2>&1 &
-  fi
-  echo "Tiller is listening on ${HELM_HOST}"
-
-  if ! helm version --debug; then
-    echo "Failed to init Tiller."
-    return 1
-  fi
-  echo ""
+  echo "Helm 3 does not have tiller"
 }
 
 function write_environment_values_file() {

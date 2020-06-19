@@ -30,7 +30,6 @@ test-dependencies:
     GIT_STRATEGY: none
   script:
     - helm version --client
-    - tiller -version
     - kubectl version --client
 
 test-kube-domain:
@@ -303,7 +302,7 @@ test-deploy-debug:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - cat tiller.log
+    - cat helm.log
 
 test-deploy-postgresql-channel-1:
   extends: test-deploy

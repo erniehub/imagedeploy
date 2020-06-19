@@ -12,6 +12,11 @@ elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
   export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.2"}"
 fi
 
+export HELM_DEBUG_FLAGS=()
+if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
+  export HELM_DEBUG_FLAGS=('--debug' '--log-file helm.log')
+fi
+
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
     echo "In order to deploy or use Review Apps,"
@@ -118,14 +123,9 @@ function install_postgresql() {
 
   local name="$POSTGRESQL_RELEASE_NAME"
 
-  local debug_flag=()
-  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
-    debug_flag=('--debug')
-  fi
-
   helm upgrade --install \
     --atomic \
-    "${debug_flag[@]}" \
+    "${HELM_DEBUG_FLAGS[@]}" \
     --wait \
     --version 8.2.1 \
     --set fullnameOverride="$name" \
@@ -256,11 +256,6 @@ channel 1 database.'
     atomic_flag=('--atomic')
   fi
 
-  local debug_flag=()
-  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
-    debug_flag=('--debug')
-  fi
-
   # TODO: Over time, migrate all --set values to this file, see https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/issues/31
   write_environment_values_file
 
@@ -269,7 +264,7 @@ channel 1 database.'
     # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
     helm upgrade --install \
       "${atomic_flag[@]}" \
-      "${debug_flag[@]}" \
+      "${HELM_DEBUG_FLAGS[@]}" \
       --wait \
       --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
@@ -309,7 +304,7 @@ channel 1 database.'
   # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
     "${atomic_flag[@]}" \
-    "${debug_flag[@]}" \
+    "${HELM_DEBUG_FLAGS[@]}" \
     --wait \
     --set gitlab.app="$CI_PROJECT_PATH_SLUG" \
     --set gitlab.env="$CI_ENVIRONMENT_SLUG" \

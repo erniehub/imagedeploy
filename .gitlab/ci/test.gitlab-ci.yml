@@ -264,7 +264,7 @@ test-deploy:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
@@ -314,7 +314,7 @@ test-deploy-postgresql-channel-1:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
     - ./test/verify-deployment-database production production-postgres
 
@@ -366,7 +366,7 @@ test-deploy-k8s-1.16:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
@@ -376,7 +376,7 @@ test-deploy-canary:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get production-canary
+    - helm get all production-canary
 
 test-deploy-modsecurity:
   extends: test-deploy
@@ -409,9 +409,9 @@ test-delete:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - auto-deploy delete
-    - helm get production && expected_error || failed_as_expected
+    - helm get all production && expected_error || failed_as_expected
 
 test-delete-postgresql:
   extends: test-deploy
@@ -419,13 +419,13 @@ test-delete-postgresql:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production
+    - helm get all production-postgresql
     - pvc_before_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -z "$pvc_before_delete" ]]; then "expected to find a postgresql pvc"; exit 1; fi
     - auto-deploy delete
-    - helm get production && expected_error || failed_as_expected
-    - helm get production-postgresql && expected_error || failed_as_expected
+    - helm get all production && expected_error || failed_as_expected
+    - helm get all production-postgresql && expected_error || failed_as_expected
     - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
@@ -435,11 +435,11 @@ test-delete-canary-postgresql:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get production-canary
+    - helm get all production-canary
     - auto-deploy deploy
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production
+    - helm get all production-postgresql
     - auto-deploy delete canary
-    - helm get production-canary && expected_error || failed_as_expected
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production-canary && expected_error || failed_as_expected
+    - helm get all production
+    - helm get all production-postgresql

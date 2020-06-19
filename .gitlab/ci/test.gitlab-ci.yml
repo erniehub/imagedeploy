@@ -191,7 +191,7 @@ test-initialize-tiller:
   script:
     - auto-deploy initialize_tiller
     - ps aufx
-    - helm ls --host "localhost:44134"
+    - helm ls
 
 test-create-secret:
   <<: *test-job

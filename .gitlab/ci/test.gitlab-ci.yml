@@ -333,6 +333,8 @@ test-deploy-does-not-delete-old-postgres-by-default:
 
 test-deploy-deletes-old-postgres-if-opt-in:
   extends: test-deploy
+  variables:
+      AUTO_DEVOPS_DEPLOY_DEBUG: 1
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart

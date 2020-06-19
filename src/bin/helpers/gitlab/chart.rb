@@ -14,14 +14,11 @@ module Gitlab
       # @param [String] data                    JSON formatted `helm list` output
       # @param [String] release_name            The release created by a chart in question
       def load_from_helm_ls(data, release_name)
-        # In Helm 2, `helm ls --output json` returns an empty string when there are no releases
-        return if data.empty?
-
-        release = JSON.parse(data)['Releases'].find { |r| r['Name'] == release_name }
+        release = JSON.parse(data).find { |r| r['name'] == release_name }
 
         return if release.nil?
 
-        name, major, minor, patch = release['Chart'].scan(/\A(.+)-(\d+)\.(\d+)\.(\d+)/).first
+        name, major, minor, patch = release['chart'].scan(/\A(.+)-(\d+)\.(\d+)\.(\d+)/).first
 
         return unless gitlab_managed_chart?(name, major, minor, patch)
 

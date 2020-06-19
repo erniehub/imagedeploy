@@ -80,6 +80,7 @@ auto-deploy ensure_namespace
 > **Notes**:
 >
 > - Introduced in auto-deploy-image v0.1.0.
+> - Removed in auto-deploy-image v2.0.0, as part of upgrading to Helm 3
 
 Example:
 

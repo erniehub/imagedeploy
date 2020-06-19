@@ -30,7 +30,6 @@ test-dependencies:
     GIT_STRATEGY: none
   script:
     - helm version --client
-    - tiller -version
     - kubectl version --client
 
 test-kube-domain:
@@ -60,7 +59,7 @@ test-download-chart:
   <<: *test-job
   script:
     - auto-deploy download_chart
-    - ./test/verify-chart-version 1
+    - ./test/verify-chart-version 2
 
 test-download-chart-from-repo:
   <<: *test-job
@@ -197,9 +196,7 @@ test-initialize-tiller:
     GIT_STRATEGY: none
     KUBE_NAMESPACE: default
   script:
-    - auto-deploy initialize_tiller
-    - ps aufx
-    - helm ls --host "localhost:44134"
+    - auto-deploy initialize_tiller | grep "Helm 3 does not have Tiller"
 
 test-create-secret:
   <<: *test-job
@@ -245,7 +242,6 @@ test-install-postgres:
     POSTGRES_PASSWORD: testing-password
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy install_postgresql
     - kubectl get statefulset production-postgresql -n $KUBE_NAMESPACE
@@ -268,10 +264,9 @@ test-deploy:
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
     HELM_HOST: "localhost:44134"
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
@@ -281,10 +276,10 @@ test-deploy-atomic:
     POSTGRES_ENABLED: "false"
     KUBE_INGRESS_BASE_DOMAIN: ""
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy && exit 1 || echo "First deployment failed as expected"
-    # second deploy should succeed
+    # second deploy should succeed, there should be no first release
+    - if [[ -n "$(helm ls -q)" ]]; then exit 1; fi
     - export KUBE_INGRESS_BASE_DOMAIN=example.com
     - auto-deploy deploy
 
@@ -298,19 +293,18 @@ test-deploy-non-atomic:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy && exit 1 || echo "First deployment failed as expected"
-    # second deploy should also fail because the first release wasn't fully rolled back
+    # second deploy should succeed on top of the first failed release
+    - if [[ -z "$(helm ls -q)" ]]; then exit 1; fi
     - export KUBE_INGRESS_BASE_DOMAIN=example.com
-    - auto-deploy deploy && exit 1 || echo "Second release failed as expected"
+    - auto-deploy deploy
 
 test-deploy-debug:
   extends: test-deploy
   variables:
     AUTO_DEVOPS_DEPLOY_DEBUG: "1"
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - cat tiller.log
 
 test-deploy-postgresql-channel-1:
   extends: test-deploy
@@ -318,17 +312,15 @@ test-deploy-postgresql-channel-1:
     <<: *deploy-variables
     AUTO_DEVOPS_POSTGRES_CHANNEL: 1
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
     - ./test/verify-deployment-database production production-postgres
 
 test-deploy-does-not-delete-old-postgres-by-default:
   extends: test-deploy
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     # make sure old posgres deployment exists
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
@@ -342,8 +334,9 @@ test-deploy-does-not-delete-old-postgres-by-default:
 
 test-deploy-deletes-old-postgres-if-opt-in:
   extends: test-deploy
+  variables:
+      AUTO_DEVOPS_DEPLOY_DEBUG: 1
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
     # make sure old postgres deployment exists
@@ -370,20 +363,18 @@ test-deploy-k8s-1.16:
     - kubectl version
     - kubectl cluster-info
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-canary:
   extends: test-deploy
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get production-canary
+    - helm get all production-canary
 
 test-deploy-modsecurity:
   extends: test-deploy
@@ -391,7 +382,6 @@ test-deploy-modsecurity:
     <<: *deploy-variables
     AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE: "On"
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
     - $([[ $(kubectl get ingress production-auto-deploy -n $KUBE_NAMESPACE --no-headers=true -o custom-columns=:"metadata.annotations.nginx\.ingress\.kubernetes\.io/modsecurity-snippet") != "<none>" ]])
@@ -413,48 +403,44 @@ test-create-application-secret:
 test-delete:
   extends: test-deploy
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - auto-deploy delete
-    - helm get production && expected_error || failed_as_expected
+    - helm get all production && expected_error || failed_as_expected
 
 test-delete-postgresql:
   extends: test-deploy
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production
+    - helm get all production-postgresql
     - pvc_before_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -z "$pvc_before_delete" ]]; then "expected to find a postgresql pvc"; exit 1; fi
     - auto-deploy delete
-    - helm get production && expected_error || failed_as_expected
-    - helm get production-postgresql && expected_error || failed_as_expected
+    - helm get all production && expected_error || failed_as_expected
+    - helm get all production-postgresql && expected_error || failed_as_expected
     - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
 test-delete-canary-postgresql:
   extends: test-deploy
   script:
-    - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get production-canary
+    - helm get all production-canary
     - auto-deploy deploy
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production
+    - helm get all production-postgresql
     - auto-deploy delete canary
-    - helm get production-canary && expected_error || failed_as_expected
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production-canary && expected_error || failed_as_expected
+    - helm get all production
+    - helm get all production-postgresql
 
 test-chart-major-version-upgrade:
   extends: test-deploy
   script:
-    - auto-deploy initialize_tiller
     # Downloading legacy v0 chart from charts.gitlab.io and the deployment should succeed
     - AUTO_DEVOPS_CHART=gitlab/auto-deploy-app auto-deploy download_chart
     - auto-deploy deploy
@@ -469,6 +455,49 @@ test-chart-major-version-upgrade:
     - export AUTO_DEVOPS_FORCE_DEPLOY_V10=true
     - auto-deploy deploy| tee deploy.log
     - grep -q "allowed to force deploy" deploy.log || exit 1
+
+test-upgrade-from-helm2-fails:
+  image: docker:19.03.12
+  services:
+    - docker:19.03.12-dind
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
+      alias: k3s
+  before_script:
+    - cat /etc/hosts
+    - apk add curl
+    # get an IP for k3s that can be accessed from within docker containers
+    - K3S_IP=$(cat /etc/hosts | awk '{if ($2 == "k3s") print $1;}')
+    - curl -fs k3s:8081?service="$K3S_IP" > k3s.yaml
+    - export KUBECONFIG=$(pwd)/k3s.yaml
+    - cat $KUBECONFIG
+  script:
+    # use an env-file to forward variables to the containers
+    - |
+      echo 'CI_APPLICATION_REPOSITORY=registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/auto-build-image-with-psql
+        CI_APPLICATION_TAG=5d248f6fa69a
+        CI_ENVIRONMENT_SLUG=production
+        CI_ENVIRONMENT_URL=example.com
+        CI_PROJECT_PATH_SLUG=gitlab-org/cluster-integration/auto-build-image
+        CI_PROJECT_ID=1
+        CI_PROJECT_VISIBILITY=public
+        KUBE_NAMESPACE=default
+        KUBE_INGRESS_BASE_DOMAIN=example.com
+        ROLLOUT_RESOURCE_TYPE=deployment
+        POSTGRES_USER=user
+        POSTGRES_PASSWORD=testing-password
+        POSTGRES_ENABLED=true
+        POSTGRES_DB=production
+        HELM_HOST=localhost:44134
+        KUBECONFIG=/tmp/k3s.yaml' > /tmp/env
+    # helm 2 deployment should succeed
+    - |
+      docker run -v $KUBECONFIG:/tmp/k3s.yaml --env-file /tmp/env registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v1.0.0 \
+        sh -c 'auto-deploy initialize_tiller && auto-deploy download_chart && auto-deploy deploy'
+    # helm 3 deployment should fail because the deployment would overwrite an existing resource
+    - |
+      docker run -v $KUBECONFIG:/tmp/k3s.yaml  --env-file /tmp/env "$BUILD_IMAGE_NAME" \
+        sh -c 'auto-deploy initialize_tiller && auto-deploy download_chart && auto-deploy deploy 2>&1 && exit 1 || exit 0' \
+        | grep 'Error: rendered manifests contain a resource that already exists.'
 
 rspec:
   stage: test

@@ -264,7 +264,7 @@ channel 1 database.'
   # TODO: Over time, migrate all --set values to this file, see https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/issues/31
   write_environment_values_file
 
-  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$stable_name$")" ]]; then
+  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -f "^$stable_name$")" ]]; then
     echo "Initializing service URL and database. No deployment will be created"
     # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
     helm upgrade --install \
@@ -359,7 +359,7 @@ function scale() {
   local replicas
   replicas=$(get_replicas "$track" "$percentage")
 
-  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+  if [[ -n "$(helm ls -f "^$name$")" ]]; then
     helm upgrade --reuse-values \
       --wait \
       --set replicaCount="$replicas" \
@@ -372,7 +372,7 @@ function scale() {
 function delete_postgresql() {
   local name="$POSTGRESQL_RELEASE_NAME"
 
-  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+  if [[ -n "$(helm ls -f "^$name$")" ]]; then
     helm delete --purge "$name"
     kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
@@ -384,7 +384,7 @@ function delete() {
   local name
   name=$(deploy_name "$track")
 
-  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+  if [[ -n "$(helm ls -f "^$name$")" ]]; then
     helm delete --purge "$name"
   fi
 

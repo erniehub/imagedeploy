@@ -343,7 +343,7 @@ test-deploy-deletes-old-postgres-if-opt-in:
     - auto-deploy deploy
     - ./test/verify-deployment-database production production-postgres
     # clean up charts/ folder because of https://github.com/helm/helm/issues/7770
-    - rm -rf charts/
+    - rm -rf chart/charts/
     # test that the deploy job succeeds
     - export POSTGRES_VERSION='9.6.16'
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=2

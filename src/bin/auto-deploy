@@ -49,6 +49,9 @@ function download_chart() {
     mv ${auto_chart_name} chart
   fi
 
+  # This seems to be required now?
+  helm repo add https://kubernetes-charts.storage.googleapis.com/
+
   helm dependency update chart/
   helm dependency build chart/
 }

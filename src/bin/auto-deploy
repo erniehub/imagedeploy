@@ -50,7 +50,7 @@ function download_chart() {
   fi
 
   # This seems to be required now?
-  helm repo add https://kubernetes-charts.storage.googleapis.com/
+  helm repo add kubernetes-charts https://kubernetes-charts.storage.googleapis.com/
 
   helm dependency update chart/
   helm dependency build chart/

@@ -14,7 +14,7 @@ fi
 
 export HELM_DEBUG_FLAGS=()
 if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
-  export HELM_DEBUG_FLAGS=('--debug' '--log-file' 'helm.log')
+  export HELM_DEBUG_FLAGS=('--debug')
 fi
 
 function check_kube_domain() {

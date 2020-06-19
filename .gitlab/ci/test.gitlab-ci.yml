@@ -302,7 +302,6 @@ test-deploy-debug:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - cat helm.log
 
 test-deploy-postgresql-channel-1:
   extends: test-deploy

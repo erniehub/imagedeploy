@@ -373,7 +373,7 @@ function delete_postgresql() {
   local name="$POSTGRESQL_RELEASE_NAME"
 
   if [[ -n "$(helm ls -f "^$name$")" ]]; then
-    helm delete --purge "$name"
+    helm delete "$name"
     kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
 }
@@ -385,7 +385,7 @@ function delete() {
   name=$(deploy_name "$track")
 
   if [[ -n "$(helm ls -f "^$name$")" ]]; then
-    helm delete --purge "$name"
+    helm delete "$name"
   fi
 
   if [[ "$track" == "stable" ]]; then

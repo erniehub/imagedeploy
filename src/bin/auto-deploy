@@ -1,4 +1,6 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+
+set -e
 
 [[ "$TRACE" ]] && set -x
 
@@ -71,6 +73,12 @@ function initialize_tiller() {
 
 function write_environment_values_file() {
   echo "deploymentApiVersion: apps/v1" >"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+  # FIXME: This is just to get the test working because Helm 3 did not like `--set image.secrets[0]=""`
+  if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
+    echo "image: { secrets: [ { name: gitlab-registry-${CI_PROJECT_PATH_SLUG} } ] }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+  else
+    echo "image: { secrets: null }">>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+  fi
 }
 
 function create_secret() {
@@ -217,13 +225,6 @@ channel 1 database.'
   local replicas
   replicas=$(get_replicas "$track" "$percentage")
 
-  local secret_name
-  if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
-    secret_name="gitlab-registry-${CI_PROJECT_PATH_SLUG}"
-  else
-    secret_name=''
-  fi
-
   local modsecurity_set_args=()
   if [[ -n "$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" ]]; then
     modsecurity_set_args=("--set" "ingress.modSecurity.enabled=true,ingress.modSecurity.secRuleEngine=$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE")
@@ -273,7 +274,6 @@ channel 1 database.'
       --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
       --set image.tag="$image_tag" \
-      --set image.secrets[0].name="$secret_name" \
       --set application.track="stable" \
       --set application.database_url="$database_url" \
       --set application.secretName="$APPLICATION_SECRET_NAME" \
@@ -313,7 +313,6 @@ channel 1 database.'
     --set releaseOverride="$RELEASE_NAME" \
     --set image.repository="$image_repository" \
     --set image.tag="$image_tag" \
-    --set image.secrets[0].name="$secret_name" \
     --set application.track="$track" \
     --set application.database_url="$database_url" \
     --set application.secretName="$APPLICATION_SECRET_NAME" \
@@ -417,7 +416,7 @@ function create_application_secret() {
 
   k8s_secrets_file=$(mktemp)
 
-  /build/bin/auto-deploy-application-secrets-yaml "$k8s_secrets_file"
+  auto-deploy-application-secrets-yaml "$k8s_secrets_file"
 
   kubectl replace -f "$k8s_secrets_file" -n "$KUBE_NAMESPACE" --force
 

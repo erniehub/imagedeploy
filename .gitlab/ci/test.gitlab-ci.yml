@@ -280,20 +280,6 @@ test-deploy-atomic:
     - export KUBE_INGRESS_BASE_DOMAIN=example.com
     - auto-deploy deploy
 
-test-deploy-non-atomic:
-  extends: test-deploy
-  variables:
-    POSTGRES_ENABLED: "false"
-    KUBE_INGRESS_BASE_DOMAIN: ""
-    AUTO_DEVOPS_ATOMIC_RELEASE: "false"
-  script:
-    - auto-deploy initialize_tiller
-    - auto-deploy download_chart
-    - auto-deploy deploy && exit 1 || echo "First deployment failed as expected"
-    # second deploy should also fail because the first release wasn't fully rolled back
-    - export KUBE_INGRESS_BASE_DOMAIN=example.com
-    - auto-deploy deploy && exit 1 || echo "Second release failed as expected"
-
 test-deploy-debug:
   extends: test-deploy
   variables:

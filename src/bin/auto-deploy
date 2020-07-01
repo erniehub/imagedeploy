@@ -77,7 +77,7 @@ function write_environment_values_file() {
   if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
     echo "image: { secrets: [ { name: gitlab-registry-${CI_PROJECT_PATH_SLUG} } ] }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
   else
-    echo "image: { secrets: null }">>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+    echo "image: { secrets: null }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
   fi
 }
 

@@ -3,7 +3,7 @@
 set -e
 
 if [[ "$AUTO_DEVOPS_HELM_MAJOR_VERSION" = '3' ]]; then
-    auto-deploy-helm3 "${@}"
+  auto-deploy-helm3 "${@}"
 else
-    auto-deploy-helm2 "${@}"
+  auto-deploy-helm2 "${@}"
 fi

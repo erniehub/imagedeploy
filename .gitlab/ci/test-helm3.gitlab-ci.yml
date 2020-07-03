@@ -268,7 +268,7 @@ test-deploy-helm3:
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-atomic-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   variables:
     POSTGRES_ENABLED: "false"
     KUBE_INGRESS_BASE_DOMAIN: ""
@@ -281,7 +281,7 @@ test-deploy-atomic-helm3:
     - auto-deploy deploy
 
 test-deploy-debug-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   variables:
     AUTO_DEVOPS_DEPLOY_DEBUG: "1"
   script:
@@ -290,7 +290,7 @@ test-deploy-debug-helm3:
     - auto-deploy deploy
 
 test-deploy-postgresql-channel-1-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   variables:
     <<: *deploy-variables
     AUTO_DEVOPS_POSTGRES_CHANNEL: 1
@@ -303,7 +303,7 @@ test-deploy-postgresql-channel-1-helm3:
     - ./test/verify-deployment-database production production-postgres
 
 test-deploy-does-not-delete-old-postgres-by-default-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -318,7 +318,7 @@ test-deploy-does-not-delete-old-postgres-by-default-helm3:
     - ./test/verify-deployment-database production production-postgres
 
 test-deploy-deletes-old-postgres-if-opt-in-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   variables:
       AUTO_DEVOPS_DEPLOY_DEBUG: 1
   script:
@@ -337,7 +337,7 @@ test-deploy-deletes-old-postgres-if-opt-in-helm3:
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-k8s-1.16-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
       alias: k3s
@@ -357,7 +357,7 @@ test-deploy-k8s-1.16-helm3:
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-canary-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -365,7 +365,7 @@ test-deploy-canary-helm3:
     - helm get all production-canary
 
 test-deploy-modsecurity-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   variables:
     <<: *deploy-variables
     AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE: "On"
@@ -390,7 +390,7 @@ test-create-application-secret-helm3:
     - ./test/verify-application-secret
 
 test-delete-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -400,7 +400,7 @@ test-delete-helm3:
     - helm get all production && expected_error || failed_as_expected
 
 test-delete-postgresql-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -416,7 +416,7 @@ test-delete-postgresql-helm3:
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
 test-delete-canary-postgresql-helm3:
-  extends: test-deploy
+  extends: test-deploy-helm3
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart

@@ -18,3 +18,4 @@ RUN apk add --no-cache openssl curl tar gzip bash jq \
   && rm glibc-${GLIBC_VERSION}.apk
 
 RUN ln -s /build/bin/* /usr/local/bin/
+RUN ln -s /usr/bin/helm2 /usr/local/bin/helm

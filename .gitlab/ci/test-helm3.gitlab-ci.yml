@@ -31,7 +31,7 @@ test-dependencies-helm3:
   variables:
     GIT_STRATEGY: none
   script:
-    - helm version --client
+    - helm3 version --client
     - kubectl version --client
 
 test-kube-domain-helm3:
@@ -263,8 +263,8 @@ test-deploy-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get all production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
+    - helm3 get all production
+    - helm3 get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-atomic-helm3:
@@ -298,8 +298,8 @@ test-deploy-postgresql-channel-1-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get all production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
+    - helm3 get all production
+    - helm3 get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
     - ./test/verify-deployment-database production production-postgres
 
 test-deploy-does-not-delete-old-postgres-by-default-helm3:
@@ -352,8 +352,8 @@ test-deploy-k8s-1.16-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get all production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
+    - helm3 get all production
+    - helm3 get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-canary-helm3:
@@ -362,7 +362,7 @@ test-deploy-canary-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get all production-canary
+    - helm3 get all production-canary
 
 test-deploy-modsecurity-helm3:
   extends: test-deploy-helm3
@@ -395,9 +395,9 @@ test-delete-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get all production
+    - helm3 get all production
     - auto-deploy delete
-    - helm get all production && expected_error || failed_as_expected
+    - helm3 get all production && expected_error || failed_as_expected
 
 test-delete-postgresql-helm3:
   extends: test-deploy-helm3
@@ -405,13 +405,13 @@ test-delete-postgresql-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get all production
-    - helm get all production-postgresql
+    - helm3 get all production
+    - helm3 get all production-postgresql
     - pvc_before_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -z "$pvc_before_delete" ]]; then "expected to find a postgresql pvc"; exit 1; fi
     - auto-deploy delete
-    - helm get all production && expected_error || failed_as_expected
-    - helm get all production-postgresql && expected_error || failed_as_expected
+    - helm3 get all production && expected_error || failed_as_expected
+    - helm3 get all production-postgresql && expected_error || failed_as_expected
     - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
@@ -421,11 +421,11 @@ test-delete-canary-postgresql-helm3:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get all production-canary
+    - helm3 get all production-canary
     - auto-deploy deploy
-    - helm get all production
-    - helm get all production-postgresql
+    - helm3 get all production
+    - helm3 get all production-postgresql
     - auto-deploy delete canary
-    - helm get all production-canary && expected_error || failed_as_expected
-    - helm get all production
-    - helm get all production-postgresql
+    - helm3 get all production-canary && expected_error || failed_as_expected
+    - helm3 get all production
+    - helm3 get all production-postgresql

@@ -1,6 +1,8 @@
-.test-job: &test-job
+.test-job-helm3: &test-job-helm3
   stage: test
   image: "$BUILD_IMAGE_NAME"
+  variables:
+    AUTO_DEVOPS_HELM_MAJOR_VERSION: 3
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.6.1
       alias: k3s
@@ -24,47 +26,46 @@
           echo "Failed as expected and exited with $?"
         }
 
-test-dependencies:
-  <<: *test-job
+test-dependencies-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
   script:
     - helm version --client
-    - tiller -version
     - kubectl version --client
 
-test-kube-domain:
-  <<: *test-job
+test-kube-domain-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     KUBE_INGRESS_BASE_DOMAIN: example.com
   script:
     - auto-deploy check_kube_domain
 
-test-kube-domain-legacy:
-  <<: *test-job
+test-kube-domain-legacy-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     AUTO_DEVOPS_DOMAIN: example.com
   script:
     - auto-deploy check_kube_domain && expected_error || failed_as_expected
 
-test-kube-domain_error:
-  <<: *test-job
+test-kube-domain_error-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
   script:
     - auto-deploy check_kube_domain && expected_error || failed_as_expected
 
-test-download-chart:
-  <<: *test-job
+test-download-chart-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
   script:
     - auto-deploy download_chart
 
-test-deploy-name:
-  <<: *test-job
+test-deploy-name-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
@@ -82,8 +83,8 @@ test-deploy-name:
         exit 1
       fi
 
-test-auto_database_url:
-  <<: *test-job
+test-auto_database_url-helm3:
+  <<: *test-job-helm3
   variables:
     CI_ENVIRONMENT_SLUG: production
     POSTGRES_USER: user
@@ -121,8 +122,8 @@ test-auto_database_url:
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=a
     - auto-deploy auto_database_url && expected_error || failed_as_expected
 
-test-get-replicas:
-  <<: *test-job
+test-get-replicas-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
@@ -134,8 +135,8 @@ test-get-replicas:
         exit 1
       fi
 
-test-get-replicas-multiple:
-  <<: *test-job
+test-get-replicas-multiple-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
@@ -148,8 +149,8 @@ test-get-replicas-multiple:
         exit 1
       fi
 
-test-get-replicas-fraction:
-  <<: *test-job
+test-get-replicas-fraction-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
@@ -162,8 +163,8 @@ test-get-replicas-fraction:
         exit 1
       fi
 
-test-get-replicas-zero:
-  <<: *test-job
+test-get-replicas-zero-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
@@ -176,26 +177,24 @@ test-get-replicas-zero:
         exit 1
       fi
 
-test-ensure-namespace:
-  <<: *test-job
+test-ensure-namespace-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     KUBE_NAMESPACE: project-123456
   script:
     - auto-deploy ensure_namespace
 
-test-initialize-tiller:
-  <<: *test-job
+test-initialize-tiller-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     KUBE_NAMESPACE: default
   script:
-    - auto-deploy initialize_tiller
-    - ps aufx
-    - helm ls --host "localhost:44134"
+    - auto-deploy initialize_tiller | grep "Helm 3 does not have tiller"
 
-test-create-secret:
-  <<: *test-job
+test-create-secret-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     KUBE_NAMESPACE: default
@@ -208,8 +207,8 @@ test-create-secret:
     - auto-deploy create_secret
     - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $KUBE_NAMESPACE
 
-test-create-secret-public-project:
-  <<: *test-job
+test-create-secret-public-project-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_PROJECT_VISIBILITY: public
@@ -218,8 +217,8 @@ test-create-secret-public-project:
     - auto-deploy create_secret
     - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $KUBE_NAMESPACE && expected_error || failed_as_expected
 
-test-persist-environment-url:
-  <<: *test-job
+test-persist-environment-url-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_URL: review-app.example.com
@@ -227,8 +226,8 @@ test-persist-environment-url:
     - auto-deploy persist_environment_url
     - grep review-app.example.com environment_url.txt
 
-test-install-postgres:
-  <<: *test-job
+test-install-postgres-helm3:
+  <<: *test-job-helm3
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
@@ -243,8 +242,8 @@ test-install-postgres:
     - auto-deploy install_postgresql
     - kubectl get statefulset production-postgresql -n $KUBE_NAMESPACE
 
-test-deploy:
-  <<: *test-job
+test-deploy-helm3:
+  <<: *test-job-helm3
   variables: &deploy-variables
     CI_APPLICATION_REPOSITORY: "registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/auto-build-image-with-psql"
     CI_APPLICATION_TAG: "5d248f6fa69a"
@@ -264,11 +263,11 @@ test-deploy:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
-test-deploy-atomic:
+test-deploy-atomic-helm3:
   extends: test-deploy
   variables:
     POSTGRES_ENABLED: "false"
@@ -281,21 +280,7 @@ test-deploy-atomic:
     - export KUBE_INGRESS_BASE_DOMAIN=example.com
     - auto-deploy deploy
 
-test-deploy-non-atomic:
-  extends: test-deploy
-  variables:
-    POSTGRES_ENABLED: "false"
-    KUBE_INGRESS_BASE_DOMAIN: ""
-    AUTO_DEVOPS_ATOMIC_RELEASE: "false"
-  script:
-    - auto-deploy initialize_tiller
-    - auto-deploy download_chart
-    - auto-deploy deploy && exit 1 || echo "First deployment failed as expected"
-    # second deploy should also fail because the first release wasn't fully rolled back
-    - export KUBE_INGRESS_BASE_DOMAIN=example.com
-    - auto-deploy deploy && exit 1 || echo "Second release failed as expected"
-
-test-deploy-debug:
+test-deploy-debug-helm3:
   extends: test-deploy
   variables:
     AUTO_DEVOPS_DEPLOY_DEBUG: "1"
@@ -303,9 +288,8 @@ test-deploy-debug:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - cat tiller.log
 
-test-deploy-postgresql-channel-1:
+test-deploy-postgresql-channel-1-helm3:
   extends: test-deploy
   variables:
     <<: *deploy-variables
@@ -314,11 +298,11 @@ test-deploy-postgresql-channel-1:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
     - ./test/verify-deployment-database production production-postgres
 
-test-deploy-does-not-delete-old-postgres-by-default:
+test-deploy-does-not-delete-old-postgres-by-default-helm3:
   extends: test-deploy
   script:
     - auto-deploy initialize_tiller
@@ -333,8 +317,10 @@ test-deploy-does-not-delete-old-postgres-by-default:
     # assert that postgres still exists
     - ./test/verify-deployment-database production production-postgres
 
-test-deploy-deletes-old-postgres-if-opt-in:
+test-deploy-deletes-old-postgres-if-opt-in-helm3:
   extends: test-deploy
+  variables:
+      AUTO_DEVOPS_DEPLOY_DEBUG: 1
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -350,7 +336,7 @@ test-deploy-deletes-old-postgres-if-opt-in:
     # test that the new postgres is up
     - ./test/verify-deployment-database production postgresql
 
-test-deploy-k8s-1.16:
+test-deploy-k8s-1.16-helm3:
   extends: test-deploy
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
@@ -366,19 +352,19 @@ test-deploy-k8s-1.16:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
-test-deploy-canary:
+test-deploy-canary-helm3:
   extends: test-deploy
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get production-canary
+    - helm get all production-canary
 
-test-deploy-modsecurity:
+test-deploy-modsecurity-helm3:
   extends: test-deploy
   variables:
     <<: *deploy-variables
@@ -389,8 +375,8 @@ test-deploy-modsecurity:
     - auto-deploy deploy
     - $([[ $(kubectl get ingress production-auto-deploy -n $KUBE_NAMESPACE --no-headers=true -o custom-columns=:"metadata.annotations.nginx\.ingress\.kubernetes\.io/modsecurity-snippet") != "<none>" ]])
 
-test-create-application-secret:
-  <<: *test-job
+test-create-application-secret-helm3:
+  <<: *test-job-helm3
   variables:
     KUBE_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
@@ -403,43 +389,43 @@ test-create-application-secret:
     - kubectl get secrets production-secret -n $KUBE_NAMESPACE
     - ./test/verify-application-secret
 
-test-delete:
+test-delete-helm3:
   extends: test-deploy
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
+    - helm get all production
     - auto-deploy delete
-    - helm get production && expected_error || failed_as_expected
+    - helm get all production && expected_error || failed_as_expected
 
-test-delete-postgresql:
+test-delete-postgresql-helm3:
   extends: test-deploy
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production
+    - helm get all production-postgresql
     - pvc_before_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -z "$pvc_before_delete" ]]; then "expected to find a postgresql pvc"; exit 1; fi
     - auto-deploy delete
-    - helm get production && expected_error || failed_as_expected
-    - helm get production-postgresql && expected_error || failed_as_expected
+    - helm get all production && expected_error || failed_as_expected
+    - helm get all production-postgresql && expected_error || failed_as_expected
     - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
-test-delete-canary-postgresql:
+test-delete-canary-postgresql-helm3:
   extends: test-deploy
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy canary
-    - helm get production-canary
+    - helm get all production-canary
     - auto-deploy deploy
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production
+    - helm get all production-postgresql
     - auto-deploy delete canary
-    - helm get production-canary && expected_error || failed_as_expected
-    - helm get production
-    - helm get production-postgresql
+    - helm get all production-canary && expected_error || failed_as_expected
+    - helm get all production
+    - helm get all production-postgresql

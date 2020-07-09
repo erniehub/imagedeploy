@@ -30,6 +30,9 @@ function check_kube_domain() {
 function download_chart() {
   local auto_chart
   local auto_chart_name
+
+  copy_bundled_chart
+
   if [[ ! -d chart ]]; then
     auto_chart=${AUTO_DEVOPS_CHART:-gitlab/auto-deploy-app}
     # shellcheck disable=SC2086 # double quote variables to prevent globbing
@@ -506,6 +509,15 @@ function get_replicas() {
     # E.g. 25% of 2 replicas is 0 (integer division)
     echo 1
   fi
+}
+
+function copy_bundled_chart() {
+  if [[ -d chart ]] || [[ -n "${AUTO_DEVOPS_CHART}${AUTO_DEVOPS_CHART_REPOSITORY_NAME}${AUTO_DEVOPS_CHART_REPOSITORY}" ]]; then
+    return
+  fi
+
+  echo "Copying bundled charts..."
+  cp -R /assets/auto-deploy-app-chart chart
 }
 
 ##

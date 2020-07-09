@@ -11,7 +11,7 @@
   before_script:
     - npm install -g semantic-release @semantic-release/gitlab
   script:
-    - semantic-release $DRY_RUN_OPT -b $CI_COMMIT_REF_NAME
+    - semantic-release $DRY_RUN_OPT
   only:
     variables:
       - $CI_API_V4_URL == "https://gitlab.com/api/v4"
@@ -39,6 +39,9 @@ publish:
   only:
     refs:
       - master@gitlab-org/cluster-integration/auto-deploy-image
+      - beta@gitlab-org/cluster-integration/auto-deploy-image
+      - /^\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
+      - /^\d+\.\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
 
 publish-dryrun:
   extends: .semantic-release

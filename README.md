@@ -56,3 +56,48 @@ an empty commit summarizing your changes like so:
 ```
 git commit --allow-empty -m '[BREAKING CHANGE|feat|fix]: <changelog summary message>'
 ```
+
+## Backport
+
+For backporting a change to a previous release, please follow [this recipe](https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/maintenance-releases.md#publishing-maintenance-releases).
+
+Here is an example:
+
+Given you have
+
+- `v2.0.0` tag, which is the latest tag of `v2`.
+- `v1.1.1` tag, which is the latest tag of `v1`.
+- `master` branch, which points to `v2.0.0`.
+
+and you want to release a bug fix to both `v1` and `v2` releases.
+
+You process the following actions:
+
+- Create `1.x` branch from `v1.1.1`.
+- Merge a fix to `1.x` branch. `semantic-release` creates a release with  `v1.1.2` tag.
+- Merge a fix to `master` branch. `semantic-release` creates a release with `v2.0.1` tag.
+
+NOTE: **NOTE**
+Ensure that the maintenance release branch (e.g. `1.x`) is [protected](https://docs.gitlab.com/ee/user/project/protected_branches.html).
+
+## Pre-release
+
+For publishing a pre-release, please follow [this recipe](https://github.com/semantic-release/semantic-release/blob/master/docs/recipes/pre-releases.md#publishing-pre-releases).
+
+Here is an example:
+
+Given you have
+
+- `v1.1.1` tag, which is the latest tag of `v1`.
+- `master` branch, which points to `v1.1.1`.
+
+and you want to publish a pre-release.
+
+You process the following actions:
+
+- Create `beta` branch from the latest `master`.
+- Merge a fix to `beta` branch. `semantic-release` creates a release with `2.0.0-beta.1` tag.
+- When you make an official release, merge `beta` to `master`. `semantic-release` creates a release with `2.0.0` tag.
+
+NOTE: **NOTE**
+Ensure that the pre-release release branch (e.g. `beta`) is [protected](https://docs.gitlab.com/ee/user/project/protected_branches.html).

@@ -290,7 +290,7 @@ channel 1 database.'
       --set gitlab.envURL="$CI_ENVIRONMENT_URL" \
       --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
-      --set image.tag="$image_tag" \
+      --set-string image.tag="$image_tag" \
       --set image.secrets[0].name="$secret_name" \
       --set application.track="stable" \
       --set application.database_url="$database_url" \
@@ -330,7 +330,7 @@ channel 1 database.'
     --set gitlab.envURL="$CI_ENVIRONMENT_URL" \
     --set releaseOverride="$RELEASE_NAME" \
     --set image.repository="$image_repository" \
-    --set image.tag="$image_tag" \
+    --set-string image.tag="$image_tag" \
     --set image.secrets[0].name="$secret_name" \
     --set application.track="$track" \
     --set application.database_url="$database_url" \

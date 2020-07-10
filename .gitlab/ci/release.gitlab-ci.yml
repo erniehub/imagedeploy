@@ -34,14 +34,17 @@ release-tag:
   only:
     - tags
 
+.release-refs: &release-refs
+  refs:
+    - master@gitlab-org/cluster-integration/auto-deploy-image
+    - beta@gitlab-org/cluster-integration/auto-deploy-image
+    - /^\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
+    - /^\d+\.\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
+
 publish:
   extends: .semantic-release
   only:
-    refs:
-      - master@gitlab-org/cluster-integration/auto-deploy-image
-      - beta@gitlab-org/cluster-integration/auto-deploy-image
-      - /^\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
-      - /^\d+\.\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
+    <<: *release-refs
 
 publish-dryrun:
   extends: .semantic-release
@@ -50,5 +53,4 @@ publish-dryrun:
   only:
     - branches@gitlab-org/cluster-integration/auto-deploy-image
   except:
-    refs:
-      - master
+    <<: *release-refs

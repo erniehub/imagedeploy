@@ -52,7 +52,7 @@ test-helm-2to3:
     - helm3 2to3 convert --release-storage configmaps --tiller-out-cluster --tiller-ns "$KUBE_NAMESPACE" production-postgresql
     - helm2 list
     - helm3 list
-    - yes | helm3 2to3 cleanup --release-storage configmaps --tiller-out-cluster --tiller-ns "$KUBE_NAMESPACE"
+    - helm3 2to3 cleanup --skip-confirmation --release-storage configmaps --tiller-out-cluster --tiller-ns "$KUBE_NAMESPACE"
     - helm2 list || echo 'helm2 failed to run'
     - export AUTO_DEVOPS_HELM_MAJOR_VERSION=3
     - auto-deploy download_chart

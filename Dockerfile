@@ -1,8 +1,7 @@
 ARG HELM_VERSION
 ARG KUBERNETES_VERSION
 
-# FROM "registry.gitlab.com/gitlab-org/cluster-integration/helm-install-image/releases/${HELM_VERSION}-kube-${KUBERNETES_VERSION}"
-FROM registry.gitlab.com/gitlab-org/cluster-integration/helm-install-image/branches/add-builds-for-helm-3:47ca2219be9793f185dc7f5bf9715f55825b34e2-helm2to3
+FROM "registry.gitlab.com/gitlab-org/cluster-integration/helm-install-image/releases/${HELM_VERSION}-kube-${KUBERNETES_VERSION}"
 
 # https://github.com/sgerrand/alpine-pkg-glibc
 ARG GLIBC_VERSION

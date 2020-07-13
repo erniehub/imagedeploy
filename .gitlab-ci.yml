@@ -17,3 +17,4 @@ include:
   - local: .gitlab/ci/shellcheck.gitlab-ci.yml
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/release.gitlab-ci.yml
+  - local: .gitlab/ci/chart.gitlab-ci.yml

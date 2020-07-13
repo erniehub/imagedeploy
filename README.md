@@ -41,7 +41,7 @@ the conventions of [Conventional Commits (v1.0.0-beta.2)](https://www.convention
 
 - Commit title starting with `fix: ` trigger a patch version bump
 - Commit title starting with `feat: ` trigger a minor version bump
-- Commit body contains `BREAKING CHANGE: ` trigger a major version bump. This can be part of commits of _any_ type.
+- Commit body contains `BREAKING CHANGE: ` trigger a major version bump. This can be part of commits of any _type_.
 
 ## Automatic versioning
 

@@ -8,13 +8,9 @@
 .semantic-release:
   image: node:12
   stage: release
-  before_script:
-    - npm install -g semantic-release @semantic-release/gitlab
   script:
+    - npm install -g semantic-release @semantic-release/gitlab
     - semantic-release $DRY_RUN_OPT
-  only:
-    variables:
-      - $CI_API_V4_URL == "https://gitlab.com/api/v4"
 
 release-tag:
   stage: release
@@ -31,26 +27,26 @@ release-tag:
     - docker tag "$BUILD_IMAGE_NAME" $ci_image:$ci_image_tag
     - docker push $ci_image:latest
     - docker push $ci_image:$ci_image_tag
-  only:
-    - tags
-
-.release-refs: &release-refs
-  refs:
-    - master@gitlab-org/cluster-integration/auto-deploy-image
-    - beta@gitlab-org/cluster-integration/auto-deploy-image
-    - /^\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
-    - /^\d+\.\d+\.x$/@gitlab-org/cluster-integration/auto-deploy-image
+  rules:
+    - if: $CI_COMMIT_TAG
 
 publish:
   extends: .semantic-release
-  only:
-    <<: *release-refs
+  rules:
+    # Only protected branches on the official project
+    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_REF_PROTECTED == 'true' && $CI_PROJECT_PATH == 'gitlab-org/cluster-integration/auto-deploy-image' && $CI_API_V4_URL == "https://gitlab.com/api/v4"
 
 publish-dryrun:
   extends: .semantic-release
   variables:
     DRY_RUN_OPT: '-d'
-  only:
-    - branches@gitlab-org/cluster-integration/auto-deploy-image
-  except:
-    <<: *release-refs
+  before_script:
+    - git fetch origin refs/merge-requests/$CI_MERGE_REQUEST_IID/merge:$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - git checkout $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    # Overriding the variable that semantic-release runs on.
+    # https://github.com/pvdlg/env-ci/blob/master/services/gitlab.js
+    - export CI_COMMIT_REF_NAME=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - unset CI_MERGE_REQUEST_ID
+  rules:
+    - if: $CI_MERGE_REQUEST_IID && $CI_PROJECT_PATH == 'gitlab-org/cluster-integration/auto-deploy-image' && $CI_API_V4_URL == "https://gitlab.com/api/v4"
+  needs: []

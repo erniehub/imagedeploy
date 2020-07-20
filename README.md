@@ -101,6 +101,7 @@ You process the following actions:
 - Create `beta` branch from the latest `master`.
 - Merge a fix to `beta` branch. `semantic-release` creates a release with `2.0.0-beta.1` tag.
 - When you make an official release, merge `beta` to `master`. `semantic-release` creates a release with `2.0.0` tag.
+- Delete the `beta` branch on https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/branches
 
 NOTE: **NOTE**
 Ensure that the pre-release release branch (e.g. `beta`) is [protected](https://docs.gitlab.com/ee/user/project/protected_branches.html).

@@ -58,10 +58,17 @@ test-kube-domain_error:
 
 test-download-chart:
   <<: *test-job
-  variables:
-    GIT_STRATEGY: none
   script:
     - auto-deploy download_chart
+    - ./test/verify-chart-version 1
+
+test-download-chart-from-repo:
+  <<: *test-job
+  variables:
+    AUTO_DEVOPS_CHART: gitlab/auto-deploy-app
+  script:
+    - auto-deploy download_chart
+    - ./test/verify-chart-version 0
 
 test-deploy-name:
   <<: *test-job
@@ -443,3 +450,30 @@ test-delete-canary-postgresql:
     - helm get production-canary && expected_error || failed_as_expected
     - helm get production
     - helm get production-postgresql
+
+test-chart-major-version-upgrade:
+  extends: test-deploy
+  script:
+    - auto-deploy initialize_tiller
+    # Downloading legacy v0 chart from charts.gitlab.io and the deployment should succeed
+    - AUTO_DEVOPS_CHART=gitlab/auto-deploy-app auto-deploy download_chart
+    - auto-deploy deploy
+    - rm -Rf chart
+    # Copying bundled chart from local storage and the deployment should fail
+    - auto-deploy download_chart
+    - "sed -i 's/version:.*/version: 10.0.0/g' chart/Chart.yaml"
+    - cat chart/Chart.yaml
+    - auto-deploy deploy| tee deploy.log || true
+    - grep -q "Detected a major version difference" deploy.log || exit 1
+    # Force deploy with the AUTO_DEVOPS_FORCE_DEPLOY option and the deployment should succeed
+    - export AUTO_DEVOPS_FORCE_DEPLOY_V10=true
+    - auto-deploy deploy| tee deploy.log
+    - grep -q "allowed to force deploy" deploy.log || exit 1
+
+rspec:
+  stage: test
+  image: ruby:2.5
+  before_script:
+    - gem install rspec
+  script:
+    - rspec test/rspec

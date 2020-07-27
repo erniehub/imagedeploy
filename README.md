@@ -25,6 +25,14 @@ template will use the Docker image generated from this project. Changes from pre
 *  All the other commands should be prepended with `auto-deploy`.
    For example, `check_kube_domain` now becomes `auto-deploy check_kube_domain`.
 
+### v1.0.0
+
+Before v1.0.0, auto-deploy-image was downloading a chart from [the chart repository](https://charts.gitlab.io/),
+which was then uploaded by the [auto-deploy-app](https://gitlab.com/gitlab-org/charts/auto-deploy-app) project.
+
+Since auto-deploy-image v1.0.0, the auto-deploy-app chart is bundled into the auto-deploy-image docker image as a local asset,
+and it no longer downloads the chart from the repository.
+
 # Generating a new auto-deploy image
 
 To generate a new image you must follow the git commit guidelines below, this

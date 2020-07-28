@@ -8,9 +8,6 @@
 .semantic-release:
   image: node:12
   stage: release
-  script:
-    - npm install -g semantic-release @semantic-release/gitlab
-    - semantic-release $DRY_RUN_OPT
 
 release-tag:
   stage: release
@@ -32,21 +29,41 @@ release-tag:
 
 publish:
   extends: .semantic-release
+  before_script:
+    - npm install -g semantic-release @semantic-release/gitlab
+  script:
+    - semantic-release
   rules:
     # Only protected branches on the official project
     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_REF_PROTECTED == 'true' && $CI_PROJECT_PATH == 'gitlab-org/cluster-integration/auto-deploy-image' && $CI_API_V4_URL == "https://gitlab.com/api/v4"
 
 publish-dryrun:
   extends: .semantic-release
-  variables:
-    DRY_RUN_OPT: '-d'
   before_script:
+    - npm install -g semantic-release @semantic-release/gitlab
     - git fetch origin refs/merge-requests/$CI_MERGE_REQUEST_IID/merge:$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     - git checkout $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     # Overriding the variable that semantic-release runs on.
     # https://github.com/pvdlg/env-ci/blob/master/services/gitlab.js
     - export CI_COMMIT_REF_NAME=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     - unset CI_MERGE_REQUEST_ID
+  script:
+    - semantic-release -d |tee output.log
+    # Check if the bundled chart version matches the next auto-deploy-image version.
+    - next_release_version=$(cat output.log | grep -oP "The next release version is \K.*$") || true
+    - bundled_chart_version=$(cat assets/auto-deploy-app/Chart.yaml | grep -oP "version:\s*\K.*$")
+    - echo "next_release_version is $next_release_version"
+    - echo "bundled_chart_version is $bundled_chart_version"
+    - |
+      if [ -n "${next_release_version}" ] && [ -n "${bundled_chart_version}" ] && [ "${next_release_version}" != "${bundled_chart_version}" ]; then
+        cat <<- EOS
+      [WARN] auto-deploy-app chart version mismatch error.
+      This merge request triggers to create a new release, auto-deploy-image ${next_release_version}.
+      This version must be matched to the auto-deploy-app chart's version, however, currently it's set to ${bundled_chart_version}.
+      Please set ${next_release_version} to the version column in assets/auto-deploy-app/Chart.yaml to resovle this error.
+      EOS
+      exit 1
+      fi
   rules:
     - if: $CI_MERGE_REQUEST_IID && $CI_PROJECT_PATH == 'gitlab-org/cluster-integration/auto-deploy-image' && $CI_API_V4_URL == "https://gitlab.com/api/v4"
   needs: []

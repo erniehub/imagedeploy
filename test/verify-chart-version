@@ -1,0 +1,12 @@
+#!/usr/bin/ruby
+
+require_relative '../src/bin/helpers/gitlab/chart'
+
+expected_major_version = ARGV[0].to_i
+
+chart = Gitlab::Chart.load_from_chart_yml('chart')
+
+unless expected_major_version == chart.major
+  raise "The chart version is different from the expected version. " \
+        "expected: #{expected_major_version} got: #{chart.major}"
+end

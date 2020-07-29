@@ -3,7 +3,7 @@ test-shellcheck:
   image: koalaman/shellcheck-alpine:stable
   needs: []
   script:
-    - shellcheck src/bin/auto-deploy test/*
+    - shellcheck src/bin/auto-deploy test/verify-application-secret test/verify-deployment-database
 
 test-shfmt:
   stage: test
@@ -12,4 +12,4 @@ test-shfmt:
     entrypoint: ["/bin/sh", "-c"]
   needs: []
   script:
-    - shfmt -i 2 -ci -l -d src/bin/auto-deploy test/*
+    - shfmt -i 2 -ci -l -d src/bin/auto-deploy test/verify-application-secret test/verify-deployment-database

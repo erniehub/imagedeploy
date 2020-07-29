@@ -1,0 +1,43 @@
+#!/usr/bin/ruby
+
+require_relative 'helpers/gitlab/chart'
+
+helm_release_list_json = ARGV[0]
+current_chart_dir = ARGV[1]
+release_name = ARGV[2]
+
+puts "Validating chart version..."
+
+print "Fetching the previously deployed chart version..."
+previous_chart = Gitlab::Chart.load_from_helm_ls(helm_release_list_json, release_name)
+puts " #{previous_chart}"
+
+print "Fetching the deploying chart version..."
+current_chart = Gitlab::Chart.load_from_chart_yml(current_chart_dir)
+puts " #{current_chart}"
+
+return unless previous_chart && current_chart
+
+if current_chart.compatible?(previous_chart)
+  puts "The current chart is compatible with the previously deployed chart"
+elsif current_chart.allowed_to_force_deploy?
+  puts "The current chart is not compatible with the previously deployed chart, however, allowed to force deploy."
+else
+  puts <<~EOS
+    *************************************************************************************
+                                       [WARNING]                                         
+    Detected a major version difference between the the chart that is currently deploying (#{current_chart.to_s}), and the previously deployed chart (#{previous_chart.to_s}).
+    A new major version might not be backward compatible with the current release (#{release_name}). The deployment could fail or be stuck in an unrecoverable status.
+    Please follow the appropriate instructions:
+
+    - To proceed with the new chart version, follow the manual upgrade guide
+      https://docs.gitlab.com/ee/topics/autodevops/upgrading_chart.html#upgrade-guide and redeploy.
+
+    - To continue using the previously deployed chart, see the following instructions:
+      https://docs.gitlab.com/ee/topics/autodevops/upgrading_chart.html#keep-using-a-specific-version-of-chart and redeploy.
+
+      For more information, please read https://docs.gitlab.com/ee/topics/autodevops/upgrading_chart.html.
+    *************************************************************************************
+  EOS
+  exit 1
+end

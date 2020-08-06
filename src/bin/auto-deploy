@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 [[ "$TRACE" ]] && set -x
-
+export CI_ENVIRONMENT_URL=*.example.com
 export TILLER_NAMESPACE=$KUBE_NAMESPACE
 export HELM_HOST="localhost:44134"
 export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml

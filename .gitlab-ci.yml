@@ -13,12 +13,18 @@ variables:
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
 
+  # Enable SAST security scanning of bundled helm chart
+  SCAN_KUBERNETES_MANIFESTS: "true"
+  SAST_DEFAULT_ANALYZERS: "kubesec,secrets"
+  KUBESEC_HELM_CHARTS_PATH: "assets/auto-deploy-app"
+
 stages:
   - build
   - test
   - release
 
 include:
+  - template: SAST.gitlab-ci.yml
   - local: .gitlab/ci/build.gitlab-ci.yml
   - local: .gitlab/ci/shellcheck.gitlab-ci.yml
   - local: .gitlab/ci/test.gitlab-ci.yml

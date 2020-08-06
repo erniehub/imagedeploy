@@ -34,18 +34,18 @@ spec:
   tls:
   - hosts:
 {{- if .Values.service.commonName }}
-    - {{ template "hostname" .Values.service.commonName | quote }}
+    - {{ template "hostname" .Values.service.commonName }}
 {{- end }}
-    - {{ template "hostname" .Values.service.url | quote }}
+    - {{ template "hostname" .Values.service.url }}
 {{- if .Values.service.additionalHosts }}
 {{- range $host := .Values.service.additionalHosts }}
-    - {{ $host | quote }}
+    - {{ $host }}
 {{- end -}}
 {{- end }}
     secretName: {{ .Values.ingress.tls.secretName | default (printf "%s-tls" (include "fullname" .)) }}
 {{- end }}
   rules:
-  - host: {{ template "hostname" .Values.service.url | quote }}
+  - host: {{ template "hostname" .Values.service.url }}
     http:
       &httpRule
       paths:
@@ -54,13 +54,13 @@ spec:
           serviceName: {{ template "fullname" . }}
           servicePort: {{ .Values.service.externalPort }}
 {{- if .Values.service.commonName }}
-  - host: {{ template "hostname" .Values.service.commonName | quote }}
+  - host: {{ template "hostname" .Values.service.commonName }}
     http:
       <<: *httpRule
 {{- end -}}
 {{- if .Values.service.additionalHosts }}
 {{- range $host := .Values.service.additionalHosts }}
-  - host: {{ $host | quote }}
+  - host: {{ $host }}
     http:
       <<: *httpRule
 {{- end -}}

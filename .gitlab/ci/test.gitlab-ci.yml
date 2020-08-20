@@ -257,6 +257,7 @@ test-deploy:
     CI_APPLICATION_TAG: "5d248f6fa69a"
     CI_ENVIRONMENT_SLUG: production
     CI_ENVIRONMENT_URL: example.com
+    ADDITIONAL_HOSTS: '*.example.com'
     CI_PROJECT_PATH_SLUG: "gitlab-org/cluster-integration/auto-build-image"
     CI_PROJECT_VISIBILITY: public
     KUBE_NAMESPACE: default
@@ -454,6 +455,7 @@ test-delete-canary-postgresql:
 test-chart-major-version-upgrade:
   extends: test-deploy
   script:
+    - unset ADDITIONAL_HOSTS # The legacy chart is not compatible wildcard hosts on ADDITIONAL_HOSTS
     - auto-deploy initialize_tiller
     # Downloading legacy v0 chart from charts.gitlab.io and the deployment should succeed
     - AUTO_DEVOPS_CHART=gitlab/auto-deploy-app auto-deploy download_chart

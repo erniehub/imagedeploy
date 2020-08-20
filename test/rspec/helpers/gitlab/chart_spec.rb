@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../../../../src/bin/helpers/gitlab/chart.rb'
 require 'tmpdir'
 
@@ -9,38 +11,38 @@ describe Gitlab::Chart do
 
     let(:data) do
       <<~EOS
-      {
-        "Next": "",
-        "Releases": [
-          {
-            "Name": "production",
-            "Revision": 1,
-            "Updated": "Wed Jul  1 08:07:07 2020",
-            "Status": "DEPLOYED",
-            "Chart": "auto-deploy-app-1.2.3",
-            "AppVersion": "",
-            "Namespace": "new-sentimentality-19561312-production"
-          },
-          {
-            "Name": "production-canary",
-            "Revision": 2,
-            "Updated": "Wed Jul  1 11:45:16 2020",
-            "Status": "DEPLOYED",
-            "Chart": "auto-deploy-app-4.5.6",
-            "AppVersion": "",
-            "Namespace": "new-sentimentality-19561312-production"
-          },
-          {
-            "Name": "production-postgresql",
-            "Revision": 9,
-            "Updated": "Mon Jul 13 11:37:20 2020",
-            "Status": "DEPLOYED",
-            "Chart": "postgresql-8.2.1",
-            "AppVersion": "11.6.0",
-            "Namespace": "new-sentimentality-19561312-production"
-          }
-        ]
-      }      
+        {
+          "Next": "",
+          "Releases": [
+            {
+              "Name": "production",
+              "Revision": 1,
+              "Updated": "Wed Jul  1 08:07:07 2020",
+              "Status": "DEPLOYED",
+              "Chart": "auto-deploy-app-1.2.3",
+              "AppVersion": "",
+              "Namespace": "new-sentimentality-19561312-production"
+            },
+            {
+              "Name": "production-canary",
+              "Revision": 2,
+              "Updated": "Wed Jul  1 11:45:16 2020",
+              "Status": "DEPLOYED",
+              "Chart": "auto-deploy-app-4.5.6",
+              "AppVersion": "",
+              "Namespace": "new-sentimentality-19561312-production"
+            },
+            {
+              "Name": "production-postgresql",
+              "Revision": 9,
+              "Updated": "Mon Jul 13 11:37:20 2020",
+              "Status": "DEPLOYED",
+              "Chart": "postgresql-8.2.1",
+              "AppVersion": "11.6.0",
+              "Namespace": "new-sentimentality-19561312-production"
+            }
+          ]
+        }
       EOS
     end
 
@@ -104,11 +106,11 @@ describe Gitlab::Chart do
   describe '.load_from_chart_yml' do
     let(:chart_yaml) do
       <<~EOS
-      apiVersion: v1
-      description: GitLab's Auto-deploy Helm Chart
-      name: auto-deploy-app
-      version: 1.0.0-beta.0
-      icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png    
+        apiVersion: v1
+        description: GitLab's Auto-deploy Helm Chart
+        name: auto-deploy-app
+        version: 1.0.2
+        icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
       EOS
     end
 
@@ -118,25 +120,25 @@ describe Gitlab::Chart do
 
         expect(chart.major).to eq(1)
         expect(chart.minor).to eq(0)
-        expect(chart.patch).to eq(0)
+        expect(chart.patch).to eq(2)
       end
     end
 
     context 'when chart is not gitlab managed chart' do
       let(:chart_yaml) do
         <<~EOS
-        apiVersion: v1
-        description: GitLab's Auto-deploy Helm Chart
-        name: custom-chart
-        version: 1.0.0-beta.0
-        icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png    
+          apiVersion: v1
+          description: GitLab's Auto-deploy Helm Chart
+          name: custom-chart
+          version: 1.0.2
+          icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
         EOS
       end
 
       it 'returns nil' do
         in_chart_dir do |dir|
           chart = described_class.load_from_chart_yml(dir)
-  
+
           expect(chart).to be_nil
         end
       end

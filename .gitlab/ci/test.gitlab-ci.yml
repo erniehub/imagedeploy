@@ -65,10 +65,16 @@ test-download-chart:
 test-download-chart-from-repo:
   <<: *test-job
   variables:
+    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
+    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
     AUTO_DEVOPS_CHART: gitlab/auto-deploy-app
   script:
     - auto-deploy download_chart
     - ./test/verify-chart-version 0
+    # test that a custom repo gets added even if the chart/ folder is present
+    - export AUTO_DEVOPS_CHART_REPOSITORY_NAME=custom
+    - auto-deploy download_chart
+    - helm fetch custom/auto-deploy-app
 
 test-deploy-name:
   <<: *test-job
@@ -454,6 +460,9 @@ test-delete-canary-postgresql:
 
 test-chart-major-version-upgrade:
   extends: test-deploy
+  variables:
+    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
+    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
   script:
     - unset ADDITIONAL_HOSTS # The legacy chart is not compatible wildcard hosts on ADDITIONAL_HOSTS
     - auto-deploy initialize_tiller

@@ -263,7 +263,7 @@ test-deploy:
     CI_APPLICATION_TAG: "5d248f6fa69a"
     CI_ENVIRONMENT_SLUG: production
     CI_ENVIRONMENT_URL: example.com
-    ADDITIONAL_HOSTS: '*.example.com'
+    ADDITIONAL_HOSTS: '*.example.com, extra.host.com'
     CI_PROJECT_PATH_SLUG: "gitlab-org/cluster-integration/auto-build-image"
     CI_PROJECT_VISIBILITY: public
     KUBE_NAMESPACE: default

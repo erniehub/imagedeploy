@@ -109,7 +109,7 @@ describe Gitlab::Chart do
         apiVersion: v1
         description: GitLab's Auto-deploy Helm Chart
         name: auto-deploy-app
-        version: 1.0.2
+        version: 1.0.3
         icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
       EOS
     end
@@ -120,7 +120,7 @@ describe Gitlab::Chart do
 
         expect(chart.major).to eq(1)
         expect(chart.minor).to eq(0)
-        expect(chart.patch).to eq(2)
+        expect(chart.patch).to eq(3)
       end
     end
 
@@ -130,7 +130,7 @@ describe Gitlab::Chart do
           apiVersion: v1
           description: GitLab's Auto-deploy Helm Chart
           name: custom-chart
-          version: 1.0.2
+          version: 1.0.3
           icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
         EOS
       end

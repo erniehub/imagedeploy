@@ -44,11 +44,12 @@ function download_chart() {
       mv "$AUTO_DEVOPS_CHART" chart/
     else
       echo "Downloading remote chart '$AUTO_DEVOPS_CHART'..."
+      helm fetch "$AUTO_DEVOPS_CHART" --untar
+
       local auto_chart_name
       auto_chart_name=$(basename "$AUTO_DEVOPS_CHART")
       auto_chart_name=${auto_chart_name%.tgz}
       auto_chart_name=${auto_chart_name%.tar.gz}
-      helm fetch "$AUTO_DEVOPS_CHART" --untar
       if [[ "$auto_chart_name" != "chart" ]]; then
         mv "$auto_chart_name" chart
       fi

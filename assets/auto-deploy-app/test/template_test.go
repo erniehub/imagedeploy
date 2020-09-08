@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -26,6 +27,8 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
+		ExpectedErrorRegexp *regexp.Regexp
+
 		ExpectedName         string
 		ExpectedRelease      string
 		ExpectedStrategyType extensions.DeploymentStrategyType
@@ -40,13 +43,12 @@ func TestDeploymentTemplate(t *testing.T) {
 			ExpectedName:         "productionOverridden",
 			ExpectedRelease:      "production",
 			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-		},
-		{
-			CaseName:             "long release name",
-			Release:              strings.Repeat("r", 80),
-			ExpectedName:         strings.Repeat("r", 63),
-			ExpectedRelease:      strings.Repeat("r", 80),
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+		}, {
+			// See https://github.com/helm/helm/issues/6006
+			CaseName: "long release name",
+			Release:  strings.Repeat("r", 80),
+
+			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* exceeds max length of 53"),
 		},
 		{
 			CaseName: "strategyType",
@@ -92,7 +94,16 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			if tc.ExpectedErrorRegexp != nil {
+				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			var deployment extensions.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -107,7 +118,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
-				"heritage": "Tiller",
+				"heritage": "Helm",
 				"release":  tc.ExpectedRelease,
 				"tier":     "web",
 				"track":    "stable",
@@ -236,7 +247,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
-				"heritage": "Tiller",
+				"heritage": "Helm",
 				"release":  tc.ExpectedRelease,
 				"tier":     "web",
 				"track":    "stable",
@@ -264,6 +275,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		CaseName string
 		Release  string
 		Values   map[string]string
+
+		ExpectedErrorRegexp *regexp.Regexp
 
 		ExpectedName        string
 		ExpectedRelease     string
@@ -293,23 +306,12 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
 				},
 			},
-		},
-		{
+		}, {
+			// See https://github.com/helm/helm/issues/6006
 			CaseName: "long release name",
 			Release:  strings.Repeat("r", 80),
-			Values: map[string]string{
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "worker1",
-			},
-			ExpectedName:    strings.Repeat("r", 63),
-			ExpectedRelease: strings.Repeat("r", 80),
-			ExpectedDeployments: []workerDeploymentTestCase{
-				{
-					ExpectedName:         strings.Repeat("r", 63) + "-worker1",
-					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-				},
-			},
+
+			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* exceeds max length of 53"),
 		},
 		{
 			CaseName: "strategyType",
@@ -384,7 +386,16 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+
+			if tc.ExpectedErrorRegexp != nil {
+				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			var deployments deploymentList
 			helm.UnmarshalK8SYaml(t, output, &deployments)
@@ -402,7 +413,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				}, deployment.Annotations)
 				require.Equal(t, map[string]string{
 					"chart":    chartName,
-					"heritage": "Tiller",
+					"heritage": "Helm",
 					"release":  tc.ExpectedRelease,
 					"tier":     "worker",
 					"track":    "stable",
@@ -509,7 +520,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				}, deployment.Annotations)
 				require.Equal(t, map[string]string{
 					"chart":    chartName,
-					"heritage": "Tiller",
+					"heritage": "Helm",
 					"release":  tc.ExpectedRelease,
 					"tier":     "worker",
 					"track":    "stable",
@@ -542,13 +553,15 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 		"app":      releaseName,
 		"chart":    chartName,
 		"release":  releaseName,
-		"heritage": "Tiller",
+		"heritage": "Helm",
 	}
 
 	tcs := []struct {
 		name       string
 		valueFiles []string
 		values     map[string]string
+
+		expectedErrorRegexp *regexp.Regexp
 
 		meta        metav1.ObjectMeta
 		podSelector metav1.LabelSelector
@@ -557,7 +570,8 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 		egress      []netV1.NetworkPolicyEgressRule
 	}{
 		{
-			name: "defaults",
+			name:                "disabled by default",
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/network-policy.yaml in chart"),
 		},
 		{
 			name:        "with default policy",
@@ -622,7 +636,16 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if tc.expectedErrorRegexp != nil {
+				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			policy := new(netV1.NetworkPolicy)
 			helm.UnmarshalK8SYaml(t, output, policy)
@@ -686,7 +709,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, "", templates)
+			output := helm.RenderTemplate(t, opts, helmChartPath, "ModSecurity-test-release", templates)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -703,51 +726,52 @@ func TestIngressTemplate_Disable(t *testing.T) {
 		name   string
 		values map[string]string
 
-		expectedrelease string
+		expectedName        string
+		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:            "defaults",
-			expectedrelease: releaseName + "-auto-deploy",
+			name:         "defaults",
+			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:            "with ingress.enabled key undefined, but service is enabled",
-			values:          map[string]string{"ingress.enabled": "null", "service.enabled": "true"},
-			expectedrelease: releaseName + "-auto-deploy",
+			name:         "with ingress.enabled key undefined, but service is enabled",
+			values:       map[string]string{"ingress.enabled": "null", "service.enabled": "true"},
+			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:            "with service enabled and track non-stable",
-			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service enabled and track non-stable",
+			values:              map[string]string{"service.enabled": "true", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track non-stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track non-stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with ingress disabled",
-			values:          map[string]string{"ingress.enabled": "false"},
-			expectedrelease: "",
+			name:                "with ingress disabled",
+			values:              map[string]string{"ingress.enabled": "false"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with ingress enabled and track non-stable",
-			values:          map[string]string{"ingress.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with ingress enabled and track non-stable",
+			values:              map[string]string{"ingress.enabled": "true", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with ingress enabled and service disabled",
-			values:          map[string]string{"ingress.enabled": "true", "service.enabled": "false"},
-			expectedrelease: "",
+			name:                "with ingress enabled and service disabled",
+			values:              map[string]string{"ingress.enabled": "true", "service.enabled": "false"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with ingress disabled and service enabled and track stable",
-			values:          map[string]string{"ingress.enabled": "false", "service.enabled": "true", "application.track": "stable"},
-			expectedrelease: "",
+			name:                "with ingress disabled and service enabled and track stable",
+			values:              map[string]string{"ingress.enabled": "false", "service.enabled": "true", "application.track": "stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 	}
 
@@ -756,12 +780,20 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if tc.expectedErrorRegexp != nil {
+				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			ingress := new(extensions.Ingress)
-
 			helm.UnmarshalK8SYaml(t, output, ingress)
-			require.Equal(t, tc.expectedrelease, ingress.ObjectMeta.Name)
+			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
 		})
 	}
 }
@@ -773,26 +805,27 @@ func TestServiceTemplate_Disable(t *testing.T) {
 		name   string
 		values map[string]string
 
-		expectedrelease string
+		expectedName        string
+		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:            "defaults",
-			expectedrelease: releaseName + "-auto-deploy",
+			name:         "defaults",
+			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:            "with service enabled and track non-stable",
-			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service enabled and track non-stable",
+			values:              map[string]string{"service.enabled": "true", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track non-stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track non-stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 	}
 
@@ -801,13 +834,20 @@ func TestServiceTemplate_Disable(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if tc.expectedErrorRegexp != nil {
+				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			service := new(coreV1.Service)
-
 			helm.UnmarshalK8SYaml(t, output, service)
-
-			require.Equal(t, tc.expectedrelease, service.ObjectMeta.Name)
+			require.Equal(t, tc.expectedName, service.ObjectMeta.Name)
 		})
 	}
 }

@@ -59,8 +59,12 @@ function download_chart() {
     cp -R "$ASSETS_CHART_DIR" chart
   fi
 
-  helm dependency update chart/
-  helm dependency build chart/
+  if [[ -f chart/requirements.lock ]]; then
+    helm dependency build chart/
+  else
+    helm dependency update chart/
+  fi
+
 }
 
 function add_chart_repository() {

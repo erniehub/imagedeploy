@@ -133,7 +133,7 @@ test-get-replicas:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "100")
+    - replicas=$(auto-deploy get_replicas "stable")
     - |
       if [[ $replicas != 1 ]]; then
         echo "$replicas should equal 1"
@@ -147,24 +147,24 @@ test-get-replicas-multiple:
     CI_ENVIRONMENT_SLUG: production
     REPLICAS: "2"
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "100")
+    - replicas=$(auto-deploy get_replicas "stable")
     - |
       if [[ $replicas != 2 ]]; then
         echo "$replicas should equal 2"
         exit 1
       fi
 
-test-get-replicas-fraction:
+test-get-replicas-canary:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
     REPLICAS: "2"
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "25")
+    - replicas=$(auto-deploy get_replicas "canary")
     - |
-      if [[ $replicas != 1 ]]; then
-        echo "$replicas should 1, (25% of 2 is 0.5, so set a floor of 1)"
+      if [[ $replicas != 2 ]]; then
+        echo "$replicas should equal 2 for canary"
         exit 1
       fi
 
@@ -175,7 +175,7 @@ test-get-replicas-zero:
     CI_ENVIRONMENT_SLUG: production
     REPLICAS: "0"
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "100")
+    - replicas=$(auto-deploy get_replicas "stable")
     - |
       if [[ $replicas != 0 ]]; then
         echo "$replicas should equal 0, as requested"

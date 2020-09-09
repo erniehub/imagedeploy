@@ -1,4 +1,4 @@
-{{- if and (.Values.service.enabled) (eq .Values.application.track "stable") (or (.Values.ingress.enabled) (not (hasKey .Values.ingress "enabled"))) -}}
+{{- if and (.Values.service.enabled) (or (eq .Values.application.track "stable") (eq .Values.application.track "canary")) (or (.Values.ingress.enabled) (not (hasKey .Values.ingress "enabled"))) -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -11,6 +11,13 @@ metadata:
   annotations:
 {{- if .Values.ingress.annotations }}
 {{ toYaml .Values.ingress.annotations | indent 4 }}
+{{- end }}
+{{- if eq .Values.application.track "canary" }}
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-by-header: "canary"
+{{- if .Values.ingress.canary.weight }}
+    nginx.ingress.kubernetes.io/canary-weight: {{ .Values.ingress.canary.weight | quote }}
+{{- end }}
 {{- end }}
 {{- with .Values.ingress.modSecurity }}
 {{- if .enabled }}
@@ -51,7 +58,7 @@ spec:
       paths:
       - path: /
         backend:
-          serviceName: {{ template "fullname" . }}
+          serviceName: {{ template "trackableappname" . }}
           servicePort: {{ .Values.service.externalPort }}
 {{- if .Values.service.commonName }}
   - host: {{ template "hostname" .Values.service.commonName }}

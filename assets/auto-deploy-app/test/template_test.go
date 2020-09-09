@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.0.0-beta.1"
+	chartName     = "auto-deploy-app-2.0.0-beta.2"
 	helmChartPath = ".."
 )
 
@@ -810,7 +810,7 @@ func TestServiceTemplate_Disable(t *testing.T) {
 	}{
 		{
 			name:         "defaults",
-			expectedName: releaseName + "-auto-deploy",
+			expectedName: releaseName,
 		},
 		{
 			name:                "with service enabled and track non-stable",
@@ -835,9 +835,12 @@ func TestServiceTemplate_Disable(t *testing.T) {
 				SetValues: tc.values,
 			}
 			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
 			if tc.expectedErrorRegexp != nil {
-				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				if err == nil {
+					t.Error("Expected error but didn't happen")
+				} else {
+					require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				}
 				return
 			}
 			if err != nil {

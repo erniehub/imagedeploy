@@ -13,7 +13,6 @@ if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
 elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
   export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.2"}"
 fi
-export BIN_DIR="/build/bin"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 
@@ -155,7 +154,6 @@ function install_postgresql() {
 # shellcheck disable=SC2154 # env_ADDITIONAL_HOSTS eval assignment is not recognized
 function deploy() {
   local track="${1-stable}"
-  local percentage="${2:-100}"
 
   local name
   name=$(deploy_name "$track")
@@ -203,7 +201,7 @@ channel 1 database.'
     old_postgres_enabled="$POSTGRES_ENABLED"
   fi
 
-  ${BIN_DIR}/validate-chart-version "$(helm list --namespace "$KUBE_NAMESPACE" --output json)" "chart" "$name"
+  validate-chart-version "$(helm list --namespace "$KUBE_NAMESPACE" --output json)" "chart" "$name"
 
   local database_url
   database_url=$(auto_database_url)
@@ -230,7 +228,7 @@ channel 1 database.'
   fi
 
   local replicas
-  replicas=$(get_replicas "$track" "$percentage")
+  replicas=$(get_replicas "$track")
 
   local modsecurity_set_args=()
   if [[ -n "$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" ]]; then
@@ -357,18 +355,19 @@ channel 1 database.'
 }
 
 function scale() {
-  local track="${1-stable}"
+  local track="${1-canary}"
   local percentage="${2-100}"
   local name
   name=$(deploy_name "$track")
 
   local replicas
-  replicas=$(get_replicas "$track" "$percentage")
+  replicas=$(get_replicas "$track")
 
   if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
     helm upgrade --reuse-values \
       --wait \
       --set replicaCount="$replicas" \
+      --set ingress.canary.weight="${percentage}" \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \
       chart/
@@ -472,7 +471,7 @@ function get_replicas() {
   env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr '[:lower:]' '[:upper:]')
 
   local new_replicas
-  if [[ "$track" == "stable" ]] || [[ "$track" == "rollout" ]]; then
+  if [[ "$track" == "stable" ]] || [[ "$track" == "canary" ]]; then
     # for stable track get number of replicas from `PRODUCTION_REPLICAS`
     eval new_replicas=\$${env_slug}_REPLICAS
     if [[ -z "$new_replicas" ]]; then
@@ -486,14 +485,9 @@ function get_replicas() {
     fi
   fi
 
-  local replicas="${new_replicas:-1}"
-  replicas="$((replicas * percentage / 100))"
-
-  if [[ $new_replicas == 0 ]]; then
+  if [[ -n "$new_replicas" ]]; then
     # If zero replicas requested, then return 0
     echo "$new_replicas"
-  elif [[ $replicas -gt 0 ]]; then
-    echo "$replicas"
   else
     # Return one if calculated replicas is zero
     # E.g. 25% of 2 replicas is 0 (integer division)

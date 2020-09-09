@@ -1,8 +1,8 @@
-{{- if and (.Values.service.enabled) (eq .Values.application.track "stable") -}}
+{{- if and (.Values.service.enabled) (or (eq .Values.application.track "stable") (eq .Values.application.track "canary")) -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "fullname" . }}
+  name: {{ template "trackableappname" . }}
   annotations:
 {{- if .Values.service.annotations }}
 {{ toYaml .Values.service.annotations | indent 4 }}
@@ -13,6 +13,7 @@ metadata:
 {{- end }}
   labels:
     app: {{ template "appname" . }}
+    track: "{{ .Values.application.track }}"
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -26,4 +27,5 @@ spec:
   selector:
     app: {{ template "appname" . }}
     tier: "{{ .Values.application.tier }}"
+    track: "{{ .Values.application.track }}"
 {{- end -}}

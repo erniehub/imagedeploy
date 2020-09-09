@@ -132,41 +132,46 @@ test-get-replicas:
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
+    TRACK: stable
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "100")
-    - |
-      if [[ $replicas != 1 ]]; then
-        echo "$replicas should equal 1"
-        exit 1
-      fi
+    # When `REPLICAS` variable is not specified
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 1 ]]; then echo "Unexpected replicas"; exit 1; fi
+    # When `REPLICAS` variable is specified
+    - export REPLICAS="2"
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 2 ]]; then echo "Unexpected replicas"; exit 1; fi
+    # When `<env>_REPLICAS` variable is specified
+    - export PRODUCTION_REPLICAS="3"
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 3 ]]; then echo "Unexpected replicas"; exit 1; fi
+    # When `<track>_<env>_REPLICAS` variable is specified
+    - export STABLE_PRODUCTION_REPLICAS="4"
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 4 ]]; then echo "Unexpected replicas"; exit 1; fi
 
-test-get-replicas-multiple:
+test-get-replicas-canary:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
     CI_ENVIRONMENT_SLUG: production
-    REPLICAS: "2"
+    TRACK: canary
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "100")
-    - |
-      if [[ $replicas != 2 ]]; then
-        echo "$replicas should equal 2"
-        exit 1
-      fi
-
-test-get-replicas-fraction:
-  <<: *test-job
-  variables:
-    GIT_STRATEGY: none
-    CI_ENVIRONMENT_SLUG: production
-    REPLICAS: "2"
-  script:
-    - replicas=$(auto-deploy get_replicas "stable" "25")
-    - |
-      if [[ $replicas != 1 ]]; then
-        echo "$replicas should 1, (25% of 2 is 0.5, so set a floor of 1)"
-        exit 1
-      fi
+    # When `REPLICAS` variable is not specified
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 1 ]]; then echo "Unexpected replicas"; exit 1; fi
+    # When `REPLICAS` variable is specified
+    - export REPLICAS="2"
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 2 ]]; then echo "Unexpected replicas"; exit 1; fi
+    # When `<env>_REPLICAS` variable is specified
+    - export PRODUCTION_REPLICAS="3"
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 3 ]]; then echo "Unexpected replicas"; exit 1; fi
+    # When `<track>_<env>_REPLICAS` variable is specified
+    - export CANARY_PRODUCTION_REPLICAS="4"
+    - replicas=$(auto-deploy get_replicas ${TRACK})
+    - if [[ $replicas != 4 ]]; then echo "Unexpected replicas"; exit 1; fi
 
 test-get-replicas-zero:
   <<: *test-job
@@ -175,7 +180,7 @@ test-get-replicas-zero:
     CI_ENVIRONMENT_SLUG: production
     REPLICAS: "0"
   script:
-    - replicas=$(auto-deploy get_replicas "stable" "100")
+    - replicas=$(auto-deploy get_replicas "stable")
     - |
       if [[ $replicas != 0 ]]; then
         echo "$replicas should equal 0, as requested"
@@ -375,6 +380,9 @@ test-deploy-canary:
     - auto-deploy download_chart
     - auto-deploy deploy canary
     - helm get all production-canary
+    # It should have Canary Ingress
+    - kubectl describe ingress production-canary-auto-deploy -n $KUBE_NAMESPACE > ingress.spec
+    - grep -q 'nginx.ingress.kubernetes.io/canary:.*true' ingress.spec || exit 1
 
 test-deploy-modsecurity:
   extends: test-deploy

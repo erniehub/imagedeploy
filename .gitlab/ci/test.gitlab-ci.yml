@@ -10,6 +10,15 @@
     - export KUBECONFIG=$(pwd)/k3s.yaml
     - kubectl version
     - kubectl cluster-info
+    - |
+        function expected_error() {
+          echo "Expected error but exited with $?, failing build!"
+          exit 1
+        }
+
+        function failed_as_expected() {
+          echo "Failed as expected and exited with $?"
+        }
 
 test-dependencies:
   <<: *test-job

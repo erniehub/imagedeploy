@@ -267,7 +267,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 		ExpectedName        string
 		ExpectedRelease     string
-		ExpectedDeployments []workerDeploymentTestCase
+		ExpectedDeployments []workerDeploymentAppsV1TestCase
 	}{
 		{
 			CaseName: "happy",
@@ -281,7 +281,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:    "productionOverridden",
 			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentTestCase{
+			ExpectedDeployments: []workerDeploymentAppsV1TestCase{
 				{
 					ExpectedName:         "productionOverridden-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
@@ -303,7 +303,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:    strings.Repeat("r", 63),
 			ExpectedRelease: strings.Repeat("r", 80),
-			ExpectedDeployments: []workerDeploymentTestCase{
+			ExpectedDeployments: []workerDeploymentAppsV1TestCase{
 				{
 					ExpectedName:         strings.Repeat("r", 63) + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
@@ -321,7 +321,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:    "production",
 			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentTestCase{
+			ExpectedDeployments: []workerDeploymentAppsV1TestCase{
 				{
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
@@ -341,7 +341,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:    "production",
 			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentTestCase{
+			ExpectedDeployments: []workerDeploymentAppsV1TestCase{
 				{
 					ExpectedName:         "production-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
@@ -386,7 +386,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
 
-			var deployments deploymentList
+			var deployments deploymentAppsV1List
 			helm.UnmarshalK8SYaml(t, output, &deployments)
 
 			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
@@ -688,7 +688,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 			}
 			output := helm.RenderTemplate(t, opts, helmChartPath, "", templates)
 
-			ingress := new(extensions.Ingress)
+			ingress := new(netV1.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 
 			require.Equal(t, tc.meta.Annotations, ingress.ObjectMeta.Annotations)
@@ -758,7 +758,7 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			}
 			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
 
-			ingress := new(extensions.Ingress)
+			ingress := new(netV1.Ingress)
 
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, tc.expectedrelease, ingress.ObjectMeta.Name)
@@ -812,24 +812,11 @@ func TestServiceTemplate_Disable(t *testing.T) {
 	}
 }
 
-type workerDeploymentTestCase struct {
-	ExpectedName         string
-	ExpectedCmd          []string
-	ExpectedStrategyType extensions.DeploymentStrategyType
-	ExpectedSelector     *metav1.LabelSelector
-}
-
 type workerDeploymentAppsV1TestCase struct {
 	ExpectedName         string
 	ExpectedCmd          []string
 	ExpectedStrategyType appsV1.DeploymentStrategyType
 	ExpectedSelector     *metav1.LabelSelector
-}
-
-type deploymentList struct {
-	metav1.TypeMeta `json:",inline"`
-
-	Items []extensions.Deployment `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 type deploymentAppsV1List struct {

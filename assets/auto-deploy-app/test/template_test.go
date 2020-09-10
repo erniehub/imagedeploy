@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
 	netV1 "k8s.io/api/networking/v1"
+	netV1beta "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -290,7 +290,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "productionOverridden-worker2",
 					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: appsv1.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 			},
 		},
@@ -688,7 +688,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 			}
 			output := helm.RenderTemplate(t, opts, helmChartPath, "", templates)
 
-			ingress := new(netV1.Ingress)
+			ingress := new(netV1beta.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 
 			require.Equal(t, tc.meta.Annotations, ingress.ObjectMeta.Annotations)
@@ -758,7 +758,7 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			}
 			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
 
-			ingress := new(netV1.Ingress)
+			ingress := new(netV1beta.Ingress)
 
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, tc.expectedrelease, ingress.ObjectMeta.Name)

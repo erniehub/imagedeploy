@@ -28,7 +28,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 		ExpectedName         string
 		ExpectedRelease      string
-		ExpectedStrategyType extensions.DeploymentStrategyType
+		ExpectedStrategyType appsV1.DeploymentStrategyType
 		ExpectedSelector     *metav1.LabelSelector
 	}{
 		{

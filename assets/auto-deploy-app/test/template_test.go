@@ -94,7 +94,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
 
-			var deployment extensions.Deployment
+			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)

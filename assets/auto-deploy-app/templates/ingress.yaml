@@ -1,5 +1,5 @@
 {{- if and (.Values.service.enabled) (eq .Values.application.track "stable") (or (.Values.ingress.enabled) (not (hasKey .Values.ingress "enabled"))) -}}
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: {{ template "fullname" . }}

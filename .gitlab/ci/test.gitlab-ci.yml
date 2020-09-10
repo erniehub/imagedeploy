@@ -6,23 +6,10 @@
       alias: k3s
       command: ["server", "--cluster-secret", "some-secret"]
   before_script:
-    - kubectl config set-cluster k3s --server https://k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-credentials default --username=node --password=some-secret
-    - kubectl config set-context k3s --cluster=k3s --user=default
-    - kubectl config use-context k3s
+    - curl k3s:8081?service=k3s > k3s.yaml
+    - export KUBECONFIG=$(pwd)/k3s.yaml
     - kubectl version
-    - kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-    - |
-        kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-    - |
-        function expected_error() {
-          echo "Expected error but exited with $?, failing build!"
-          exit 1
-        }
-
-        function failed_as_expected() {
-          echo "Failed as expected and exited with $?"
-        }
+    - kubectl cluster-info
 
 test-dependencies:
   <<: *test-job
@@ -372,10 +359,23 @@ test-deploy-k8s-1.14:
   variables:
     AUTO_DEVOPS_POSTGRES_CHANNEL: 2
   before_script:
-    - curl k3s:8081?service=k3s > k3s.yaml
-    - export KUBECONFIG=$(pwd)/k3s.yaml
+    - kubectl config set-cluster k3s --server https://k3s:6443 --insecure-skip-tls-verify
+    - kubectl config set-credentials default --username=node --password=some-secret
+    - kubectl config set-context k3s --cluster=k3s --user=default
+    - kubectl config use-context k3s
     - kubectl version
-    - kubectl cluster-info
+    - kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+    - |
+        kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+    - |
+        function expected_error() {
+          echo "Expected error but exited with $?, failing build!"
+          exit 1
+        }
+
+        function failed_as_expected() {
+          echo "Failed as expected and exited with $?"
+        }
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart

@@ -2,7 +2,7 @@
   stage: test
   image: "$BUILD_IMAGE_NAME"
   services:
-    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.6.1
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
       alias: k3s
       command: ["server", "--cluster-secret", "some-secret"]
   before_script:
@@ -364,10 +364,10 @@ test-deploy-deletes-old-postgres-if-opt-in:
     # test that the new postgres is up
     - ./test/verify-deployment-database production postgresql
 
-test-deploy-k8s-1.16:
+test-deploy-k8s-1.14:
   extends: test-deploy
   services:
-    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.6.1
       alias: k3s
   variables:
     AUTO_DEVOPS_POSTGRES_CHANNEL: 2

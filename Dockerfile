@@ -2,7 +2,7 @@ ARG HELM_VERSION
 ARG KUBERNETES_VERSION
 
 #FROM "registry.gitlab.com/gitlab-org/cluster-integration/helm-install-image/releases/${HELM_VERSION}-kube-${KUBERNETES_VERSION}"
-FROM "registry.gitlab.com/gitlab-org/cluster-integration/helm-install-image/branches/kubectl-1-16-7:d217f17e305cd2cfada4073aa33fbf3aa48bffc9-helm3"
+FROM "registry.gitlab.com/gitlab-org/cluster-integration/helm-install-image/branches/kubectl-1-16-7:d217f17e305cd2cfada4073aa33fbf3aa48bffc9-helm2"
 ## Remove hard-coded FROM once the helm-install-image is tagged for release. 
 
 # https://github.com/sgerrand/alpine-pkg-glibc

@@ -39,14 +39,14 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "productionOverridden",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 		},
 		{
 			CaseName:             "long release name",
 			Release:              strings.Repeat("r", 80),
 			ExpectedName:         strings.Repeat("r", 63),
 			ExpectedRelease:      strings.Repeat("r", 80),
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 		},
 		{
 			CaseName: "strategyType",
@@ -56,7 +56,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "production",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.RecreateDeploymentStrategyType,
+			ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
 		},
 		{
 			CaseName: "enableSelector",
@@ -66,7 +66,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "production",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 			ExpectedSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app":     "production",
@@ -285,12 +285,12 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "productionOverridden-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 				{
 					ExpectedName:         "productionOverridden-worker2",
 					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsv1.DeploymentStrategyType(""),
 				},
 			},
 		},
@@ -307,7 +307,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         strings.Repeat("r", 63) + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 			},
 		},
@@ -325,7 +325,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.RecreateDeploymentStrategyType,
+					ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
 				},
 			},
 		},
@@ -345,7 +345,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "production-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 					ExpectedSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"release": "production",
@@ -357,7 +357,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "production-worker2",
 					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 					ExpectedSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"release": "production",

@@ -351,7 +351,7 @@ test-deploy-deletes-old-postgres-if-opt-in:
     # test that the new postgres is up
     - ./test/verify-deployment-database production postgresql
 
-test-deploy-k8s-1.14:
+test-deploy-k8s-1.13.12:
   extends: test-deploy
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.6.1

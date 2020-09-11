@@ -36,7 +36,11 @@ chart:test:
   extends: .chart-job
   stage: test
   script:
-    - apk add --no-cache build-base go
+    - apk add build-base
+    - wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
+    - tar -C /usr/local -xzf go1.15.2.linux-amd64.tar.gz
+    - export PATH=$PATH:/usr/local/go/bin
+    - go version
     - helm repo add stable https://kubernetes-charts.storage.googleapis.com/
     - helm dependency build .
     - cd test && GO111MODULE=auto go test .

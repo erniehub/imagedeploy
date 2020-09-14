@@ -1,4 +1,4 @@
-{{- if and (.Values.service.enabled) (eq .Values.application.track "stable") -}}
+{{- if .Values.service.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,6 +13,7 @@ metadata:
 {{- end }}
   labels:
     app: {{ template "appname" . }}
+    track: "{{ .Values.application.track }}"
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
@@ -26,4 +27,5 @@ spec:
   selector:
     app: {{ template "appname" . }}
     tier: "{{ .Values.application.tier }}"
+    track: "{{ .Values.application.track }}"
 {{- end -}}

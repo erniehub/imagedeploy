@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.0.0-beta.1"
+	chartName     = "auto-deploy-app-2.0.0-beta.2"
 	helmChartPath = ".."
 )
 
@@ -719,6 +719,65 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 	}
 }
 
+func TestIngressTemplate_DifferentTracks(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	tcs := []struct {
+		name        string
+		releaseName string
+		values      map[string]string
+
+		expectedName                     string
+		expectedLabels                   map[string]string
+		expectedSelector                 map[string]string
+		expectedAnnotations              map[string]string
+		expectedInexistentAnnotationKeys []string
+		expectedErrorRegexp              *regexp.Regexp
+	}{
+		{
+			name:                             "defaults",
+			releaseName:                      "production",
+			expectedName:                     "production-auto-deploy",
+			expectedAnnotations:              map[string]string{"kubernetes.io/ingress.class": "nginx"},
+			expectedInexistentAnnotationKeys: []string{"nginx.ingress.kubernetes.io/canary"},
+		},
+		{
+			name:                             "with canary track",
+			releaseName:                      "production-canary",
+			values:                           map[string]string{"application.track": "canary"},
+			expectedName:                     "production-canary-auto-deploy",
+			expectedAnnotations:              map[string]string{"nginx.ingress.kubernetes.io/canary": "true", "nginx.ingress.kubernetes.io/canary-by-header": "canary", "kubernetes.io/ingress.class": "nginx"},
+			expectedInexistentAnnotationKeys: []string{"nginx.ingress.kubernetes.io/canary-weight"},
+		},
+		{
+			name:                "with canary weight",
+			releaseName:         "production-canary",
+			values:              map[string]string{"application.track": "canary", "ingress.canary.weight": "25"},
+			expectedName:        "production-canary-auto-deploy",
+			expectedAnnotations: map[string]string{"nginx.ingress.kubernetes.io/canary-weight": "25"},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			ingress := new(extensions.Ingress)
+			helm.UnmarshalK8SYaml(t, output, ingress)
+			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
+			for key, value := range tc.expectedAnnotations {
+				require.Equal(t, ingress.ObjectMeta.Annotations[key], value)
+			}
+			for _, key := range tc.expectedInexistentAnnotationKeys {
+				require.Empty(t, ingress.ObjectMeta.Annotations[key])
+			}
+		})
+	}
+}
+
 func TestIngressTemplate_Disable(t *testing.T) {
 	templates := []string{"templates/ingress.yaml"}
 	releaseName := "ingress-disable-test"
@@ -739,11 +798,6 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:                "with service enabled and track non-stable",
-			values:              map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
-		},
-		{
 			name:                "with service disabled and track stable",
 			values:              map[string]string{"service.enabled": "false", "application.track": "stable"},
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
@@ -756,11 +810,6 @@ func TestIngressTemplate_Disable(t *testing.T) {
 		{
 			name:                "with ingress disabled",
 			values:              map[string]string{"ingress.enabled": "false"},
-			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
-		},
-		{
-			name:                "with ingress enabled and track non-stable",
-			values:              map[string]string{"ingress.enabled": "true", "application.track": "non-stable"},
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
@@ -798,6 +847,56 @@ func TestIngressTemplate_Disable(t *testing.T) {
 	}
 }
 
+func TestServiceTemplate_DifferentTracks(t *testing.T) {
+	templates := []string{"templates/service.yaml"}
+	tcs := []struct {
+		name        string
+		releaseName string
+		values      map[string]string
+
+		expectedName        string
+		expectedLabels      map[string]string
+		expectedSelector    map[string]string
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:             "defaults",
+			releaseName:      "production",
+			expectedName:     "production-auto-deploy",
+			expectedLabels:   map[string]string{"app": "production", "release": "production", "track": "stable"},
+			expectedSelector: map[string]string{"app": "production", "tier": "web", "track": "stable"},
+		},
+		{
+			name:             "with canary track",
+			releaseName:      "production-canary",
+			values:           map[string]string{"application.track": "canary"},
+			expectedName:     "production-canary-auto-deploy",
+			expectedLabels:   map[string]string{"app": "production-canary", "release": "production-canary", "track": "canary"},
+			expectedSelector: map[string]string{"app": "production-canary", "tier": "web", "track": "canary"},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			service := new(coreV1.Service)
+			helm.UnmarshalK8SYaml(t, output, service)
+			require.Equal(t, tc.expectedName, service.ObjectMeta.Name)
+			for key, value := range tc.expectedLabels {
+				require.Equal(t, service.ObjectMeta.Labels[key], value)
+			}
+			for key, value := range tc.expectedSelector {
+				require.Equal(t, service.Spec.Selector[key], value)
+			}
+		})
+	}
+}
+
 func TestServiceTemplate_Disable(t *testing.T) {
 	templates := []string{"templates/service.yaml"}
 	releaseName := "service-disable-test"
@@ -813,11 +912,6 @@ func TestServiceTemplate_Disable(t *testing.T) {
 			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:                "with service enabled and track non-stable",
-			values:              map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
-		},
-		{
 			name:                "with service disabled and track stable",
 			values:              map[string]string{"service.enabled": "false", "application.track": "stable"},
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
@@ -831,17 +925,9 @@ func TestServiceTemplate_Disable(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &helm.Options{
-				SetValues: tc.values,
-			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
 
-			if tc.expectedErrorRegexp != nil {
-				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
-				return
-			}
-			if err != nil {
-				t.Error(err)
+			if ret == false {
 				return
 			}
 
@@ -850,6 +936,28 @@ func TestServiceTemplate_Disable(t *testing.T) {
 			require.Equal(t, tc.expectedName, service.ObjectMeta.Name)
 		})
 	}
+}
+
+func renderTemplate(t *testing.T, values map[string]string, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string, bool) {
+	opts := &helm.Options{
+		SetValues: values,
+	}
+
+	output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+	if expectedErrorRegexp != nil {
+		if err == nil {
+			t.Error("Expected error but didn't happen")
+		} else {
+			require.Regexp(t, expectedErrorRegexp, err.Error())
+		}
+		return "", false
+	}
+	if err != nil {
+		t.Error(err)
+		return "", false
+	}
+
+	return output, true
 }
 
 type workerDeploymentTestCase struct {

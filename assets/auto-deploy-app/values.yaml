@@ -54,6 +54,8 @@ ingress:
     #   - variable: ""
     #     operator: ""
     #     action: ""
+  canary:
+    weight:
 prometheus:
   metrics: false
 livenessProbe:

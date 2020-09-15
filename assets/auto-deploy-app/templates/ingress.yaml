@@ -46,7 +46,7 @@ spec:
     - {{ template "hostname" .Values.service.url }}
 {{- if .Values.service.additionalHosts }}
 {{- range $host := .Values.service.additionalHosts }}
-    - {{ $host }}
+    - {{ template "hostname" $host }}
 {{- end -}}
 {{- end }}
     secretName: {{ .Values.ingress.tls.secretName | default (printf "%s-tls" (include "fullname" .)) }}
@@ -67,7 +67,7 @@ spec:
 {{- end -}}
 {{- if .Values.service.additionalHosts }}
 {{- range $host := .Values.service.additionalHosts }}
-  - host: {{ $host }}
+  - host: {{ template "hostname" $host }}
     http:
       <<: *httpRule
 {{- end -}}

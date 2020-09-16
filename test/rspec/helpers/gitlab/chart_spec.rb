@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../../../../src/bin/helpers/gitlab/chart.rb'
 require 'tmpdir'
 
@@ -101,11 +103,11 @@ describe Gitlab::Chart do
   describe '.load_from_chart_yml' do
     let(:chart_yaml) do
       <<~EOS
-      apiVersion: v1
-      description: GitLab's Auto-deploy Helm Chart
-      name: auto-deploy-app
-      version: 1.0.0-beta.0
-      icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
+        apiVersion: v1
+        description: GitLab's Auto-deploy Helm Chart
+        name: auto-deploy-app
+        version: 1.0.3
+        icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
       EOS
     end
 
@@ -115,18 +117,18 @@ describe Gitlab::Chart do
 
         expect(chart.major).to eq(1)
         expect(chart.minor).to eq(0)
-        expect(chart.patch).to eq(0)
+        expect(chart.patch).to eq(3)
       end
     end
 
     context 'when chart is not gitlab managed chart' do
       let(:chart_yaml) do
         <<~EOS
-        apiVersion: v1
-        description: GitLab's Auto-deploy Helm Chart
-        name: custom-chart
-        version: 1.0.0-beta.0
-        icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
+          apiVersion: v1
+          description: GitLab's Auto-deploy Helm Chart
+          name: custom-chart
+          version: 1.0.3
+          icon: https://gitlab.com/gitlab-com/gitlab-artwork/raw/master/logo/logo-square.png
         EOS
       end
 

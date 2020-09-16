@@ -30,35 +30,61 @@ function check_kube_domain() {
 }
 
 function download_chart() {
+  add_chart_repository
+
   if [[ -d chart ]]; then
-    echo "Download is skipped. The bundled chart in user's repository will be used."
-  elif [[ -n "${AUTO_DEVOPS_CHART}${AUTO_DEVOPS_CHART_REPOSITORY_NAME}${AUTO_DEVOPS_CHART_REPOSITORY}" ]]; then
-    echo "Downloading the chart from the chart repository..."
-    local auto_chart
-    local auto_chart_name
+    echo "Download skipped. Using the chart at local path 'chart/'..."
+  elif [[ -n "$AUTO_DEVOPS_CHART" ]]; then
+    # user specified a custom chart to use, but it can be a local directory or a remote chart
+    if [[ -d "$AUTO_DEVOPS_CHART" ]]; then
+      echo "Download skipped. Using the chart at local path '$AUTO_DEVOPS_CHART' (moving to 'chart/' first)..."
+      mv "$AUTO_DEVOPS_CHART" chart/
+    else
+      echo "Downloading remote chart '$AUTO_DEVOPS_CHART'..."
+      helm pull "$AUTO_DEVOPS_CHART" --untar
 
-    auto_chart=${AUTO_DEVOPS_CHART:-gitlab/auto-deploy-app}
-    # shellcheck disable=SC2086 # double quote variables to prevent globbing
-    auto_chart_name=$(basename $auto_chart)
-    auto_chart_name=${auto_chart_name%.tgz}
-    auto_chart_name=${auto_chart_name%.tar.gz}
-
-    # shellcheck disable=SC2086 # double quote variables to prevent globbing
-    # shellcheck disable=SC2140 # ambiguous quoting warning
-    helm repo add ${AUTO_DEVOPS_CHART_REPOSITORY_NAME:-gitlab} ${AUTO_DEVOPS_CHART_REPOSITORY:-https://charts.gitlab.io} ${AUTO_DEVOPS_CHART_REPOSITORY_USERNAME:+"--username" "$AUTO_DEVOPS_CHART_REPOSITORY_USERNAME"} ${AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD:+"--password" "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD"}
-    helm pull "${auto_chart}" --untar
-    if [ "$auto_chart_name" != "chart" ]; then
-      mv "${auto_chart_name}" chart
+      local auto_chart_name
+      auto_chart_name=$(basename "$AUTO_DEVOPS_CHART")
+      auto_chart_name=${auto_chart_name%.tgz}
+      auto_chart_name=${auto_chart_name%.tar.gz}
+      if [[ "$auto_chart_name" != "chart" ]]; then
+        mv "$auto_chart_name" chart
+      fi
     fi
   else
-    echo "Download is skipped. The bundled chart in auto-deploy-image will be used."
-    cp -R $ASSETS_CHART_DIR chart
+    echo "Download skipped. Using the default chart included in auto-deploy-image..."
+    cp -R "$ASSETS_CHART_DIR" chart
   fi
 
   helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 
-  helm dependency update chart/
-  helm dependency build chart/
+  if [[ -f chart/requirements.lock ]]; then
+    helm dependency build chart/
+  else
+    helm dependency update chart/
+  fi
+
+}
+
+function add_chart_repository() {
+  if [[ -z "$AUTO_DEVOPS_CHART_REPOSITORY" ]]; then
+    return
+  fi
+
+  echo "Adding Helm chart repository '$AUTO_DEVOPS_CHART_REPOSITORY_NAME'"
+
+  # repo should always be added when present, because any chart can have external dependencies
+  local helm_repo_auth=()
+  if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_USERNAME" ]]; then
+    helm_repo_auth+=('--username' "$AUTO_DEVOPS_CHART_REPOSITORY_USERNAME")
+  fi
+  if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD" ]]; then
+    helm_repo_auth+=('--password' "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD")
+  fi
+  helm repo add \
+    "${AUTO_DEVOPS_CHART_REPOSITORY_NAME}" \
+    "${AUTO_DEVOPS_CHART_REPOSITORY}" \
+    "${helm_repo_auth[@]}"
 }
 
 function ensure_namespace() {

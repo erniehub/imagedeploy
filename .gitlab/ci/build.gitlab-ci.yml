@@ -13,3 +13,6 @@ build:
        --build-arg "GLIBC_VERSION=$GLIBC_VERSION"
        --tag "$BUILD_IMAGE_NAME" .
     - docker push "$BUILD_IMAGE_NAME"
+    - export latest_tag="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}:latest"
+    - docker tag "$BUILD_IMAGE_NAME" $latest_tag
+    - docker push $latest_tag

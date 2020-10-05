@@ -1,0 +1,18 @@
+#!/usr/bin/ruby
+
+require_relative 'helpers/kubectl/version'
+
+kubectl_version_json = ARGV[0]
+operator = ARGV[1]
+target_version = ARGV[2]
+
+puts "Validating kubernetes version is ${operator} ${target_version}..."
+
+print "Fetching the previously deployed chart version..."
+version = Kubectl::Version.load_from_json(kubectl_version_json)
+
+if version
+  print "true"
+else
+  print "false"
+end

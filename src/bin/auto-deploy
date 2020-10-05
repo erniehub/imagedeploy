@@ -205,7 +205,8 @@ deprecated channel 1, but the current channel is set to 2. The default
 channel changed to 2 in of GitLab 13.0.
 
 - To continue using the channel 1 PostgreSQL database, set
-  AUTO_DEVOPS_POSTGRES_CHANNEL to 1 and redeploy
+  AUTO_DEVOPS_POSTGRES_CHANNEL to 1 and redeploy.
+  This workaround is supported in Kubernetes v1.15 or below.
 
 - OR, to proceed with deleting the channel 1 PostgreSQL database
   and install a fresh channel 2 database, set AUTO_DEVOPS_POSTGRES_DELETE_V1
@@ -235,6 +236,9 @@ channel 1 database.'
     old_postgres_enabled="$POSTGRES_ENABLED"
   fi
 
+  if [[ "$old_postgres_enabled" == "true" ]]; then
+    result=$(validate-kubernetes-version "$(kubectl version --output=json)" "<" "1.16")
+  fi
   ${BIN_DIR}/validate-chart-version "$(helm list --output json)" "chart" "$name"
 
   local database_url
@@ -498,6 +502,10 @@ function deploy_name() {
   fi
 
   echo $name
+}
+
+function get_kubernetes_version() {
+  kubectl version
 }
 
 # shellcheck disable=SC2086 # double quote to prevent globbing

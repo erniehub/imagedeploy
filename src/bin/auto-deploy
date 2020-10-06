@@ -406,10 +406,18 @@ function scale() {
   local replicas
   replicas=$(get_replicas "$track" "$percentage")
 
+  # NOTE: This is a patch for Helm2 that `--reuse-values` option is not respected
+  # in the subchart. This causes a problem that `scale` always creates legacy PostgreSQL
+  # instance even if it's unnecessary.
+  # See more https://gitlab.com/gitlab-org/gitlab/-/issues/209045#note_422968926
+  local old_postgres_enabled
+  old_postgres_enabled=$(check_old_postgres_exist)
+
   if [[ -n "$(helm ls -q "^$name$")" ]]; then
     helm upgrade --reuse-values \
       --wait \
       --set replicaCount="$replicas" \
+      --set postgresql.enabled="$old_postgres_enabled" \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \
       chart/
@@ -500,6 +508,22 @@ function deploy_name() {
   echo $name
 }
 
+# In the past, we're creating postgres instance via the auto-deploy-app chart (see requirements.yaml),
+# these instances called old postgreses in Auto Deploy context.
+# This approach was discontinued in favor of new postgres installation as channel 2.
+function check_old_postgres_exist() {
+  local stable_name
+  stable_name=$(deploy_name stable)
+
+  value=$( (helm get values --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
+
+  if [[ "$value" == "true" ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
 # shellcheck disable=SC2086 # double quote to prevent globbing
 # shellcheck disable=SC2153 # incorrectly thinks replicas vs REPLICAS is a misspelling
 function get_replicas() {
@@ -561,5 +585,6 @@ case $option in
   create_application_secret) create_application_secret "${@:2}" ;;
   deploy_name) deploy_name "${@:2}" ;;
   get_replicas) get_replicas "${@:2}" ;;
+  check_old_postgres_exist) check_old_postgres_exist ;;
   *) exit 1 ;;
 esac

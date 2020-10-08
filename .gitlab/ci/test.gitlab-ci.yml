@@ -62,20 +62,6 @@ test-download-chart:
     - auto-deploy download_chart
     - ./test/verify-chart-version 1
 
-test-download-chart-from-repo:
-  <<: *test-job
-  variables:
-    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
-    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
-    AUTO_DEVOPS_CHART: gitlab/auto-deploy-app
-  script:
-    - auto-deploy download_chart
-    - ./test/verify-chart-version 0
-    # test that a custom repo gets added even if the chart/ folder is present
-    - export AUTO_DEVOPS_CHART_REPOSITORY_NAME=custom
-    - auto-deploy download_chart
-    - helm fetch custom/auto-deploy-app
-
 test-deploy-name:
   <<: *test-job
   variables:
@@ -331,6 +317,16 @@ test-deploy-debug:
     - auto-deploy deploy
     - cat tiller.log
 
+test-deploy-when-stable-chart-repository-is-unreachable:
+  extends: test-deploy
+  variables:
+    <<: *deploy-variables
+  script:
+    - echo "127.0.0.1 kubernetes-charts.storage.googleapis.com" >> /etc/hosts
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+
 test-deploy-postgresql-channel-1:
   extends: test-deploy
   variables:
@@ -513,18 +509,12 @@ test-delete-canary-postgresql:
 
 test-chart-major-version-upgrade:
   extends: test-deploy
-  variables:
-    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
-    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
   script:
-    - unset ADDITIONAL_HOSTS # The legacy chart is not compatible wildcard hosts on ADDITIONAL_HOSTS
     - auto-deploy initialize_tiller
-    # Downloading legacy v0 chart from charts.gitlab.io and the deployment should succeed
-    - AUTO_DEVOPS_CHART=gitlab/auto-deploy-app auto-deploy download_chart
-    - auto-deploy deploy
-    - rm -Rf chart
-    # Copying bundled chart from local storage and the deployment should fail
+    # Copying bundled chart from local storage and the deployment should succeed
     - auto-deploy download_chart
+    - auto-deploy deploy
+    # Modifying the chart version and the deployment should fail
     - "sed -i 's/version:.*/version: 10.0.0/g' chart/Chart.yaml"
     - cat chart/Chart.yaml
     - auto-deploy deploy| tee deploy.log || true

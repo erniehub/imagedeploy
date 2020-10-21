@@ -331,6 +331,16 @@ test-deploy-debug:
     - auto-deploy deploy
     - cat tiller.log
 
+test-deploy-when-stable-chart-repository-is-unreachable:
+  extends: test-deploy
+  variables:
+    <<: *deploy-variables
+  script:
+    - echo "127.0.0.1 kubernetes-charts.storage.googleapis.com" >> /etc/hosts
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+
 test-deploy-postgresql-channel-1:
   extends: test-deploy
   variables:

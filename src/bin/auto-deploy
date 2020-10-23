@@ -31,9 +31,14 @@ function check_kube_domain() {
 }
 
 function download_chart() {
-  helm init --client-only
+  # In Helm2, `helm` is connected to the stable repository by default. This repository
+  # will be removed in Nov 13, 2020 therefore we need to specify `stable-repo-url` option to
+  # avoid reaching the repository.
+  # In Helm3, `helm` is not connected to the stable repository by default, thus this option is not necessary.
+  helm init --client-only \
+    --stable-repo-url=https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive
 
-  add_chart_repository
+  add_chart_repositories
 
   if [[ -d chart ]]; then
     echo "Download skipped. Using the chart at local path 'chart/'..."
@@ -67,7 +72,16 @@ function download_chart() {
 
 }
 
-function add_chart_repository() {
+function add_chart_repositories() {
+  # bitnami repository is used for in-cluster PostgreSQL installation.
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  # stable-archive repository is used for a legacy in-cluster PostgreSQL dependency.
+  helm repo add stable-archive https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive
+  # Additionaly, users can specify their custom chart repository.
+  add_custom_chart_repository
+}
+
+function add_custom_chart_repository() {
   if [[ -z "$AUTO_DEVOPS_CHART_REPOSITORY" ]]; then
     return
   fi
@@ -180,7 +194,7 @@ function install_postgresql() {
     --set image.tag="$POSTGRES_VERSION" \
     --namespace="$KUBE_NAMESPACE" \
     "$name" \
-    stable/postgresql
+    bitnami/postgresql
 }
 
 # shellcheck disable=SC2153 # warns that my_var vs MY_VAR is a possible misspelling

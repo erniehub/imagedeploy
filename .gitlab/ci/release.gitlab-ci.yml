@@ -53,7 +53,8 @@ publish-dryrun:
   script:
     - semantic-release -d |tee output.log
     # Check if the bundled chart version matches the next auto-deploy-image version.
-    - git diff @..@^ --name-only | grep 'assets/auto-deploy-app' || echo 'This change does not contain changes for the chart. Skip the validation' && exit 0
+    - git diff @..@^ --name-only | grep 'assets/auto-deploy-app'
+    - if [[ "$?" != "0" ]]; then echo 'This change does not contain changes for the chart. Skip the validation' && exit 0; fi
     - next_release_version=$(cat output.log | grep -oP "The next release version is \K.*$") || true
     - bundled_chart_version=$(cat assets/auto-deploy-app/Chart.yaml | grep -oP "version:\s*\K.*$")
     - echo "next_release_version is $next_release_version"
@@ -61,9 +62,8 @@ publish-dryrun:
     - |
       if [ -n "${next_release_version}" ] && [ -n "${bundled_chart_version}" ] && [ "${next_release_version}" != "${bundled_chart_version}" ]; then
         cat <<- EOS
-      [WARN] auto-deploy-app chart version mismatch error.
-      This merge request triggers to create a new release, auto-deploy-image ${next_release_version}.
-      This version must be matched to the auto-deploy-app chart's version, however, currently it's set to ${bundled_chart_version}.
+      [WARN] auto-deploy-app chart version outdated!
+      This merge request changes auto-deploy-app chart, however, the chart version is not updated yet.
       Please set ${next_release_version} to the version column in assets/auto-deploy-app/Chart.yaml to resovle this error.
       EOS
       exit 1

@@ -13,6 +13,7 @@ import (
 	extensions "k8s.io/api/extensions/v1beta1"
 	netV1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -175,6 +176,66 @@ func TestDeploymentTemplate(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedImageRepository, deployment.Spec.Template.Spec.Containers[0].Image)
+		})
+	}
+
+	// deployment livenessProbe, and readinessProbe tests
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		expectedLivenessProbe  *coreV1.Probe
+		expectedReadinessProbe *coreV1.Probe
+	}{
+		{
+			CaseName: "defaults",
+			expectedLivenessProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(5000),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 15,
+				TimeoutSeconds:      15,
+			},
+			expectedReadinessProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(5000),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 5,
+				TimeoutSeconds:      3,
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.expectedLivenessProbe, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
+			require.Equal(t, tc.expectedReadinessProbe, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
 		})
 	}
 

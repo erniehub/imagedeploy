@@ -185,33 +185,13 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
-		expectedLivenessProbe  *coreV1.Probe
-		expectedReadinessProbe *coreV1.Probe
+		ExpectedLivenessProbe  *coreV1.Probe
+		ExpectedReadinessProbe *coreV1.Probe
 	}{
 		{
-			CaseName: "defaults",
-			expectedLivenessProbe: &coreV1.Probe{
-				Handler: coreV1.Handler{
-					HTTPGet: &coreV1.HTTPGetAction{
-						Path:   "/",
-						Port:   intstr.FromInt(5000),
-						Scheme: coreV1.URISchemeHTTP,
-					},
-				},
-				InitialDelaySeconds: 15,
-				TimeoutSeconds:      15,
-			},
-			expectedReadinessProbe: &coreV1.Probe{
-				Handler: coreV1.Handler{
-					HTTPGet: &coreV1.HTTPGetAction{
-						Path:   "/",
-						Port:   intstr.FromInt(5000),
-						Scheme: coreV1.URISchemeHTTP,
-					},
-				},
-				InitialDelaySeconds: 5,
-				TimeoutSeconds:      3,
-			},
+			CaseName:               "defaults",
+			ExpectedLivenessProbe:  defaultLivenessProbe(),
+			ExpectedReadinessProbe: defaultReadinessProbe(),
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -234,8 +214,8 @@ func TestDeploymentTemplate(t *testing.T) {
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
-			require.Equal(t, tc.expectedLivenessProbe, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
-			require.Equal(t, tc.expectedReadinessProbe, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+			require.Equal(t, tc.ExpectedLivenessProbe, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
+			require.Equal(t, tc.ExpectedReadinessProbe, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
 		})
 	}
 
@@ -594,6 +574,72 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			}
 		})
 	}
+
+	// worker livenessProbe, and readinessProbe tests
+	for _, tc := range []struct {
+		CaseName string
+		Values   map[string]string
+		Release  string
+
+		ExpectedDeployments []workerDeploymentTestCase
+	}{
+		{
+			CaseName: "default liveness and readiness values",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+				"workers.worker2.command[0]": "echo",
+				"workers.worker2.command[1]": "worker2",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:           "production-worker1",
+					ExpectedCmd:            []string{"echo", "worker1"},
+					ExpectedLivenessProbe:  defaultLivenessProbe(),
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+				{
+					ExpectedName:           "production-worker2",
+					ExpectedCmd:            []string{"echo", "worker2"},
+					ExpectedLivenessProbe:  defaultLivenessProbe(),
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+
+			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+
+			for i, expectedDeployment := range tc.ExpectedDeployments {
+				deployment := deployments.Items[i]
+				require.Equal(t, expectedDeployment.ExpectedName, deployment.Name)
+				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
+				require.Equal(t, expectedDeployment.ExpectedLivenessProbe, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
+				require.Equal(t, expectedDeployment.ExpectedReadinessProbe, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+			}
+		})
+	}
 }
 
 func TestNetworkPolicyDeployment(t *testing.T) {
@@ -874,10 +920,12 @@ func TestServiceTemplate_Disable(t *testing.T) {
 }
 
 type workerDeploymentTestCase struct {
-	ExpectedName         string
-	ExpectedCmd          []string
-	ExpectedStrategyType extensions.DeploymentStrategyType
-	ExpectedSelector     *metav1.LabelSelector
+	ExpectedName           string
+	ExpectedCmd            []string
+	ExpectedStrategyType   extensions.DeploymentStrategyType
+	ExpectedSelector       *metav1.LabelSelector
+	ExpectedLivenessProbe  *coreV1.Probe
+	ExpectedReadinessProbe *coreV1.Probe
 }
 
 type workerDeploymentAppsV1TestCase struct {
@@ -902,5 +950,33 @@ type deploymentAppsV1List struct {
 func mergeStringMap(dst, src map[string]string) {
 	for k, v := range src {
 		dst[k] = v
+	}
+}
+
+func defaultLivenessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			HTTPGet: &coreV1.HTTPGetAction{
+				Path:   "/",
+				Port:   intstr.FromInt(5000),
+				Scheme: coreV1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 15,
+		TimeoutSeconds:      15,
+	}
+}
+
+func defaultReadinessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			HTTPGet: &coreV1.HTTPGetAction{
+				Path:   "/",
+				Port:   intstr.FromInt(5000),
+				Scheme: coreV1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 5,
+		TimeoutSeconds:      3,
 	}
 }

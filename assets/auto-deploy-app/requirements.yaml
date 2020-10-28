@@ -3,5 +3,5 @@ dependencies:
   # We can remove this dependency when we drop support for the legacy instances.
   - name: postgresql
     version: "0.7.1"
-    repository: "@stable-archive"
+    repository: "@stable"
     condition: postgresql.enabled

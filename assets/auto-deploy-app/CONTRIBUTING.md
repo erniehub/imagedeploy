@@ -47,6 +47,7 @@ To run the tests, run the following commands from the root of your copy of `auto
 
 ```shell
 helm init --client-only               # required only once
+helm repo add stable-archive https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive # required only once
 helm dependency build .               # required only once
 cd test
 GO111MODULE=auto go test .            # required for every change to the tests or the template

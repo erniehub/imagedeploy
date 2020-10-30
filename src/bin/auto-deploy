@@ -36,7 +36,7 @@ function download_chart() {
   # avoid reaching the repository.
   # In Helm3, `helm` is not connected to the stable repository by default, thus this option is not necessary.
   helm init --client-only \
-    --stable-repo-url=https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive
+    --stable-repo-url=https://charts.helm.sh/stable
 
   add_chart_repositories
 
@@ -75,8 +75,6 @@ function download_chart() {
 function add_chart_repositories() {
   # bitnami repository is used for in-cluster PostgreSQL installation.
   helm repo add bitnami https://charts.bitnami.com/bitnami
-  # stable-archive repository is used for a legacy in-cluster PostgreSQL dependency.
-  helm repo add stable-archive https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive
   # Additionaly, users can specify their custom chart repository.
   add_custom_chart_repository
 }

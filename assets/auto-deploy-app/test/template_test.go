@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-1.0.7"
+	chartName     = "auto-deploy-app-1.1.0"
 	helmChartPath = ".."
 )
 
@@ -607,6 +607,66 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			CaseName: "enableWorkerLivenessProbe",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":              "echo",
+				"workers.worker1.command[1]":              "worker1",
+				"workers.worker1.livenessProbe.path":      "/worker",
+				"workers.worker1.livenessProbe.scheme":    "HTTP",
+				"workers.worker1.livenessProbe.probeType": "httpGet",
+				"workers.worker2.command[0]":              "echo",
+				"workers.worker2.command[1]":              "worker2",
+				"workers.worker2.livenessProbe.path":      "/worker",
+				"workers.worker2.livenessProbe.scheme":    "HTTP",
+				"workers.worker2.livenessProbe.probeType": "httpGet",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:           "production-worker1",
+					ExpectedCmd:            []string{"echo", "worker1"},
+					ExpectedLivenessProbe:  workerLivenessProbe(),
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+				{
+					ExpectedName:           "production-worker2",
+					ExpectedCmd:            []string{"echo", "worker2"},
+					ExpectedLivenessProbe:  workerLivenessProbe(),
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+			},
+		},
+		{
+			CaseName: "enableWorkerReadinessProbe",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":               "echo",
+				"workers.worker1.command[1]":               "worker1",
+				"workers.worker1.readinessProbe.path":      "/worker",
+				"workers.worker1.readinessProbe.scheme":    "HTTP",
+				"workers.worker1.readinessProbe.probeType": "httpGet",
+				"workers.worker2.command[0]":               "echo",
+				"workers.worker2.command[1]":               "worker2",
+				"workers.worker2.readinessProbe.path":      "/worker",
+				"workers.worker2.readinessProbe.scheme":    "HTTP",
+				"workers.worker2.readinessProbe.probeType": "httpGet",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:           "production-worker1",
+					ExpectedCmd:            []string{"echo", "worker1"},
+					ExpectedLivenessProbe:  defaultLivenessProbe(),
+					ExpectedReadinessProbe: workerReadinessProbe(),
+				},
+				{
+					ExpectedName:           "production-worker2",
+					ExpectedCmd:            []string{"echo", "worker2"},
+					ExpectedLivenessProbe:  defaultLivenessProbe(),
+					ExpectedReadinessProbe: workerReadinessProbe(),
+				},
+			},
+		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
 			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
@@ -978,5 +1038,33 @@ func defaultReadinessProbe() *coreV1.Probe {
 		},
 		InitialDelaySeconds: 5,
 		TimeoutSeconds:      3,
+	}
+}
+
+func workerLivenessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			HTTPGet: &coreV1.HTTPGetAction{
+				Path:   "/worker",
+				Port:   intstr.FromInt(5000),
+				Scheme: coreV1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 0,
+		TimeoutSeconds:      0,
+	}
+}
+
+func workerReadinessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			HTTPGet: &coreV1.HTTPGetAction{
+				Path:   "/worker",
+				Port:   intstr.FromInt(5000),
+				Scheme: coreV1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 0,
+		TimeoutSeconds:      0,
 	}
 }

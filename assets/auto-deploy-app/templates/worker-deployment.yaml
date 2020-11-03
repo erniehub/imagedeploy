@@ -64,30 +64,46 @@ items:
             value: {{ $.Values.application.database_url | quote }}
           - name: GITLAB_ENVIRONMENT_NAME
             value: {{ $.Values.gitlab.envName | quote }}
+{{- with $livenessProbeConfig := default $.Values.livenessProbe $workerConfig.livenessProbe -}}
+{{- if $livenessProbeConfig }}
           livenessProbe:
-{{- if eq $.Values.livenessProbe.probeType "httpGet" }}
+{{- if eq $livenessProbeConfig.probeType "httpGet" }}
             httpGet:
-              path: {{ $.Values.livenessProbe.path }}
-              scheme: {{ $.Values.livenessProbe.scheme }}
+              path: {{ $livenessProbeConfig.path }}
+              scheme: {{ $livenessProbeConfig.scheme }}
               port: {{ $.Values.service.internalPort }}
-{{- else if eq $.Values.livenessProbe.probeType "tcpSocket" }}
+{{- else if eq $livenessProbeConfig.probeType "tcpSocket" }}
             tcpSocket:
               port: {{ $.Values.service.internalPort }}
+{{- else if eq $livenessProbeConfig.probeType "exec" }}
+            exec:
+              command:
+{{ toYaml $livenessProbeConfig.command | indent 16 }}
 {{- end }}
-            initialDelaySeconds: {{ $.Values.livenessProbe.initialDelaySeconds }}
-            timeoutSeconds: {{ $.Values.livenessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ $livenessProbeConfig.initialDelaySeconds }}
+            timeoutSeconds: {{ $livenessProbeConfig.timeoutSeconds }}
+{{- end }}
+{{- end }}
+{{- with $readinessProbeConfig := default $.Values.readinessProbe $workerConfig.readinessProbe -}}
+{{- if $readinessProbeConfig }}
           readinessProbe:
-{{- if eq $.Values.readinessProbe.probeType "httpGet" }}
+{{- if eq $readinessProbeConfig.probeType "httpGet" }}
             httpGet:
-              path: {{ $.Values.readinessProbe.path }}
-              scheme: {{ $.Values.readinessProbe.scheme }}
+              path: {{ $readinessProbeConfig.path }}
+              scheme: {{ $readinessProbeConfig.scheme }}
               port: {{ $.Values.service.internalPort }}
-{{- else if eq $.Values.readinessProbe.probeType "tcpSocket" }}
+{{- else if eq $readinessProbeConfig.probeType "tcpSocket" }}
             tcpSocket:
               port: {{ $.Values.service.internalPort }}
+{{- else if eq $readinessProbeConfig.probeType "exec" }}
+            exec:
+              command:
+{{ toYaml $readinessProbeConfig.command | indent 16 }}
 {{- end }}
-            initialDelaySeconds: {{ $.Values.readinessProbe.initialDelaySeconds }}
-            timeoutSeconds: {{ $.Values.readinessProbe.timeoutSeconds }}
+            initialDelaySeconds: {{ $readinessProbeConfig.initialDelaySeconds }}
+            timeoutSeconds: {{ $readinessProbeConfig.timeoutSeconds }}
+{{- end }}
+{{- end }}
           {{- if $workerConfig.preStopCommand }}
           lifecycle:
             preStop:

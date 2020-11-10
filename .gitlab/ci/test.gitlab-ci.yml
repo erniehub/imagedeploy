@@ -61,20 +61,6 @@ test-download-chart:
     - auto-deploy download_chart
     - ./test/verify-chart-version 2
 
-test-download-chart-from-repo:
-  <<: *test-job
-  variables:
-    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
-    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
-    AUTO_DEVOPS_CHART: gitlab/auto-deploy-app
-  script:
-    - auto-deploy download_chart
-    - ./test/verify-chart-version 0
-    # test that a custom repo gets added even if the chart/ folder is present
-    - export AUTO_DEVOPS_CHART_REPOSITORY_NAME=custom
-    - auto-deploy download_chart
-    - helm fetch custom/auto-deploy-app
-
 test-deploy-name:
   <<: *test-job
   variables:
@@ -282,6 +268,18 @@ test-deploy:
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
+test-deploy-postgres-disabled:
+  extends: test-deploy
+  variables:
+    POSTGRES_ENABLED: "false"
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - helm get production
+    - helm list > releases.txt
+    - if grep -q "postgres" releases.txt; then echo "postgresql should not be installed"; exit 1; fi
+
 test-deploy-atomic:
   extends: test-deploy
   variables:
@@ -318,6 +316,16 @@ test-deploy-debug:
     - auto-deploy download_chart
     - auto-deploy deploy
 
+test-deploy-when-stable-chart-repository-is-unreachable:
+  extends: test-deploy
+  variables:
+    <<: *deploy-variables
+  script:
+    - echo "127.0.0.1 kubernetes-charts.storage.googleapis.com" >> /etc/hosts
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+
 test-deploy-postgresql-channel-1:
   extends: test-deploy
   variables:
@@ -329,6 +337,47 @@ test-deploy-postgresql-channel-1:
     - helm get all production
     - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
     - ./test/verify-deployment-database production production-postgres
+
+test-deploy-postgresql-channel-1-disabled:
+  extends: test-deploy-postgresql-channel-1
+  variables:
+    POSTGRES_ENABLED: "false"
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - helm get production
+    - helm get manifest production > manifest.txt
+    - if grep -q "postgres-password" manifest.txt; then echo "postgresql should not be installed"; exit 1; fi
+
+test-scale-does-not-create-old-postgres:
+  extends: test-deploy
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - auto-deploy scale
+    - exist=$(auto-deploy check_old_postgres_exist)
+    - |
+      if [[ "$exist" != "false" ]]; then
+        echo "Old Postgres should not exist"
+        exit 1
+      fi
+
+test-scale-does-not-delete-old-postgres:
+  extends: test-deploy
+  script:
+    - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
+    - auto-deploy initialize_tiller
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    - auto-deploy scale
+    - exist=$(auto-deploy check_old_postgres_exist)
+    - |
+      if [[ "$exist" != "true" ]]; then
+        echo "Old Postgres should exist"
+        exit 1
+      fi
 
 test-deploy-does-not-delete-old-postgres-by-default:
   extends: test-deploy
@@ -455,18 +504,12 @@ test-delete-canary-postgresql:
 
 test-chart-major-version-upgrade:
   extends: test-deploy
-  variables:
-    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
-    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
   script:
-    - unset ADDITIONAL_HOSTS # The legacy chart is not compatible wildcard hosts on ADDITIONAL_HOSTS
     - auto-deploy initialize_tiller
-    # Downloading legacy v0 chart from charts.gitlab.io and the deployment should succeed
-    - AUTO_DEVOPS_CHART=gitlab/auto-deploy-app auto-deploy download_chart
-    - auto-deploy deploy
-    - rm -Rf chart
-    # Copying bundled chart from local storage and the deployment should fail
+    # Copying bundled chart from local storage and the deployment should succeed
     - auto-deploy download_chart
+    - auto-deploy deploy
+    # Modifying the chart version and the deployment should fail
     - "sed -i 's/version:.*/version: 10.0.0/g' chart/Chart.yaml"
     - cat chart/Chart.yaml
     - auto-deploy deploy| tee deploy.log || true

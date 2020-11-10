@@ -30,7 +30,7 @@ function check_kube_domain() {
 }
 
 function download_chart() {
-  add_chart_repository
+  add_chart_repositories
 
   if [[ -d chart ]]; then
     echo "Download skipped. Using the chart at local path 'chart/'..."
@@ -56,8 +56,6 @@ function download_chart() {
     cp -R "$ASSETS_CHART_DIR" chart
   fi
 
-  helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-
   if [[ -f chart/requirements.lock ]]; then
     helm dependency build chart/
   else
@@ -66,7 +64,15 @@ function download_chart() {
 
 }
 
-function add_chart_repository() {
+function add_chart_repositories() {
+  helm repo add stable https://charts.helm.sh/stable
+  # bitnami repository is used for in-cluster PostgreSQL installation.
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  # Additionaly, users can specify their custom chart repository.
+  add_custom_chart_repository
+}
+
+function add_custom_chart_repository() {
   if [[ -z "$AUTO_DEVOPS_CHART_REPOSITORY" ]]; then
     return
   fi
@@ -173,7 +179,7 @@ function install_postgresql() {
     --set image.tag="$POSTGRES_VERSION" \
     --namespace="$KUBE_NAMESPACE" \
     "$name" \
-    stable/postgresql
+    bitnami/postgresql
 }
 
 # shellcheck disable=SC2153 # warns that my_var vs MY_VAR is a possible misspelling
@@ -487,6 +493,22 @@ function deploy_name() {
   echo $name
 }
 
+# In the past, we're creating postgres instance via the auto-deploy-app chart (see requirements.yaml),
+# these instances called old postgreses in Auto Deploy context.
+# This approach was discontinued in favor of new postgres installation as channel 2.
+function check_old_postgres_exist() {
+  local stable_name
+  stable_name=$(deploy_name stable)
+
+  value=$( (helm get values --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
+
+  if [[ "$value" == "true" ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
 # shellcheck disable=SC2086 # double quote to prevent globbing
 # shellcheck disable=SC2153 # incorrectly thinks replicas vs REPLICAS is a misspelling
 function get_replicas() {
@@ -536,5 +558,6 @@ case $option in
   create_application_secret) create_application_secret "${@:2}" ;;
   deploy_name) deploy_name "${@:2}" ;;
   get_replicas) get_replicas "${@:2}" ;;
+  check_old_postgres_exist) check_old_postgres_exist ;;
   *) exit 1 ;;
 esac

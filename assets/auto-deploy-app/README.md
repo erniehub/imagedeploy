@@ -87,6 +87,15 @@
 | readinessProbe.timeoutSeconds | # of seconds after which the readiness probe times out. | `3`                                |
 | readinessProbe.probeType     | Type of [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes) to use. | `httpGet`
 | readinessProbe.command       | Commands for use with probe type 'exec'. | `{}`
+| startupProbe.enabled         | If true, enables startup probe. | `/`                                |
+| startupProbe.path            | Path to access on the HTTP server on periodic probe of container startup. | `/`                                |
+| startupProbe.scheme          | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
+| startupProbe.initialDelaySeconds | # of seconds after the container has started before startup probes are initiated. | `5`                                |
+| startupProbe.timeoutSeconds  | # of seconds after which the startup probe times out. | `3`                                |
+| startupProbe.failureThreshold | # of times, Kubernetes will retry failed probes before giving up. | `30`                                |
+| startupProbe.periodSeconds  | How often (in seconds) to perform the probe. | `10`                                |
+| startupProbe.probeType      | Type of [startup probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes) to use. | `httpGet`
+| startupProbe.command        | Commands for use with probe type 'exec'. | `{}`
 | postgresql.managed            | If true, this will provision a managed Postgres instance via crossplane.            | `false`                             |
 | postgresql.managedClassSelector            | This will allow provisioning a Postgres instance based on label selectors via Crossplane, eg: `managedClassSelector.matchLabels.stack: gitlab`. The `postgresql.managed` value should be true as well for this to be honoured. [Crossplane Configuration](https://docs.gitlab.com/ee/user/clusters/applications.html#crossplane)            | `{}`                             |
 | podDisruptionBudget.enabled   |             | `false`                            |

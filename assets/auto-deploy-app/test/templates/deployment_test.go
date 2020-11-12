@@ -396,7 +396,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
-	// deployment livenessProbe, and readinessProbe tests
+	// deployment livenessProbe, readinessProbe, and startupProbe tests
 	for _, tc := range []struct {
 		CaseName string
 		Release  string
@@ -404,12 +404,14 @@ func TestDeploymentTemplate(t *testing.T) {
 
 		ExpectedLivenessProbe  *coreV1.Probe
 		ExpectedReadinessProbe *coreV1.Probe
+		ExpectedStartupProbe *coreV1.Probe
 	}{
 		{
 			CaseName:               "defaults",
 			Release:                "production",
 			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
+			ExpectedStartupProbe: nil,
 		},
 		{
 			CaseName: "custom liveness probe",
@@ -429,6 +431,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				TimeoutSeconds:      15,
 			},
 			ExpectedReadinessProbe: defaultReadinessProbe(),
+			ExpectedStartupProbe: nil,
 		},
 		{
 			CaseName: "custom readiness probe",
@@ -447,6 +450,30 @@ func TestDeploymentTemplate(t *testing.T) {
 				},
 				InitialDelaySeconds: 5,
 				TimeoutSeconds:      3,
+			},
+			ExpectedStartupProbe: nil,
+		},
+		{
+			CaseName: "custom startup probe",
+			Release:  "production",
+			Values: map[string]string{
+				"startupProbe.enabled": "true",
+				"startupProbe.port": "2345",
+			},
+			ExpectedLivenessProbe: defaultLivenessProbe(),
+			ExpectedReadinessProbe: defaultReadinessProbe(),
+			ExpectedStartupProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(2345),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 5,
+				TimeoutSeconds:      3,
+				FailureThreshold:    30,
+				PeriodSeconds:       10,
 			},
 		},
 	} {
@@ -472,6 +499,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedLivenessProbe, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
 			require.Equal(t, tc.ExpectedReadinessProbe, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+			require.Equal(t, tc.ExpectedStartupProbe, deployment.Spec.Template.Spec.Containers[0].StartupProbe)
 		})
 	}
 

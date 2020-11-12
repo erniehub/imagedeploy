@@ -114,6 +114,15 @@ readinessProbe:
   timeoutSeconds: 3
   scheme: "HTTP"
   probeType: "httpGet"
+startupProbe:
+  enabled: false
+  path: "/"
+  initialDelaySeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 30
+  periodSeconds: 10
+  scheme: "HTTP"
+  probeType: "httpGet"
 
 #hostAliases:
 #- ip: X.X.X.X

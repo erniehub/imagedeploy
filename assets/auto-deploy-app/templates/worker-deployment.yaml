@@ -3,7 +3,7 @@ apiVersion: v1
 kind: List
 items:
 {{- range $workerName, $workerConfig :=  .Values.workers }}
-- apiVersion: {{ default "extensions/v1beta1" $.Values.deploymentApiVersion }}
+- apiVersion: apps/v1
   kind: Deployment
   metadata:
     name: {{ template "trackableappname" $ }}-{{ $workerName }}
@@ -17,13 +17,11 @@ items:
       release: {{ $.Release.Name }}
       heritage: {{ $.Release.Service }}
   spec:
-  {{- if or $.Values.enableSelector (eq (default "extensions/v1beta1" $.Values.deploymentApiVersion) "apps/v1") }}
     selector:
       matchLabels:
         track: "{{ $.Values.application.track }}"
         tier: worker
         release: {{ $.Release.Name }}
-  {{- end }}
     replicas: {{ $workerConfig.replicaCount }}
   {{- if $workerConfig.strategyType }}
     strategy:

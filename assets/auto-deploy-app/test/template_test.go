@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.0.0-beta.3"
+	chartName     = "auto-deploy-app-2.0.0-beta.4"
 	helmChartPath = ".."
 )
 
@@ -31,8 +31,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 		ExpectedName         string
 		ExpectedRelease      string
-		ExpectedStrategyType extensions.DeploymentStrategyType
-		ExpectedSelector     *metav1.LabelSelector
+		ExpectedStrategyType appsV1.DeploymentStrategyType
 	}{
 		{
 			CaseName: "happy",
@@ -42,7 +41,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "productionOverridden",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 		}, {
 			// See https://github.com/helm/helm/issues/6006
 			CaseName: "long release name",
@@ -58,25 +57,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "production",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.RecreateDeploymentStrategyType,
-		},
-		{
-			CaseName: "enableSelector",
-			Release:  "production",
-			Values: map[string]string{
-				"enableSelector": "true",
-			},
-			ExpectedName:         "production",
-			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-			ExpectedSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app":     "production",
-					"release": "production",
-					"tier":    "web",
-					"track":   "stable",
-				},
-			},
+			ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -105,7 +86,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				return
 			}
 
-			var deployment extensions.Deployment
+			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)
@@ -123,8 +104,6 @@ func TestDeploymentTemplate(t *testing.T) {
 				"tier":     "web",
 				"track":    "stable",
 			}, deployment.Labels)
-
-			require.Equal(t, tc.ExpectedSelector, deployment.Spec.Selector)
 
 			require.Equal(t, map[string]string{
 				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
@@ -189,25 +168,21 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// Test Deployment selector
 	for _, tc := range []struct {
 		CaseName string
 		Release  string
 		Values   map[string]string
 
-		ExpectedName         string
-		ExpectedRelease      string
-		ExpectedStrategyType appsV1.DeploymentStrategyType
-		ExpectedSelector     *metav1.LabelSelector
+		ExpectedName     string
+		ExpectedRelease  string
+		ExpectedSelector *metav1.LabelSelector
 	}{
 		{
-			CaseName: "appsv1",
-			Release:  "production",
-			Values: map[string]string{
-				"deploymentApiVersion": "apps/v1",
-			},
-			ExpectedName:         "production",
-			ExpectedRelease:      "production",
-			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+			CaseName:        "selector",
+			Release:         "production",
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
 			ExpectedSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app":     "production",
@@ -239,11 +214,6 @@ func TestDeploymentTemplate(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)
-			require.Equal(t, tc.ExpectedStrategyType, deployment.Spec.Strategy.Type)
-			require.Equal(t, map[string]string{
-				"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
-				"app.gitlab.com/env": "prod",
-			}, deployment.Annotations)
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
@@ -255,11 +225,6 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedSelector, deployment.Spec.Selector)
 
-			require.Equal(t, map[string]string{
-				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
-				"app.gitlab.com/env":           "prod",
-				"checksum/application-secrets": "",
-			}, deployment.Spec.Template.Annotations)
 			require.Equal(t, map[string]string{
 				"app":     tc.ExpectedName,
 				"release": tc.ExpectedRelease,
@@ -298,12 +263,12 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "productionOverridden-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 				{
 					ExpectedName:         "productionOverridden-worker2",
 					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 			},
 		}, {
@@ -327,46 +292,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.RecreateDeploymentStrategyType,
-				},
-			},
-		},
-		{
-			CaseName: "enableSelector",
-			Release:  "production",
-			Values: map[string]string{
-				"enableSelector":             "true",
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "worker1",
-				"workers.worker2.command[0]": "echo",
-				"workers.worker2.command[1]": "worker2",
-			},
-			ExpectedName:    "production",
-			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentTestCase{
-				{
-					ExpectedName:         "production-worker1",
-					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-					ExpectedSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"release": "production",
-							"tier":    "worker",
-							"track":   "stable",
-						},
-					},
-				},
-				{
-					ExpectedName:         "production-worker2",
-					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-					ExpectedSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"release": "production",
-							"tier":    "worker",
-							"track":   "stable",
-						},
-					},
+					ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
 				},
 			},
 		},
@@ -419,8 +345,6 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					"track":    "stable",
 				}, deployment.Labels)
 
-				require.Equal(t, expectedDeployment.ExpectedSelector, deployment.Spec.Selector)
-
 				require.Equal(t, map[string]string{
 					"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
 					"app.gitlab.com/env":           "prod",
@@ -438,6 +362,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// Tests worker selector
 	for _, tc := range []struct {
 		CaseName string
 		Release  string
@@ -445,13 +370,12 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 		ExpectedName        string
 		ExpectedRelease     string
-		ExpectedDeployments []workerDeploymentAppsV1TestCase
+		ExpectedDeployments []workerDeploymentSelectorTestCase
 	}{
 		{
-			CaseName: "appsv1",
+			CaseName: "worker selector",
 			Release:  "production",
 			Values: map[string]string{
-				"deploymentApiVersion":       "apps/v1",
 				"workers.worker1.command[0]": "echo",
 				"workers.worker1.command[1]": "worker1",
 				"workers.worker2.command[0]": "echo",
@@ -459,11 +383,9 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:    "production",
 			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentAppsV1TestCase{
+			ExpectedDeployments: []workerDeploymentSelectorTestCase{
 				{
-					ExpectedName:         "production-worker1",
-					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedName: "production-worker1",
 					ExpectedSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"release": "production",
@@ -473,9 +395,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					},
 				},
 				{
-					ExpectedName:         "production-worker2",
-					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedName: "production-worker2",
 					ExpectedSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"release": "production",
@@ -512,12 +432,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				deployment := deployments.Items[i]
 
 				require.Equal(t, expectedDeployment.ExpectedName, deployment.Name)
-				require.Equal(t, expectedDeployment.ExpectedStrategyType, deployment.Spec.Strategy.Type)
 
-				require.Equal(t, map[string]string{
-					"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
-					"app.gitlab.com/env": "prod",
-				}, deployment.Annotations)
 				require.Equal(t, map[string]string{
 					"chart":    chartName,
 					"heritage": "Helm",
@@ -529,18 +444,10 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				require.Equal(t, expectedDeployment.ExpectedSelector, deployment.Spec.Selector)
 
 				require.Equal(t, map[string]string{
-					"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
-					"app.gitlab.com/env":           "prod",
-					"checksum/application-secrets": "",
-				}, deployment.Spec.Template.Annotations)
-				require.Equal(t, map[string]string{
 					"release": tc.ExpectedRelease,
 					"tier":    "worker",
 					"track":   "stable",
 				}, deployment.Spec.Template.Labels)
-
-				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
-				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
 			}
 		})
 	}
@@ -963,21 +870,18 @@ func renderTemplate(t *testing.T, values map[string]string, releaseName string, 
 type workerDeploymentTestCase struct {
 	ExpectedName         string
 	ExpectedCmd          []string
-	ExpectedStrategyType extensions.DeploymentStrategyType
-	ExpectedSelector     *metav1.LabelSelector
+	ExpectedStrategyType appsV1.DeploymentStrategyType
 }
 
-type workerDeploymentAppsV1TestCase struct {
-	ExpectedName         string
-	ExpectedCmd          []string
-	ExpectedStrategyType appsV1.DeploymentStrategyType
-	ExpectedSelector     *metav1.LabelSelector
+type workerDeploymentSelectorTestCase struct {
+	ExpectedName     string
+	ExpectedSelector *metav1.LabelSelector
 }
 
 type deploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 
-	Items []extensions.Deployment `json:"items" protobuf:"bytes,2,rep,name=items"`
+	Items []appsV1.Deployment `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 type deploymentAppsV1List struct {

@@ -94,45 +94,6 @@ test-deploy-name:
         exit 1
       fi
 
-test-auto_database_url:
-  <<: *test-job
-  variables:
-    CI_ENVIRONMENT_SLUG: production
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: testing-password
-    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
-  script:
-    # default is channel 2
-    - auto_database_url=$(auto-deploy auto_database_url)
-    - export expected_url="postgres://user:testing-password@production-postgresql:5432/production"
-    - |
-      if [[ $auto_database_url != $expected_url ]]; then
-        echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
-        exit 1
-      fi
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=a
-    - auto-deploy auto_database_url && expected_error || failed_as_expected
-    # test that channel 1 still works
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
-    - auto_database_url=$(auto-deploy auto_database_url)
-    - export expected_url="postgres://user:testing-password@production-postgres:5432/production"
-    - |
-      if [[ $auto_database_url != $expected_url ]]; then
-        echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
-        exit 1
-      fi
-    # test explicit channel 2 just in case
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=2
-    - auto_database_url=$(auto-deploy auto_database_url)
-    - export expected_url="postgres://user:testing-password@production-postgresql:5432/production"
-    - |
-      if [[ $auto_database_url != $expected_url ]]; then
-        echo "\$auto_database_url = '${auto_database_url}', want '${expected_url}'"
-        exit 1
-      fi
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=a
-    - auto-deploy auto_database_url && expected_error || failed_as_expected
-
 test-get-replicas:
   <<: *test-job
   variables:
@@ -318,49 +279,18 @@ test-deploy-debug:
     - auto-deploy download_chart
     - auto-deploy deploy
 
-test-deploy-postgresql-channel-1:
-  extends: test-deploy
-  variables:
-    <<: *deploy-variables
-    AUTO_DEVOPS_POSTGRES_CHANNEL: 1
-  script:
-    - auto-deploy download_chart
-    - auto-deploy deploy
-    - helm get all production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgres:5432/production"
-    - ./test/verify-deployment-database production production-postgres
-
-test-deploy-does-not-delete-old-postgres-by-default:
+test-show-warning-for-legacy-in-cluster-postgresql:
   extends: test-deploy
   script:
+    # Create a release/deployment
     - auto-deploy download_chart
-    # make sure old posgres deployment exists
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
     - auto-deploy deploy
-    - ./test/verify-deployment-database production production-postgres
-    # test that the deploy job fails with default channel:2
-    - unset AUTO_DEVOPS_POSTGRES_CHANNEL
-    - auto-deploy deploy && expected_error || failed_as_expected
-    # assert that postgres still exists
-    - ./test/verify-deployment-database production production-postgres
-
-test-deploy-deletes-old-postgres-if-opt-in:
-  extends: test-deploy
-  variables:
-      AUTO_DEVOPS_DEPLOY_DEBUG: 1
-  script:
-    - auto-deploy download_chart
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
-    # make sure old postgres deployment exists
-    - auto-deploy deploy
-    - ./test/verify-deployment-database production production-postgres
-    # test that the deploy job succeeds
-    - export POSTGRES_VERSION='9.6.16'
-    - export AUTO_DEVOPS_POSTGRES_CHANNEL=2
-    - export AUTO_DEVOPS_POSTGRES_DELETE_V1=1
-    - auto-deploy deploy
-    # test that the new postgres is up
-    - ./test/verify-deployment-database production postgresql
+    # Forcibly update the release that a legacy in-cluster postgresql exists in it
+    - helm upgrade --reuse-values --wait --set postgresql.enabled="true" --namespace="$KUBE_NAMESPACE" "${CI_ENVIRONMENT_SLUG}" chart/
+    - helm get values --namespace "$KUBE_NAMESPACE" --output json "${CI_ENVIRONMENT_SLUG}"
+    # It should see an error when the deployment is upgraded
+    - auto-deploy deploy| tee deploy.log || true
+    - grep -q "Detected an existing PostgreSQL database" deploy.log || exit 1
 
 test-deploy-k8s-1.16:
   extends: test-deploy
@@ -455,18 +385,12 @@ test-delete-canary-postgresql:
 
 test-chart-major-version-upgrade:
   extends: test-deploy
-  variables:
-    AUTO_DEVOPS_CHART_REPOSITORY: https://charts.gitlab.io
-    AUTO_DEVOPS_CHART_REPOSITORY_NAME: gitlab
   script:
-    - unset ADDITIONAL_HOSTS # The legacy chart is not compatible wildcard hosts on ADDITIONAL_HOSTS
     - auto-deploy initialize_tiller
-    # Downloading legacy v0 chart from charts.gitlab.io and the deployment should succeed
-    - AUTO_DEVOPS_CHART=gitlab/auto-deploy-app auto-deploy download_chart
-    - auto-deploy deploy
-    - rm -Rf chart
-    # Copying bundled chart from local storage and the deployment should fail
+    # Copying bundled chart from local storage and the deployment should succeed
     - auto-deploy download_chart
+    - auto-deploy deploy
+    # Modifying the chart version and the deployment should fail
     - "sed -i 's/version:.*/version: 10.0.0/g' chart/Chart.yaml"
     - cat chart/Chart.yaml
     - auto-deploy deploy| tee deploy.log || true

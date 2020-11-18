@@ -7,12 +7,7 @@ set -e
 export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
 export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
-export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"2"}
-if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
-  export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
-elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
-  export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.2"}"
-fi
+export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 
@@ -134,26 +129,12 @@ function persist_environment_url() {
 
 function auto_database_url() {
   local auto_database_url
-  if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
-    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
-  elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
-    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}"
-  else
-    echo "Un-recognized \$AUTO_DEVOPS_POSTGRES_CHANNEL variable '${AUTO_DEVOPS_POSTGRES_CHANNEL}'. Accepted values are '1' and '2'"
-
-    exit 1
-  fi
+  auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
 
   echo "${DATABASE_URL-$auto_database_url}"
 }
 
 function install_postgresql() {
-  if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" != "2" ]]; then
-    echo "Separate postgres chart is only supported for AUTO_DEVOPS_POSTGRES_CHANNEL:2"
-
-    exit 1
-  fi
-
   if [[ "$POSTGRES_VERSION" == "9.6.2" ]]; then
     echo "The minimum supported POSTGRES_VERSION for AUTO_DEVOPS_POSTGRES_CHANNEL:2 is 9.6.16"
 
@@ -195,10 +176,9 @@ function deploy() {
   stable_name=$(deploy_name stable)
 
   local old_postgres_already_enabled
-  local old_postgres_enabled
-  if [[ "$POSTGRES_ENABLED" == "true" && "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
+  if [[ "$POSTGRES_ENABLED" == "true" ]]; then
     old_postgres_already_enabled=$( (helm get values --namespace "$KUBE_NAMESPACE" --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
-    if [[ -z "$AUTO_DEVOPS_POSTGRES_DELETE_V1" ]] && [[ "$old_postgres_already_enabled" == "true" ]]; then
+    if [[ "$old_postgres_already_enabled" == "true" ]]; then
       echo 'Detected an existing PostgreSQL database installed on the
 deprecated channel 1, but the current channel is set to 2. The default
 channel changed to 2 in of GitLab 13.0.
@@ -220,6 +200,12 @@ release, which is controlled by the POSTGRES_ENABLED CI variable. If you are
 not using the in-cluster PostgreSQL database at all, you can also set the CI
 variable POSTGRES_ENABLED to false.
 
+NOTE: This database migration is only supported in v1 auto-deploy-image.
+If you are seeing this error message in v2 auto-deploy-image, please switch to
+the v1 auto-deploy-image before proceed the above steps.
+For more information,
+please see https://docs.gitlab.com/ee/topics/autodevops/upgrading_auto_deploy_dependencies.html
+
 WARNING: Setting POSTGRES_ENABLED to false will permanently delete any existing
 channel 1 database.'
 
@@ -228,10 +214,6 @@ channel 1 database.'
 
     install_postgresql
 
-    # Do not install the older 0.7.1 postgresql sub-chart
-    old_postgres_enabled="false"
-  else
-    old_postgres_enabled="$POSTGRES_ENABLED"
   fi
 
   validate-chart-version "$(helm list --namespace "$KUBE_NAMESPACE" --output json)" "chart" "$name"
@@ -250,15 +232,8 @@ channel 1 database.'
     image_tag=${CI_APPLICATION_TAG:-$CI_COMMIT_TAG}
   fi
 
-  local old_postgres_enabled_for_track="$old_postgres_enabled"
   local postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
   local postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
-
-  # if track is different than stable,
-  # re-use all attached resources
-  if [[ "$track" != "stable" ]]; then
-    old_postgres_enabled_for_track="false"
-  fi
 
   local replicas
   replicas=$(get_replicas "$track")
@@ -326,14 +301,8 @@ channel 1 database.'
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
       --set ingress.canary.weight="${percentage}" \
-      --set postgresql.enabled="$old_postgres_enabled" \
       --set postgresql.managed="$postgres_managed" \
       --set postgresql.managedClassSelector="$postgres_managed_selector" \
-      --set postgresql.nameOverride="postgres" \
-      --set postgresql.postgresUser="$POSTGRES_USER" \
-      --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
-      --set postgresql.postgresDatabase="$POSTGRES_DB" \
-      --set postgresql.imageTag="$POSTGRES_VERSION" \
       --set application.initializeCommand="$DB_INITIALIZE" \
       "${modsecurity_set_args[@]}" \
       --values "$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE" \
@@ -366,14 +335,8 @@ channel 1 database.'
     --set service.additionalHosts="$additional_hosts" \
     --set replicaCount="$replicas" \
     --set ingress.canary.weight="${percentage}" \
-    --set postgresql.enabled="$old_postgres_enabled_for_track" \
     --set postgresql.managed="$postgres_managed" \
     --set postgresql.managedClassSelector="$postgres_managed_selector" \
-    --set postgresql.nameOverride="postgres" \
-    --set postgresql.postgresUser="$POSTGRES_USER" \
-    --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
-    --set postgresql.postgresDatabase="$POSTGRES_DB" \
-    --set postgresql.imageTag="$POSTGRES_VERSION" \
     --set application.initializeCommand="" \
     --set application.migrateCommand="$DB_MIGRATE" \
     "${modsecurity_set_args[@]}" \

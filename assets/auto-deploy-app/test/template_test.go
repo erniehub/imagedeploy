@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -17,7 +18,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-1.1.0"
+	chartName     = "auto-deploy-app-2.0.0"
 	helmChartPath = ".."
 )
 
@@ -27,10 +28,11 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
+		ExpectedErrorRegexp *regexp.Regexp
+
 		ExpectedName         string
 		ExpectedRelease      string
-		ExpectedStrategyType extensions.DeploymentStrategyType
-		ExpectedSelector     *metav1.LabelSelector
+		ExpectedStrategyType appsV1.DeploymentStrategyType
 	}{
 		{
 			CaseName: "happy",
@@ -40,14 +42,13 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "productionOverridden",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-		},
-		{
-			CaseName:             "long release name",
-			Release:              strings.Repeat("r", 80),
-			ExpectedName:         strings.Repeat("r", 63),
-			ExpectedRelease:      strings.Repeat("r", 80),
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+		}, {
+			// See https://github.com/helm/helm/issues/6006
+			CaseName: "long release name",
+			Release:  strings.Repeat("r", 80),
+
+			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* exceeds max length of 53"),
 		},
 		{
 			CaseName: "strategyType",
@@ -57,25 +58,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:         "production",
 			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.RecreateDeploymentStrategyType,
-		},
-		{
-			CaseName: "enableSelector",
-			Release:  "production",
-			Values: map[string]string{
-				"enableSelector": "true",
-			},
-			ExpectedName:         "production",
-			ExpectedRelease:      "production",
-			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-			ExpectedSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app":     "production",
-					"release": "production",
-					"tier":    "web",
-					"track":   "stable",
-				},
-			},
+			ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -93,9 +76,18 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
 
-			var deployment extensions.Deployment
+			if tc.ExpectedErrorRegexp != nil {
+				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)
@@ -108,13 +100,11 @@ func TestDeploymentTemplate(t *testing.T) {
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
-				"heritage": "Tiller",
+				"heritage": "Helm",
 				"release":  tc.ExpectedRelease,
 				"tier":     "web",
 				"track":    "stable",
 			}, deployment.Labels)
-
-			require.Equal(t, tc.ExpectedSelector, deployment.Spec.Selector)
 
 			require.Equal(t, map[string]string{
 				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
@@ -190,6 +180,7 @@ func TestDeploymentTemplate(t *testing.T) {
 	}{
 		{
 			CaseName:               "defaults",
+			Release:                "production",
 			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
 		},
@@ -219,25 +210,21 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// Test Deployment selector
 	for _, tc := range []struct {
 		CaseName string
 		Release  string
 		Values   map[string]string
 
-		ExpectedName         string
-		ExpectedRelease      string
-		ExpectedStrategyType appsV1.DeploymentStrategyType
-		ExpectedSelector     *metav1.LabelSelector
+		ExpectedName     string
+		ExpectedRelease  string
+		ExpectedSelector *metav1.LabelSelector
 	}{
 		{
-			CaseName: "appsv1",
-			Release:  "production",
-			Values: map[string]string{
-				"deploymentApiVersion": "apps/v1",
-			},
-			ExpectedName:         "production",
-			ExpectedRelease:      "production",
-			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+			CaseName:        "selector",
+			Release:         "production",
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
 			ExpectedSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app":     "production",
@@ -269,15 +256,10 @@ func TestDeploymentTemplate(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)
-			require.Equal(t, tc.ExpectedStrategyType, deployment.Spec.Strategy.Type)
-			require.Equal(t, map[string]string{
-				"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
-				"app.gitlab.com/env": "prod",
-			}, deployment.Annotations)
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
-				"heritage": "Tiller",
+				"heritage": "Helm",
 				"release":  tc.ExpectedRelease,
 				"tier":     "web",
 				"track":    "stable",
@@ -285,11 +267,6 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedSelector, deployment.Spec.Selector)
 
-			require.Equal(t, map[string]string{
-				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
-				"app.gitlab.com/env":           "prod",
-				"checksum/application-secrets": "",
-			}, deployment.Spec.Template.Annotations)
 			require.Equal(t, map[string]string{
 				"app":     tc.ExpectedName,
 				"release": tc.ExpectedRelease,
@@ -305,6 +282,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		CaseName string
 		Release  string
 		Values   map[string]string
+
+		ExpectedErrorRegexp *regexp.Regexp
 
 		ExpectedName        string
 		ExpectedRelease     string
@@ -326,31 +305,20 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "productionOverridden-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 				{
 					ExpectedName:         "productionOverridden-worker2",
 					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
 				},
 			},
-		},
-		{
+		}, {
+			// See https://github.com/helm/helm/issues/6006
 			CaseName: "long release name",
 			Release:  strings.Repeat("r", 80),
-			Values: map[string]string{
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "worker1",
-			},
-			ExpectedName:    strings.Repeat("r", 63),
-			ExpectedRelease: strings.Repeat("r", 80),
-			ExpectedDeployments: []workerDeploymentTestCase{
-				{
-					ExpectedName:         strings.Repeat("r", 63) + "-worker1",
-					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-				},
-			},
+
+			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* exceeds max length of 53"),
 		},
 		{
 			CaseName: "strategyType",
@@ -366,46 +334,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.RecreateDeploymentStrategyType,
-				},
-			},
-		},
-		{
-			CaseName: "enableSelector",
-			Release:  "production",
-			Values: map[string]string{
-				"enableSelector":             "true",
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "worker1",
-				"workers.worker2.command[0]": "echo",
-				"workers.worker2.command[1]": "worker2",
-			},
-			ExpectedName:    "production",
-			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentTestCase{
-				{
-					ExpectedName:         "production-worker1",
-					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-					ExpectedSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"release": "production",
-							"tier":    "worker",
-							"track":   "stable",
-						},
-					},
-				},
-				{
-					ExpectedName:         "production-worker2",
-					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
-					ExpectedSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"release": "production",
-							"tier":    "worker",
-							"track":   "stable",
-						},
-					},
+					ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
 				},
 			},
 		},
@@ -425,7 +354,16 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+
+			if tc.ExpectedErrorRegexp != nil {
+				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			var deployments deploymentList
 			helm.UnmarshalK8SYaml(t, output, &deployments)
@@ -443,13 +381,11 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				}, deployment.Annotations)
 				require.Equal(t, map[string]string{
 					"chart":    chartName,
-					"heritage": "Tiller",
+					"heritage": "Helm",
 					"release":  tc.ExpectedRelease,
 					"tier":     "worker",
 					"track":    "stable",
 				}, deployment.Labels)
-
-				require.Equal(t, expectedDeployment.ExpectedSelector, deployment.Spec.Selector)
 
 				require.Equal(t, map[string]string{
 					"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
@@ -468,6 +404,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// Tests worker selector
 	for _, tc := range []struct {
 		CaseName string
 		Release  string
@@ -475,13 +412,12 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 		ExpectedName        string
 		ExpectedRelease     string
-		ExpectedDeployments []workerDeploymentAppsV1TestCase
+		ExpectedDeployments []workerDeploymentSelectorTestCase
 	}{
 		{
-			CaseName: "appsv1",
+			CaseName: "worker selector",
 			Release:  "production",
 			Values: map[string]string{
-				"deploymentApiVersion":       "apps/v1",
 				"workers.worker1.command[0]": "echo",
 				"workers.worker1.command[1]": "worker1",
 				"workers.worker2.command[0]": "echo",
@@ -489,11 +425,9 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedName:    "production",
 			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentAppsV1TestCase{
+			ExpectedDeployments: []workerDeploymentSelectorTestCase{
 				{
-					ExpectedName:         "production-worker1",
-					ExpectedCmd:          []string{"echo", "worker1"},
-					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedName: "production-worker1",
 					ExpectedSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"release": "production",
@@ -503,9 +437,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					},
 				},
 				{
-					ExpectedName:         "production-worker2",
-					ExpectedCmd:          []string{"echo", "worker2"},
-					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedName: "production-worker2",
 					ExpectedSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"release": "production",
@@ -542,15 +474,10 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				deployment := deployments.Items[i]
 
 				require.Equal(t, expectedDeployment.ExpectedName, deployment.Name)
-				require.Equal(t, expectedDeployment.ExpectedStrategyType, deployment.Spec.Strategy.Type)
 
 				require.Equal(t, map[string]string{
-					"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
-					"app.gitlab.com/env": "prod",
-				}, deployment.Annotations)
-				require.Equal(t, map[string]string{
 					"chart":    chartName,
-					"heritage": "Tiller",
+					"heritage": "Helm",
 					"release":  tc.ExpectedRelease,
 					"tier":     "worker",
 					"track":    "stable",
@@ -559,18 +486,10 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				require.Equal(t, expectedDeployment.ExpectedSelector, deployment.Spec.Selector)
 
 				require.Equal(t, map[string]string{
-					"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
-					"app.gitlab.com/env":           "prod",
-					"checksum/application-secrets": "",
-				}, deployment.Spec.Template.Annotations)
-				require.Equal(t, map[string]string{
 					"release": tc.ExpectedRelease,
 					"tier":    "worker",
 					"track":   "stable",
 				}, deployment.Spec.Template.Labels)
-
-				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
-				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
 			}
 		})
 	}
@@ -709,13 +628,15 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 		"app":      releaseName,
 		"chart":    chartName,
 		"release":  releaseName,
-		"heritage": "Tiller",
+		"heritage": "Helm",
 	}
 
 	tcs := []struct {
 		name       string
 		valueFiles []string
 		values     map[string]string
+
+		expectedErrorRegexp *regexp.Regexp
 
 		meta        metav1.ObjectMeta
 		podSelector metav1.LabelSelector
@@ -724,7 +645,8 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 		egress      []netV1.NetworkPolicyEgressRule
 	}{
 		{
-			name: "defaults",
+			name:                "disabled by default",
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/network-policy.yaml in chart"),
 		},
 		{
 			name:        "with default policy",
@@ -789,7 +711,16 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if tc.expectedErrorRegexp != nil {
+				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			policy := new(netV1.NetworkPolicy)
 			helm.UnmarshalK8SYaml(t, output, policy)
@@ -853,12 +784,71 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, "", templates)
+			output := helm.RenderTemplate(t, opts, helmChartPath, "ModSecurity-test-release", templates)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 
 			require.Equal(t, tc.meta.Annotations, ingress.ObjectMeta.Annotations)
+		})
+	}
+}
+
+func TestIngressTemplate_DifferentTracks(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	tcs := []struct {
+		name        string
+		releaseName string
+		values      map[string]string
+
+		expectedName                     string
+		expectedLabels                   map[string]string
+		expectedSelector                 map[string]string
+		expectedAnnotations              map[string]string
+		expectedInexistentAnnotationKeys []string
+		expectedErrorRegexp              *regexp.Regexp
+	}{
+		{
+			name:                             "defaults",
+			releaseName:                      "production",
+			expectedName:                     "production-auto-deploy",
+			expectedAnnotations:              map[string]string{"kubernetes.io/ingress.class": "nginx"},
+			expectedInexistentAnnotationKeys: []string{"nginx.ingress.kubernetes.io/canary"},
+		},
+		{
+			name:                             "with canary track",
+			releaseName:                      "production-canary",
+			values:                           map[string]string{"application.track": "canary"},
+			expectedName:                     "production-canary-auto-deploy",
+			expectedAnnotations:              map[string]string{"nginx.ingress.kubernetes.io/canary": "true", "nginx.ingress.kubernetes.io/canary-by-header": "canary", "kubernetes.io/ingress.class": "nginx"},
+			expectedInexistentAnnotationKeys: []string{"nginx.ingress.kubernetes.io/canary-weight"},
+		},
+		{
+			name:                "with canary weight",
+			releaseName:         "production-canary",
+			values:              map[string]string{"application.track": "canary", "ingress.canary.weight": "25"},
+			expectedName:        "production-canary-auto-deploy",
+			expectedAnnotations: map[string]string{"nginx.ingress.kubernetes.io/canary-weight": "25"},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			ingress := new(extensions.Ingress)
+			helm.UnmarshalK8SYaml(t, output, ingress)
+			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
+			for key, value := range tc.expectedAnnotations {
+				require.Equal(t, ingress.ObjectMeta.Annotations[key], value)
+			}
+			for _, key := range tc.expectedInexistentAnnotationKeys {
+				require.Empty(t, ingress.ObjectMeta.Annotations[key])
+			}
 		})
 	}
 }
@@ -870,51 +860,42 @@ func TestIngressTemplate_Disable(t *testing.T) {
 		name   string
 		values map[string]string
 
-		expectedrelease string
+		expectedName        string
+		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:            "defaults",
-			expectedrelease: releaseName + "-auto-deploy",
+			name:         "defaults",
+			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:            "with ingress.enabled key undefined, but service is enabled",
-			values:          map[string]string{"ingress.enabled": "null", "service.enabled": "true"},
-			expectedrelease: releaseName + "-auto-deploy",
+			name:         "with ingress.enabled key undefined, but service is enabled",
+			values:       map[string]string{"ingress.enabled": "null", "service.enabled": "true"},
+			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:            "with service enabled and track non-stable",
-			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track non-stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track non-stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with ingress disabled",
+			values:              map[string]string{"ingress.enabled": "false"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with ingress disabled",
-			values:          map[string]string{"ingress.enabled": "false"},
-			expectedrelease: "",
+			name:                "with ingress enabled and service disabled",
+			values:              map[string]string{"ingress.enabled": "true", "service.enabled": "false"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 		{
-			name:            "with ingress enabled and track non-stable",
-			values:          map[string]string{"ingress.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with ingress enabled and service disabled",
-			values:          map[string]string{"ingress.enabled": "true", "service.enabled": "false"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with ingress disabled and service enabled and track stable",
-			values:          map[string]string{"ingress.enabled": "false", "service.enabled": "true", "application.track": "stable"},
-			expectedrelease: "",
+			name:                "with ingress disabled and service enabled and track stable",
+			values:              map[string]string{"ingress.enabled": "false", "service.enabled": "true", "application.track": "stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/ingress.yaml in chart"),
 		},
 	}
 
@@ -923,12 +904,70 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if tc.expectedErrorRegexp != nil {
+				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
+				return
+			}
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
 			ingress := new(extensions.Ingress)
-
 			helm.UnmarshalK8SYaml(t, output, ingress)
-			require.Equal(t, tc.expectedrelease, ingress.ObjectMeta.Name)
+			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
+		})
+	}
+}
+
+func TestServiceTemplate_DifferentTracks(t *testing.T) {
+	templates := []string{"templates/service.yaml"}
+	tcs := []struct {
+		name        string
+		releaseName string
+		values      map[string]string
+
+		expectedName        string
+		expectedLabels      map[string]string
+		expectedSelector    map[string]string
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:             "defaults",
+			releaseName:      "production",
+			expectedName:     "production-auto-deploy",
+			expectedLabels:   map[string]string{"app": "production", "release": "production", "track": "stable"},
+			expectedSelector: map[string]string{"app": "production", "tier": "web", "track": "stable"},
+		},
+		{
+			name:             "with canary track",
+			releaseName:      "production-canary",
+			values:           map[string]string{"application.track": "canary"},
+			expectedName:     "production-canary-auto-deploy",
+			expectedLabels:   map[string]string{"app": "production-canary", "release": "production-canary", "track": "canary"},
+			expectedSelector: map[string]string{"app": "production-canary", "tier": "web", "track": "canary"},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			service := new(coreV1.Service)
+			helm.UnmarshalK8SYaml(t, output, service)
+			require.Equal(t, tc.expectedName, service.ObjectMeta.Name)
+			for key, value := range tc.expectedLabels {
+				require.Equal(t, service.ObjectMeta.Labels[key], value)
+			}
+			for key, value := range tc.expectedSelector {
+				require.Equal(t, service.Spec.Selector[key], value)
+			}
 		})
 	}
 }
@@ -940,65 +979,80 @@ func TestServiceTemplate_Disable(t *testing.T) {
 		name   string
 		values map[string]string
 
-		expectedrelease string
+		expectedName        string
+		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:            "defaults",
-			expectedrelease: releaseName + "-auto-deploy",
+			name:         "defaults",
+			expectedName: releaseName + "-auto-deploy",
 		},
 		{
-			name:            "with service enabled and track non-stable",
-			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 		{
-			name:            "with service disabled and track stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "stable"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with service disabled and track non-stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
-			expectedrelease: "",
+			name:                "with service disabled and track non-stable",
+			values:              map[string]string{"service.enabled": "false", "application.track": "non-stable"},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &helm.Options{
-				SetValues: tc.values,
+			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
 
 			service := new(coreV1.Service)
-
 			helm.UnmarshalK8SYaml(t, output, service)
-
-			require.Equal(t, tc.expectedrelease, service.ObjectMeta.Name)
+			require.Equal(t, tc.expectedName, service.ObjectMeta.Name)
 		})
 	}
+}
+
+func renderTemplate(t *testing.T, values map[string]string, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string, bool) {
+	opts := &helm.Options{
+		SetValues: values,
+	}
+
+	output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+	if expectedErrorRegexp != nil {
+		if err == nil {
+			t.Error("Expected error but didn't happen")
+		} else {
+			require.Regexp(t, expectedErrorRegexp, err.Error())
+		}
+		return "", false
+	}
+	if err != nil {
+		t.Error(err)
+		return "", false
+	}
+
+	return output, true
 }
 
 type workerDeploymentTestCase struct {
 	ExpectedName           string
 	ExpectedCmd            []string
-	ExpectedStrategyType   extensions.DeploymentStrategyType
+	ExpectedStrategyType   appsV1.DeploymentStrategyType
 	ExpectedSelector       *metav1.LabelSelector
 	ExpectedLivenessProbe  *coreV1.Probe
 	ExpectedReadinessProbe *coreV1.Probe
 }
 
-type workerDeploymentAppsV1TestCase struct {
-	ExpectedName         string
-	ExpectedCmd          []string
-	ExpectedStrategyType appsV1.DeploymentStrategyType
-	ExpectedSelector     *metav1.LabelSelector
+type workerDeploymentSelectorTestCase struct {
+	ExpectedName     string
+	ExpectedSelector *metav1.LabelSelector
 }
 
 type deploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 
-	Items []extensions.Deployment `json:"items" protobuf:"bytes,2,rep,name=items"`
+	Items []appsV1.Deployment `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 type deploymentAppsV1List struct {

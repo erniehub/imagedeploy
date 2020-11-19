@@ -11,38 +11,35 @@ describe Gitlab::Chart do
 
     let(:data) do
       <<~EOS
-        {
-          "Next": "",
-          "Releases": [
-            {
-              "Name": "production",
-              "Revision": 1,
-              "Updated": "Wed Jul  1 08:07:07 2020",
-              "Status": "DEPLOYED",
-              "Chart": "auto-deploy-app-1.2.3",
-              "AppVersion": "",
-              "Namespace": "new-sentimentality-19561312-production"
-            },
-            {
-              "Name": "production-canary",
-              "Revision": 2,
-              "Updated": "Wed Jul  1 11:45:16 2020",
-              "Status": "DEPLOYED",
-              "Chart": "auto-deploy-app-4.5.6",
-              "AppVersion": "",
-              "Namespace": "new-sentimentality-19561312-production"
-            },
-            {
-              "Name": "production-postgresql",
-              "Revision": 9,
-              "Updated": "Mon Jul 13 11:37:20 2020",
-              "Status": "DEPLOYED",
-              "Chart": "postgresql-8.2.1",
-              "AppVersion": "11.6.0",
-              "Namespace": "new-sentimentality-19561312-production"
-            }
-          ]
-        }
+        [
+          {
+            "name": "production",
+            "revision": 1,
+            "updated":"2020-08-18 11:26:58.055761 -0400 EDT",
+            "status": "deployed",
+            "chart": "auto-deploy-app-1.2.3",
+            "app_version": "",
+            "namespace": "new-sentimentality-19561312-production"
+          },
+          {
+            "name": "production-canary",
+            "revision": 2,
+            "updated":"2020-08-18 11:26:58.055761 -0400 EDT",
+            "status": "deployed",
+            "chart": "auto-deploy-app-4.5.6",
+            "app_version": "",
+            "namespace": "new-sentimentality-19561312-production"
+          },
+          {
+            "name": "production-postgresql",
+            "revision": 9,
+            "updated":"2020-08-18 11:26:58.055761 -0400 EDT",
+            "status": "deployed",
+            "chart": "postgresql-8.2.1",
+            "app_version": "11.6.0",
+            "namespace": "new-sentimentality-19561312-production"
+          }
+        ]
       EOS
     end
 
@@ -79,7 +76,7 @@ describe Gitlab::Chart do
     end
 
     context 'when data is empty' do
-      let(:data) { '' }
+      let(:data) { '[]' }
 
       it 'returns nil' do
         expect(subject).to be_nil
@@ -90,7 +87,7 @@ describe Gitlab::Chart do
       let(:data) { nil }
 
       it 'raises an error' do
-        expect { subject }.to raise_error(NoMethodError)
+        expect { subject }.to raise_error(TypeError)
       end
     end
 

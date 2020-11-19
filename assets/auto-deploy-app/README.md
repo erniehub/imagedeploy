@@ -19,8 +19,6 @@ If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/a
 | ---                           | ---         | ---                                |
 | replicaCount                  |             | `1`                                |
 | strategyType                  | Pod deployment [strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy) | `nil` |
-| enableSelector                | If `true`, enables selector field for the deployment. Only applicable for `extensions/v1beta1`, as selector field will always be included for `apps/v1` | `nil` |
-| deploymentApiVersion          | Sets `apiVersion` field for the deployment. Can be set to either `extensions/v1beta1` or `apps/v1`. | `extensions/v1beta1` |
 | image.repository              |             | `gitlab.example.com/group/project` |
 | image.tag                     |             | `stable`                           |
 | image.pullPolicy              |             | `Always`                           |
@@ -68,7 +66,6 @@ If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/a
 | readinessProbe.timeoutSeconds | # of seconds after which the readiness probe times out. | `3`                                |
 | readinessProbe.probeType     | Type of [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes) to use. | `httpGet`
 | readinessProbe.command       | Commands for use with probe type 'exec'. | `{}`
-| postgresql.enabled            |             | `true`                             |
 | postgresql.managed            | If true, this will provision a managed Postgres instance via crossplane.            | `false`                             |
 | postgresql.managedClassSelector            | This will allow provisioning a Postgres instance based on label selectors via Crossplane, eg: `managedClassSelector.matchLabels.stack: gitlab`. The `postgresql.managed` value should be true as well for this to be honoured. [Crossplane Configuration](https://docs.gitlab.com/ee/user/clusters/applications.html#crossplane)            | `{}`                             |
 | podDisruptionBudget.enabled   |             | `false`                            |
@@ -77,8 +74,3 @@ If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/a
 | prometheus.metrics            | Annotates the service for prometheus auto-discovery. Also denies access to the `/metrics` endpoint from external addresses with Ingress. | `false` |
 | networkPolicy.enabled         | Enable container network policy | `false` |
 | networkPolicy.spec            | [Network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) definition | `{ podSelector: { matchLabels: {} }, ingress: [{ from: [{ podSelector: { matchLabels: {} } }, { namespaceSelector: { matchLabels: { app.gitlab.com/managed_by: gitlab } } }] }] }` |
-
-## PostgreSQL
-
-This chart depends on version 0.7.1 of the `stable/postgresql` chart.
-For reference the source code for this specific version can be found at https://github.com/helm/charts/tree/b90ad657e1a226eb52c3eb6a2a95ba3d6d494f58/stable/postgresql

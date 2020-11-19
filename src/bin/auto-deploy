@@ -1,19 +1,13 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+
+set -e
 
 [[ "$TRACE" ]] && set -x
 
-export TILLER_NAMESPACE=$KUBE_NAMESPACE
-export HELM_HOST="localhost:44134"
 export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
 export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
-export AUTO_DEVOPS_POSTGRES_CHANNEL=${AUTO_DEVOPS_POSTGRES_CHANNEL:-"2"}
-if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
-  export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
-elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
-  export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.2"}"
-fi
-export BIN_DIR="/build/bin"
+export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 
@@ -31,13 +25,6 @@ function check_kube_domain() {
 }
 
 function download_chart() {
-  # In Helm2, `helm` is connected to the stable repository by default. This repository
-  # will be removed in Nov 13, 2020 therefore we need to specify `stable-repo-url` option to
-  # avoid reaching the repository.
-  # In Helm3, `helm` is not connected to the stable repository by default, thus this option is not necessary.
-  helm init --client-only \
-    --stable-repo-url=https://charts.helm.sh/stable
-
   add_chart_repositories
 
   if [[ -d chart ]]; then
@@ -49,7 +36,7 @@ function download_chart() {
       mv "$AUTO_DEVOPS_CHART" chart/
     else
       echo "Downloading remote chart '$AUTO_DEVOPS_CHART'..."
-      helm fetch "$AUTO_DEVOPS_CHART" --untar
+      helm pull "$AUTO_DEVOPS_CHART" --untar
 
       local auto_chart_name
       auto_chart_name=$(basename "$AUTO_DEVOPS_CHART")
@@ -73,6 +60,7 @@ function download_chart() {
 }
 
 function add_chart_repositories() {
+  helm repo add stable https://charts.helm.sh/stable
   # bitnami repository is used for in-cluster PostgreSQL installation.
   helm repo add bitnami https://charts.bitnami.com/bitnami
   # Additionaly, users can specify their custom chart repository.
@@ -105,24 +93,18 @@ function ensure_namespace() {
 }
 
 function initialize_tiller() {
-  echo "Checking Tiller..."
-
-  if [[ -n "$AUTO_DEVOPS_DEPLOY_DEBUG" ]]; then
-    nohup tiller -listen "${HELM_HOST}" >tiller.log 2>&1 &
-  else
-    nohup tiller -listen "${HELM_HOST}" >/dev/null 2>&1 &
-  fi
-  echo "Tiller is listening on ${HELM_HOST}"
-
-  if ! helm version --debug; then
-    echo "Failed to init Tiller."
-    return 1
-  fi
-  echo ""
+  echo "Deprecated: Helm 3 does not have Tiller."
 }
 
 function write_environment_values_file() {
   echo "deploymentApiVersion: apps/v1" >"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+
+  # Helm 3 does not like `--set image.secrets[0]=""`
+  if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
+    echo "image: { secrets: [ { name: gitlab-registry-${CI_PROJECT_PATH_SLUG} } ] }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+  else
+    echo "image: { secrets: null }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
+  fi
 }
 
 function create_secret() {
@@ -147,26 +129,12 @@ function persist_environment_url() {
 
 function auto_database_url() {
   local auto_database_url
-  if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
-    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
-  elif [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "1" ]]; then
-    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${RELEASE_NAME}-postgres:5432/${POSTGRES_DB}"
-  else
-    echo "Un-recognized \$AUTO_DEVOPS_POSTGRES_CHANNEL variable '${AUTO_DEVOPS_POSTGRES_CHANNEL}'. Accepted values are '1' and '2'"
-
-    exit 1
-  fi
+  auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
 
   echo "${DATABASE_URL-$auto_database_url}"
 }
 
 function install_postgresql() {
-  if [[ "$AUTO_DEVOPS_POSTGRES_CHANNEL" != "2" ]]; then
-    echo "Separate postgres chart is only supported for AUTO_DEVOPS_POSTGRES_CHANNEL:2"
-
-    exit 1
-  fi
-
   if [[ "$POSTGRES_VERSION" == "9.6.2" ]]; then
     echo "The minimum supported POSTGRES_VERSION for AUTO_DEVOPS_POSTGRES_CHANNEL:2 is 9.6.16"
 
@@ -208,10 +176,9 @@ function deploy() {
   stable_name=$(deploy_name stable)
 
   local old_postgres_already_enabled
-  local old_postgres_enabled
-  if [[ "$POSTGRES_ENABLED" == "true" && "$AUTO_DEVOPS_POSTGRES_CHANNEL" == "2" ]]; then
-    old_postgres_already_enabled=$( (helm get values --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
-    if [[ -z "$AUTO_DEVOPS_POSTGRES_DELETE_V1" ]] && [[ "$old_postgres_already_enabled" == "true" ]]; then
+  if [[ "$POSTGRES_ENABLED" == "true" ]]; then
+    old_postgres_already_enabled=$( (helm get values --namespace "$KUBE_NAMESPACE" --output json "$stable_name" || echo '{}') | jq '.postgresql.enabled')
+    if [[ "$old_postgres_already_enabled" == "true" ]]; then
       echo 'Detected an existing PostgreSQL database installed on the
 deprecated channel 1, but the current channel is set to 2. The default
 channel changed to 2 in of GitLab 13.0.
@@ -233,6 +200,12 @@ release, which is controlled by the POSTGRES_ENABLED CI variable. If you are
 not using the in-cluster PostgreSQL database at all, you can also set the CI
 variable POSTGRES_ENABLED to false.
 
+NOTE: This database migration is only supported in v1 auto-deploy-image.
+If you are seeing this error message in v2 auto-deploy-image, please switch to
+the v1 auto-deploy-image before proceed the above steps.
+For more information,
+please see https://docs.gitlab.com/ee/topics/autodevops/upgrading_auto_deploy_dependencies.html
+
 WARNING: Setting POSTGRES_ENABLED to false will permanently delete any existing
 channel 1 database.'
 
@@ -241,13 +214,9 @@ channel 1 database.'
 
     install_postgresql
 
-    # Do not install the older 0.7.1 postgresql sub-chart
-    old_postgres_enabled="false"
-  else
-    old_postgres_enabled="$POSTGRES_ENABLED"
   fi
 
-  ${BIN_DIR}/validate-chart-version "$(helm list --output json)" "chart" "$name"
+  validate-chart-version "$(helm list --namespace "$KUBE_NAMESPACE" --output json)" "chart" "$name"
 
   local database_url
   database_url=$(auto_database_url)
@@ -263,25 +232,11 @@ channel 1 database.'
     image_tag=${CI_APPLICATION_TAG:-$CI_COMMIT_TAG}
   fi
 
-  local old_postgres_enabled_for_track="$old_postgres_enabled"
   local postgres_managed="$AUTO_DEVOPS_POSTGRES_MANAGED"
   local postgres_managed_selector="$AUTO_DEVOPS_POSTGRES_MANAGED_CLASS_SELECTOR"
 
-  # if track is different than stable,
-  # re-use all attached resources
-  if [[ "$track" != "stable" ]]; then
-    old_postgres_enabled_for_track="false"
-  fi
-
   local replicas
-  replicas=$(get_replicas "$track" "$percentage")
-
-  local secret_name
-  if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
-    secret_name="gitlab-registry-${CI_PROJECT_PATH_SLUG}"
-  else
-    secret_name=''
-  fi
+  replicas=$(get_replicas "$track")
 
   local modsecurity_set_args=()
   if [[ -n "$AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE" ]]; then
@@ -323,7 +278,7 @@ channel 1 database.'
   # TODO: Over time, migrate all --set values to this file, see https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/issues/31
   write_environment_values_file
 
-  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls -q "^$stable_name$")" ]]; then
+  if [[ -n "$DB_INITIALIZE" && -z "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$stable_name$")" ]]; then
     echo "Initializing service URL and database. No deployment will be created"
     # shellcheck disable=SC2086 # HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
     helm upgrade --install \
@@ -337,7 +292,6 @@ channel 1 database.'
       --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
       --set-string image.tag="$image_tag" \
-      --set image.secrets[0].name="$secret_name" \
       --set application.track="stable" \
       --set application.database_url="$database_url" \
       --set application.secretName="$APPLICATION_SECRET_NAME" \
@@ -346,14 +300,9 @@ channel 1 database.'
       --set service.url="$CI_ENVIRONMENT_URL" \
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
-      --set postgresql.enabled="$old_postgres_enabled" \
+      --set ingress.canary.weight="${percentage}" \
       --set postgresql.managed="$postgres_managed" \
       --set postgresql.managedClassSelector="$postgres_managed_selector" \
-      --set postgresql.nameOverride="postgres" \
-      --set postgresql.postgresUser="$POSTGRES_USER" \
-      --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
-      --set postgresql.postgresDatabase="$POSTGRES_DB" \
-      --set postgresql.imageTag="$POSTGRES_VERSION" \
       --set application.initializeCommand="$DB_INITIALIZE" \
       "${modsecurity_set_args[@]}" \
       --values "$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE" \
@@ -377,7 +326,6 @@ channel 1 database.'
     --set releaseOverride="$RELEASE_NAME" \
     --set image.repository="$image_repository" \
     --set-string image.tag="$image_tag" \
-    --set image.secrets[0].name="$secret_name" \
     --set application.track="$track" \
     --set application.database_url="$database_url" \
     --set application.secretName="$APPLICATION_SECRET_NAME" \
@@ -386,14 +334,9 @@ channel 1 database.'
     --set service.url="$CI_ENVIRONMENT_URL" \
     --set service.additionalHosts="$additional_hosts" \
     --set replicaCount="$replicas" \
-    --set postgresql.enabled="$old_postgres_enabled_for_track" \
+    --set ingress.canary.weight="${percentage}" \
     --set postgresql.managed="$postgres_managed" \
     --set postgresql.managedClassSelector="$postgres_managed_selector" \
-    --set postgresql.nameOverride="postgres" \
-    --set postgresql.postgresUser="$POSTGRES_USER" \
-    --set postgresql.postgresPassword="$POSTGRES_PASSWORD" \
-    --set postgresql.postgresDatabase="$POSTGRES_DB" \
-    --set postgresql.imageTag="$POSTGRES_VERSION" \
     --set application.initializeCommand="" \
     --set application.migrateCommand="$DB_MIGRATE" \
     "${modsecurity_set_args[@]}" \
@@ -416,20 +359,13 @@ function scale() {
   name=$(deploy_name "$track")
 
   local replicas
-  replicas=$(get_replicas "$track" "$percentage")
+  replicas=$(get_replicas "$track")
 
-  # NOTE: This is a patch for Helm2 that `--reuse-values` option is not respected
-  # in the subchart. This causes a problem that `scale` always creates legacy PostgreSQL
-  # instance even if it's unnecessary.
-  # See more https://gitlab.com/gitlab-org/gitlab/-/issues/209045#note_422968926
-  local old_postgres_enabled
-  old_postgres_enabled=$(check_old_postgres_exist)
-
-  if [[ -n "$(helm ls -q "^$name$")" ]]; then
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
     helm upgrade --reuse-values \
       --wait \
       --set replicaCount="$replicas" \
-      --set postgresql.enabled="$old_postgres_enabled" \
+      --set ingress.canary.weight="${percentage}" \
       --namespace="$KUBE_NAMESPACE" \
       "$name" \
       chart/
@@ -439,8 +375,8 @@ function scale() {
 function delete_postgresql() {
   local name="$POSTGRESQL_RELEASE_NAME"
 
-  if [[ -n "$(helm ls -q "^$name$")" ]]; then
-    helm delete --purge "$name"
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
+    helm delete "$name" --namespace "$KUBE_NAMESPACE"
     kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
 }
@@ -451,8 +387,8 @@ function delete() {
   local name
   name=$(deploy_name "$track")
 
-  if [[ -n "$(helm ls -q "^$name$")" ]]; then
-    helm delete --purge "$name"
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
+    helm delete "$name" --namespace "$KUBE_NAMESPACE"
   fi
 
   if [[ "$track" == "stable" ]]; then
@@ -489,7 +425,7 @@ function create_application_secret() {
 
   k8s_secrets_file=$(mktemp)
 
-  ${BIN_DIR}/auto-deploy-application-secrets-yaml "$k8s_secrets_file"
+  auto-deploy-application-secrets-yaml "$k8s_secrets_file"
 
   kubectl replace -f "$k8s_secrets_file" -n "$KUBE_NAMESPACE" --force
 
@@ -540,7 +476,6 @@ function check_old_postgres_exist() {
 # shellcheck disable=SC2153 # incorrectly thinks replicas vs REPLICAS is a misspelling
 function get_replicas() {
   local track="${1:-stable}"
-  local percentage="${2:-100}"
 
   local env_track
   env_track=$(echo $track | tr '[:lower:]' '[:upper:]')
@@ -548,32 +483,21 @@ function get_replicas() {
   local env_slug
   env_slug=$(echo ${CI_ENVIRONMENT_SLUG//-/_} | tr '[:lower:]' '[:upper:]')
 
+  local environment_track_replicas
+  local environment_replicas
+  eval environment_track_replicas=\$${env_track}_${env_slug}_REPLICAS
+  eval environment_replicas=\$${env_slug}_REPLICAS
+
   local new_replicas
-  if [[ "$track" == "stable" ]] || [[ "$track" == "rollout" ]]; then
-    # for stable track get number of replicas from `PRODUCTION_REPLICAS`
-    eval new_replicas=\$${env_slug}_REPLICAS
-    if [[ -z "$new_replicas" ]]; then
-      new_replicas=$REPLICAS
-    fi
-  else
-    # for all tracks get number of replicas from `CANARY_PRODUCTION_REPLICAS`
-    eval new_replicas=\$${env_track}_${env_slug}_REPLICAS
-    if [[ -z "$new_replicas" ]]; then
-      eval new_replicas=\$${env_track}_REPLICAS
-    fi
-  fi
+  new_replicas=${environment_track_replicas}
+  new_replicas=${new_replicas:-$environment_replicas}
+  new_replicas=${new_replicas:-$REPLICAS}
 
-  local replicas="${new_replicas:-1}"
-  replicas="$((replicas * percentage / 100))"
-
-  if [[ $new_replicas == 0 ]]; then
+  if [[ -n "$new_replicas" ]]; then
     # If zero replicas requested, then return 0
     echo "$new_replicas"
-  elif [[ $replicas -gt 0 ]]; then
-    echo "$replicas"
   else
-    # Return one if calculated replicas is zero
-    # E.g. 25% of 2 replicas is 0 (integer division)
+    # Return one if replicas is not specified
     echo 1
   fi
 }

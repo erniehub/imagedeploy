@@ -3,8 +3,6 @@
 # Declare variables to be passed into your templates.
 replicaCount: 1
 strategyType:
-enableSelector:
-deploymentApiVersion: extensions/v1beta1
 image:
   repository: gitlab.example.com/group/project
   tag: stable
@@ -54,6 +52,8 @@ ingress:
     #   - variable: ""
     #     operator: ""
     #     action: ""
+  canary:
+    weight:
 prometheus:
   metrics: false
 livenessProbe:
@@ -69,7 +69,6 @@ readinessProbe:
   scheme: "HTTP"
   probeType: "httpGet"
 postgresql:
-  enabled: true
   managed: false
   managedClassSelector:
     #   matchLabels:

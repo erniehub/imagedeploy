@@ -1,19 +1,33 @@
+.old-k8s: &old-k8s
+  parallel:
+    matrix:
+      - K3S_VERSION:
+        - v0.8.1 # kube 1.14.6, see https://github.com/rancher/k3s/releases/tag/v0.8.1
+        - v0.9.1 # kube 1.15.4, see https://github.com/rancher/k3s/releases/tag/v0.9.1 and https://github.com/rancher/k3s/releases/tag/v0.9.0
+
 .test-job: &test-job
   stage: test
   image: "$BUILD_IMAGE_NAME"
+  parallel:
+    matrix:
+      - K3S_VERSION:
+        - v0.8.1 # kube 1.14.6, see https://github.com/rancher/k3s/releases/tag/v0.8.1
+        - v0.9.1 # kube 1.15.4, see https://github.com/rancher/k3s/releases/tag/v0.9.1 and https://github.com/rancher/k3s/releases/tag/v0.9.0
+        - v1.16.15-k3s1
+        - v1.17.13-k3s1
   services:
-    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v0.6.1
+    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/${K3S_VERSION}
       alias: k3s
-      command: ["server", "--cluster-secret", "some-secret"]
   before_script:
-    - kubectl config set-cluster k3s --server https://k3s:6443 --insecure-skip-tls-verify
-    - kubectl config set-credentials default --username=node --password=some-secret
-    - kubectl config set-context k3s --cluster=k3s --user=default
-    - kubectl config use-context k3s
+    - apk add curl
+    - curl k3s:8081?service=k3s > kubeconfig
+    - export KUBECONFIG=$(pwd)/kubeconfig
     - kubectl version
-    - kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
     - |
-        kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+        if [[ "$K3S_VERSION" < "v1" ]]; then
+          kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+          kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+        fi
     - |
         function expected_error() {
           echo "Expected error but exited with $?, failing build!"
@@ -83,6 +97,7 @@ test-deploy-name:
 
 test-auto_database_url:
   <<: *test-job
+  <<: *old-k8s
   variables:
     CI_ENVIRONMENT_SLUG: production
     POSTGRES_USER: user
@@ -328,7 +343,7 @@ test-deploy-when-stable-chart-repository-is-unreachable:
     - auto-deploy deploy
 
 test-deploy-postgresql-channel-1:
-  extends: test-deploy
+  extends: [test-deploy, .old-k8s]
   variables:
     <<: *deploy-variables
     AUTO_DEVOPS_POSTGRES_CHANNEL: 1
@@ -353,7 +368,7 @@ test-deploy-postgresql-channel-1-disabled:
     - if grep -q "postgres-password" manifest.txt; then echo "postgresql should not be installed"; exit 1; fi
 
 test-scale-does-not-create-old-postgres:
-  extends: test-deploy
+  extends: [test-deploy, .old-k8s]
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -367,7 +382,7 @@ test-scale-does-not-create-old-postgres:
       fi
 
 test-scale-does-not-delete-old-postgres:
-  extends: test-deploy
+  extends: [test-deploy, .old-k8s]
   script:
     - export AUTO_DEVOPS_POSTGRES_CHANNEL=1
     - auto-deploy initialize_tiller
@@ -382,7 +397,7 @@ test-scale-does-not-delete-old-postgres:
       fi
 
 test-deploy-does-not-delete-old-postgres-by-default:
-  extends: test-deploy
+  extends: [test-deploy, .old-k8s]
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -397,7 +412,7 @@ test-deploy-does-not-delete-old-postgres-by-default:
     - ./test/verify-deployment-database production production-postgres
 
 test-deploy-deletes-old-postgres-if-opt-in:
-  extends: test-deploy
+  extends: [test-deploy, .old-k8s]
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
@@ -411,26 +426,6 @@ test-deploy-deletes-old-postgres-if-opt-in:
     - export AUTO_DEVOPS_POSTGRES_DELETE_V1=1
     - auto-deploy deploy
     # test that the new postgres is up
-    - ./test/verify-deployment-database production postgresql
-
-test-deploy-k8s-1.16:
-  extends: test-deploy
-  services:
-    - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
-      alias: k3s
-  variables:
-    AUTO_DEVOPS_POSTGRES_CHANNEL: 2
-  before_script:
-    - curl k3s:8081?service=k3s > k3s.yaml
-    - export KUBECONFIG=$(pwd)/k3s.yaml
-    - kubectl version
-    - kubectl cluster-info
-  script:
-    - auto-deploy initialize_tiller
-    - auto-deploy download_chart
-    - auto-deploy deploy
-    - helm get production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
     - ./test/verify-deployment-database production postgresql
 
 test-deploy-canary:

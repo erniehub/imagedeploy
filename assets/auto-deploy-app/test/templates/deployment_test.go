@@ -270,9 +270,11 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
-		ExpectedName     string
-		ExpectedRelease  string
-		ExpectedSelector *metav1.LabelSelector
+		ExpectedName         string
+		ExpectedRelease      string
+		ExpectedSelector     *metav1.LabelSelector
+		ExpectedNodeSelector map[string]string
+		ExpectedTolerations  []coreV1.Toleration
 	}{
 		{
 			CaseName:        "selector",
@@ -285,6 +287,54 @@ func TestDeploymentTemplate(t *testing.T) {
 					"release": "production",
 					"tier":    "web",
 					"track":   "stable",
+				},
+			},
+		},
+		{
+			CaseName:        "nodeSelector",
+			Release:         "production",
+			Values: map[string]string{
+				"nodeSelector.disktype": "ssd",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":     "production",
+					"release": "production",
+					"tier":    "web",
+					"track":   "stable",
+				},
+			},
+			ExpectedNodeSelector: map[string]string{
+				"disktype": "ssd",
+			},
+		},
+		{
+			CaseName:        "tolerations",
+			Release:         "production",
+			Values: map[string]string{
+				"tolerations[0].key":      "key1",
+				"tolerations[0].operator": "Equal",
+				"tolerations[0].value":    "value1",
+				"tolerations[0].effect":   "NoSchedule",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":     "production",
+					"release": "production",
+					"tier":    "web",
+					"track":   "stable",
+				},
+			},
+			ExpectedTolerations: []coreV1.Toleration{
+				{
+					Key:      "key1",
+					Operator: "Equal",
+					Value:    "value1",
+					Effect:   "NoSchedule",
 				},
 			},
 		},
@@ -337,6 +387,9 @@ func TestDeploymentTemplate(t *testing.T) {
 				"app.kubernetes.io/managed-by": "Helm",
 				"app.kubernetes.io/instance":   tc.ExpectedRelease,
 			}, deployment.Spec.Template.Labels)
+
+			require.Equal(t, tc.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
+			require.Equal(t, tc.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
 		})
 	}
 }

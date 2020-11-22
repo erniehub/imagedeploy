@@ -10,6 +10,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	appsV1 "k8s.io/api/apps/v1"
+	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -71,6 +72,55 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
 					ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
+				},
+			},
+		},
+		{
+			CaseName:        "nodeSelector",
+			Release:         "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":            "echo",
+				"workers.worker1.command[1]":            "worker1",
+				"workers.worker1.nodeSelector.disktype": "ssd",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:         "production" + "-worker1",
+					ExpectedCmd:          []string{"echo", "worker1"},
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedNodeSelector: map[string]string{"disktype": "ssd"},
+				},
+			},
+
+		},
+		{
+			CaseName:        "tolerations",
+			Release:         "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":              "echo",
+				"workers.worker1.command[1]":              "worker1",
+				"workers.worker1.tolerations[0].key":      "key1",
+				"workers.worker1.tolerations[0].operator": "Equal",
+				"workers.worker1.tolerations[0].value":    "value1",
+				"workers.worker1.tolerations[0].effect":   "NoSchedule",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:         "production" + "-worker1",
+					ExpectedCmd:          []string{"echo", "worker1"},
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedTolerations:  []coreV1.Toleration{
+						{
+							Key:      "key1",
+							Operator: "Equal",
+							Value:    "value1",
+							Effect:   "NoSchedule",
+						},
+					},
 				},
 			},
 		},
@@ -136,6 +186,9 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
 				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
+
+				require.Equal(t, expectedDeployment.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
+				require.Equal(t, expectedDeployment.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
 			}
 		})
 	}

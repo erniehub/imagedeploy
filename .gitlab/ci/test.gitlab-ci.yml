@@ -8,6 +8,7 @@
         - v0.9.1 # kube 1.15.4, see https://github.com/rancher/k3s/releases/tag/v0.9.1 and https://github.com/rancher/k3s/releases/tag/v0.9.0
         - v1.16.15-k3s1
         - v1.17.13-k3s1
+        - v1.18.10-k3s1
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/${K3S_VERSION}
       alias: k3s

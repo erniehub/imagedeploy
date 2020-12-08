@@ -148,6 +148,16 @@ function install_postgresql() {
     debug_flag=('--debug')
   fi
 
+  local postgres_helm_values_args=()
+  local postgres_helm_values_file=${POSTGRES_HELM_UPGRADE_VALUES_FILE:-.gitlab/auto-deploy-postgres-values.yaml}
+  if [[ -f "${postgres_helm_values_file}" ]]; then
+    echo "Using PostgreSQL helm values file ${postgres_helm_values_file@Q}"
+    postgres_helm_values_args=(--values "${postgres_helm_values_file}")
+  else
+    echo "No PostgreSQL helm values file found at ${postgres_helm_values_file@Q}"
+  fi
+
+  # shellcheck disable=SC2086 # POSTGRES_HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
     --atomic \
     "${debug_flag[@]}" \
@@ -158,6 +168,8 @@ function install_postgresql() {
     --set postgresqlPassword="$POSTGRES_PASSWORD" \
     --set postgresqlDatabase="$POSTGRES_DB" \
     --set image.tag="$POSTGRES_VERSION" \
+    "${postgres_helm_values_args[@]}" \
+    $POSTGRES_HELM_UPGRADE_EXTRA_ARGS \
     --namespace="$KUBE_NAMESPACE" \
     "$name" \
     bitnami/postgresql

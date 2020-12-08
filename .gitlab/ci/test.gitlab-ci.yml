@@ -209,8 +209,11 @@ test-install-postgres:
     POSTGRES_PASSWORD: testing-password
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG
   script:
+    - mkdir -p .gitlab
+    - "echo 'custom_key: custom_value' > .gitlab/auto-deploy-postgres-values.yaml"
     - auto-deploy download_chart
     - auto-deploy install_postgresql
+    - helm get values production-postgresql --namespace "$KUBE_NAMESPACE" --output json | grep -q '"custom_key":"custom_value"' || exit 1
     - kubectl get statefulset production-postgresql -n $KUBE_NAMESPACE
 
 test-deploy:

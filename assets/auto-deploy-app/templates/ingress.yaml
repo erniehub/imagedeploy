@@ -12,6 +12,9 @@ metadata:
 {{- if .Values.ingress.annotations }}
 {{ toYaml .Values.ingress.annotations | indent 4 }}
 {{- end }}
+{{- if .Values.ingress.tls.enabled }}
+    kubernetes.io/tls-acme: "true"
+{{- end }}
 {{- if eq .Values.application.track "canary" }}
     nginx.ingress.kubernetes.io/canary: "true"
     nginx.ingress.kubernetes.io/canary-by-header: "canary"

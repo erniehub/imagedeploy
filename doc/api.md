@@ -132,6 +132,8 @@ Deploy an application
 | `POSTGRES_PASSWORD`                           | string | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v0.1.0 ~ |
 | `POSTGRES_USER`                               | string | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v0.1.0 ~ |
 | `POSTGRES_VERSION`                            | string | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v0.1.0 ~ |
+| `POSTGRES_HELM_UPGRADE_EXTRA_ARGS`            | string | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v2.0.2 ~ |
+| `POSTGRES_HELM_UPGRADE_VALUES_FILE`           | string | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v2.0.2 ~ |
 | `ROLLOUT_RESOURCE_TYPE`                       | integer | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v0.1.0 ~ |
 | `ROLLOUT_STATUS_DISABLED`                     | boolean | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v0.1.0 ~ |
 

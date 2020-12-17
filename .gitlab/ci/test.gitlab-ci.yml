@@ -447,7 +447,7 @@ test-upgrade-from-helm2-fails:
         KUBECONFIG=/tmp/k3s.yaml' > /tmp/env
     # helm 2 deployment should succeed
     - |
-      docker run -v $KUBECONFIG:/tmp/k3s.yaml --env-file /tmp/env registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v1.0.0 \
+      docker run -v $KUBECONFIG:/tmp/k3s.yaml --env-file /tmp/env registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v1.1.0 \
         sh -c 'auto-deploy initialize_tiller && auto-deploy download_chart && auto-deploy deploy'
     # helm 3 deployment should fail because the deployment would overwrite an existing resource
     - |

@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.0.1"
+	chartName     = "auto-deploy-app-2.0.2"
 	helmChartPath = ".."
 )
 
@@ -849,6 +849,51 @@ func TestIngressTemplate_DifferentTracks(t *testing.T) {
 			for _, key := range tc.expectedInexistentAnnotationKeys {
 				require.Empty(t, ingress.ObjectMeta.Annotations[key])
 			}
+		})
+	}
+}
+
+func TestIngressTemplate_TLS(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	releaseName := "ingress-tls-test"
+	tcs := []struct {
+		name        string
+		values      map[string]string
+
+		expectedAnnotations map[string]string
+		expectedIngressTLS  []extensions.IngressTLS
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:                "defaults",
+			expectedAnnotations: map[string]string{"kubernetes.io/ingress.class": "nginx", "kubernetes.io/tls-acme": "true"},
+			expectedIngressTLS: []extensions.IngressTLS{
+				extensions.IngressTLS{
+					Hosts:      []string{"my.host.com"},
+					SecretName: releaseName + "-auto-deploy-tls",
+				},
+			},
+		},
+		{
+			name:                "with tls disabled",
+			values:              map[string]string{"ingress.tls.enabled": "false"},
+			expectedAnnotations: map[string]string{"kubernetes.io/ingress.class": "nginx"},
+			expectedIngressTLS:  []extensions.IngressTLS(nil),
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			ingress := new(extensions.Ingress)
+			helm.UnmarshalK8SYaml(t, output, ingress)
+			require.Equal(t, tc.expectedAnnotations, ingress.ObjectMeta.Annotations)
+			require.Equal(t, tc.expectedIngressTLS, ingress.Spec.TLS)
 		})
 	}
 }

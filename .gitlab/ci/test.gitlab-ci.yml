@@ -460,8 +460,8 @@ test-upgrade-from-helm2-fails:
 
 rspec:
   stage: test
-  image: ruby:2.5
+  image: ruby:2.7
   before_script:
-    - gem install rspec
+    - gem install --no-document rspec
   script:
     - rspec test/rspec

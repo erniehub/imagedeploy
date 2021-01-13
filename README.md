@@ -46,7 +46,7 @@ that will build and tag the new image
 
 This project uses [Semantic Versioning](https://semver.org). We use commit
 messages to automatically determine the version bumps, so they should adhere to
-the conventions of [Conventional Commits (v1.0.0-beta.2)](https://www.conventionalcommits.org/en/v1.0.0-beta.2/).
+the conventions of [Conventional Commits (v1.0.0)](https://www.conventionalcommits.org/en/v1.0.0).
 
 ### TL;DR
 

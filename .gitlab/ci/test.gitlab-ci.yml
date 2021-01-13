@@ -465,3 +465,14 @@ rspec:
     - gem install --no-document rspec
   script:
     - rspec test/rspec
+
+commitlint:
+  stage: test
+  image: node:12
+  needs: []
+  before_script:
+    - npm install
+  script:
+    - npx --quiet commitlint --from="$CI_MERGE_REQUEST_DIFF_BASE_SHA" --help-url 'https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image#git-commit-guidelines'
+  rules:
+    - if: "$CI_MERGE_REQUEST_DIFF_BASE_SHA"

@@ -40,6 +40,9 @@ spec:
         tier: "{{ .Values.application.tier }}"
         release: {{ .Release.Name }}
     spec:
+{{- if .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName | quote }}
+{{- end }}        
       imagePullSecrets:
 {{ toYaml .Values.image.secrets | indent 10 }}
       containers:

@@ -10,6 +10,7 @@
 | ---                           | ---         | ---                                |
 | replicaCount                  |             | `1`                                |
 | strategyType                  | Pod deployment [strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy) | `nil` |
+| serviceAccountName            | Pod service account name override  | `nil` |
 | image.repository              |             | `gitlab.example.com/group/project` |
 | image.tag                     |             | `stable`                           |
 | image.pullPolicy              |             | `Always`                           |
@@ -39,8 +40,10 @@
 | service.externalPort          |             | `5000`                             |
 | service.internalPort          |             | `5000`                             |
 | ingress.enabled               | If true, enables ingress | `true`                |
+| ingress.path                  | Default path for the ingress | `/` |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |
 | ingress.tls.secretName        | Name of the secret used to terminate SSL traffic | `""` |
+| ingress.tls.useDefaultSecret  | If set to `true`, the `secretName` is not used, which makes Ingress fall back to the default secret (certificate). This requires [configuration of the default secret](https://kubernetes.github.io/ingress-nginx/user-guide/tls/#default-ssl-certificate). | `false` |
 | ingress.modSecurity.enabled | Enable custom configuration for modsecurity, defaulting to [the Core Rule Set](https://coreruleset.org) | `false` |
 | ingress.modSecurity.secRuleEngine | Configuration for [ModSecurity's rule engine](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#SecRuleEngine) | `DetectionOnly` |
 | ingress.modSecurity.secRules | Configuration for custom [ModSecurity's rules](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#secrule) | `nil` |

@@ -159,6 +159,17 @@ func TestIngressTemplate_TLS(t *testing.T) {
 			},
 		},
 		{
+			name:                "with tls-acme disabled",
+			values:              map[string]string{"ingress.tls.acme": "false"},
+			expectedAnnotations: map[string]string{"kubernetes.io/ingress.class": "nginx", "kubernetes.io/tls-acme": "false"},
+			expectedIngressTLS: []extensions.IngressTLS{
+				extensions.IngressTLS{
+					Hosts:      []string{"my.host.com"},
+					SecretName: releaseName + "-auto-deploy-tls",
+				},
+			},
+		},
+		{
 			name:                "with tls disabled",
 			values:              map[string]string{"ingress.tls.enabled": "false"},
 			expectedAnnotations: map[string]string{"kubernetes.io/ingress.class": "nginx"},

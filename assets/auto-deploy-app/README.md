@@ -42,6 +42,7 @@
 | ingress.enabled               | If true, enables ingress | `true`                |
 | ingress.path                  | Default path for the ingress | `/` |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |
+| ingress.tls.acme              | Controls `kubernetes.io/tls-acme` annotation | `true` |
 | ingress.tls.secretName        | Name of the secret used to terminate SSL traffic | `""` |
 | ingress.tls.useDefaultSecret  | If set to `true`, the `secretName` is not used, which makes Ingress fall back to the default secret (certificate). This requires [configuration of the default secret](https://kubernetes.github.io/ingress-nginx/user-guide/tls/#default-ssl-certificate). | `false` |
 | ingress.modSecurity.enabled | Enable custom configuration for modsecurity, defaulting to [the Core Rule Set](https://coreruleset.org) | `false` |

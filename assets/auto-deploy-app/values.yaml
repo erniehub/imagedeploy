@@ -43,6 +43,7 @@ ingress:
   path: "/"
   tls:
     enabled: true
+    acme: true
     secretName: ""
     useDefaultSecret: false
   annotations:

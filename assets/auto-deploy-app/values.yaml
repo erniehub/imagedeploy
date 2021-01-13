@@ -41,6 +41,7 @@ ingress:
   enabled: true
   tls:
     enabled: true
+    acme: true
     secretName: ""
   annotations:
     kubernetes.io/ingress.class: "nginx"

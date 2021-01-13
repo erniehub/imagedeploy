@@ -40,6 +40,7 @@
 | service.internalPort          |             | `5000`                             |
 | ingress.enabled               | If true, enables ingress | `true`                |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |
+| ingress.tls.acme              | Controls `kubernetes.io/tls-acme` annotation | `true` |
 | ingress.tls.secretName        | Name of the secret used to terminate SSL traffic | `""` |
 | ingress.modSecurity.enabled | Enable custom configuration for modsecurity, defaulting to [the Core Rule Set](https://coreruleset.org) | `false` |
 | ingress.modSecurity.secRuleEngine | Configuration for [ModSecurity's rule engine](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#SecRuleEngine) | `DetectionOnly` |

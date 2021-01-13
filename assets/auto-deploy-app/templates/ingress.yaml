@@ -52,14 +52,16 @@ spec:
     - {{ template "hostname" $host }}
 {{- end -}}
 {{- end }}
+{{- if not .Values.ingress.tls.useDefaultSecret }}
     secretName: {{ .Values.ingress.tls.secretName | default (printf "%s-tls" (include "fullname" .)) }}
+{{- end }}
 {{- end }}
   rules:
   - host: {{ template "hostname" .Values.service.url }}
     http:
       &httpRule
       paths:
-      - path: /
+      - path: {{ .Values.ingress.path | default "/" | quote }}
         backend:
           serviceName: {{ template "fullname" . }}
           servicePort: {{ .Values.service.externalPort }}

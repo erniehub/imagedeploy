@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.0.2"
+	chartName     = "auto-deploy-app-2.2.0"
 	helmChartPath = ".."
 )
 
@@ -411,6 +411,86 @@ func TestServiceTemplate_DifferentTracks(t *testing.T) {
 			for key, value := range tc.expectedSelector {
 				require.Equal(t, service.Spec.Selector[key], value)
 			}
+		})
+	}
+}
+
+func TestIngressTemplate_HTTPPath(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	releaseName := "ingress-http-path-test"
+	tcs := []struct {
+		name   string
+		values map[string]string
+
+		expectedpath string
+	}{
+		{
+			name:         "defaults",
+			expectedpath: "/",
+		},
+		{
+			name:         "with /*",
+			values:       map[string]string{"ingress.path": "/*"},
+			expectedpath: "/*",
+		},
+		{
+			name:         "with /myapi",
+			values:       map[string]string{"ingress.path": "/myapi"},
+			expectedpath: "/myapi",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				SetValues: tc.values,
+			}
+			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+
+			ingress := new(extensions.Ingress)
+
+			helm.UnmarshalK8SYaml(t, output, ingress)
+			require.Equal(t, tc.expectedpath, ingress.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Path)
+		})
+	}
+}
+
+func TestIngressTemplate_TLSSecret(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	releaseName := "ingress-secret-name-test"
+	tcs := []struct {
+		name   string
+		values map[string]string
+
+		expectedsecretname string
+	}{
+		{
+			name:               "default condition from values - use the provided secretName",
+			expectedsecretname: releaseName + "-auto-deploy-tls",
+		},
+		{
+			name:               "don't set the secretName, use the default secret/cert",
+			values:             map[string]string{"ingress.tls.useDefaultSecret": "true"},
+			expectedsecretname: "",
+		},
+		{
+			name:               "use the provided secretName",
+			values:             map[string]string{"ingress.useDefaultSecret": "false"},
+			expectedsecretname: releaseName + "-auto-deploy-tls",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				SetValues: tc.values,
+			}
+			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+
+			ingress := new(extensions.Ingress)
+
+			helm.UnmarshalK8SYaml(t, output, ingress)
+			require.Equal(t, tc.expectedsecretname, ingress.Spec.TLS[0].SecretName)
 		})
 	}
 }

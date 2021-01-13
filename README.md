@@ -54,6 +54,32 @@ the conventions of [Conventional Commits (v1.0.0)](https://www.conventionalcommi
 - Commit title starting with `feat: ` trigger a minor version bump
 - Commit body contains `BREAKING CHANGE: ` trigger a major version bump. This can be part of commits of any _type_.
 
+### Tip: Test commit messages locally
+
+Testing the commit message locally can speed up the iteration cycle. It can be configured as follows:
+
+``` sh
+# install dev dependencies, if necessary
+npm install
+
+# usage
+npx commitlint --from=master # if targeting latest
+npx commitlint --from=1.x # if targeting 1.x stable
+```
+
+### Tip: Use a git hook with commitlint
+
+To save yourself the manual step of testing the commit message, you can use a commit hook.
+
+At the root of this project, add `.git/hooks/commit-msg` with the following contents:
+
+``` sh
+#!/bin/sh
+npx commitlint --edit
+```
+
+Then, run `chmod +x .git/hooks/commit-msg` to make it executable.
+
 ## Automatic versioning
 
 Each push to `master` triggers a [`semantic-release`](https://semantic-release.gitbook.io/semantic-release/)

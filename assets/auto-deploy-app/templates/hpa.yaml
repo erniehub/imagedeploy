@@ -4,10 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ template "fullname" . }}
   labels:
-    app: {{ template "appname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+{{ include "sharedlabels" . | indent 4 }}
 spec:
   scaleTargetRef:
     kind: Deployment

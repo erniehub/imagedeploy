@@ -15,6 +15,7 @@
 | image.tag                     |             | `stable`                           |
 | image.pullPolicy              |             | `Always`                           |
 | image.secrets                 |             | `[name: gitlab-registry]`          |
+| extraLabels                   | Allow labelling resources with custom key/value pairs | `{}` |
 | podAnnotations                | Pod annotations | `{}`                           |
 | application.track             |             | `stable`                           |
 | application.tier              |             | `web`                              |

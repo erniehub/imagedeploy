@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.2.0"
+	chartName     = "auto-deploy-app-2.3.0"
 	helmChartPath = ".."
 )
 
@@ -258,6 +258,120 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
+		})
+	}
+}
+
+func TestTemplateLabels(t *testing.T) {
+	templates := []string{
+		"templates/deployment.yaml", "templates/hpa.yaml",
+		"templates/ingress.yaml", "templates/network-policy.yaml",
+		"templates/pdb.yaml", "templates/network-policy.yaml",
+		"templates/service.yaml"}
+	databaseTemplates := []string{
+		"templates/db-initialize-job.yaml", "templates/db-migrate-hook.yaml"}
+	tcs := []struct {
+		name        string
+		releaseName string
+		values      map[string]string
+
+		expectedName        string
+		expectedLabels      map[string]string
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:        "defaults",
+			releaseName: "production",
+			values: map[string]string{
+				"hpa.enabled":                 "true",
+				"podDisruptionBudget.enabled": "true",
+				"networkPolicy.enabled":       "true",
+				"resources.requests.cpu":      "100m",
+				"resources.requests.memory":   "128Mi"},
+			expectedLabels: map[string]string{
+				"app":                          "production",
+				"chart":                        chartName,
+				"release":                      "production",
+				"heritage":                     "Helm",
+				"app.kubernetes.io/name":       "production",
+				"helm.sh/chart":                chartName,
+				"app.kubernetes.io/managed-by": "Helm",
+				"app.kubernetes.io/instance":   "production",
+			},
+		},
+		{
+			name:        "extraLabels",
+			releaseName: "production",
+			values: map[string]string{
+				"hpa.enabled":                 "true",
+				"podDisruptionBudget.enabled": "true",
+				"networkPolicy.enabled":       "true",
+				"resources.requests.cpu":      "100m",
+				"resources.requests.memory":   "128Mi",
+				"labels.useRecommended":       "false",
+				"extraLabels.team":            "myteam",
+				"extraLabels.organization":    "myorg",
+			},
+			expectedLabels: map[string]string{
+				"app":                          "production",
+				"chart":                        chartName,
+				"release":                      "production",
+				"heritage":                     "Helm",
+				"app.kubernetes.io/name":       "production",
+				"helm.sh/chart":                chartName,
+				"app.kubernetes.io/managed-by": "Helm",
+				"app.kubernetes.io/instance":   "production",
+				"team":                         "myteam",
+				"organization":                 "myorg",
+			},
+		},
+	}
+	dbtcs := []struct {
+		name        string
+		releaseName string
+		values      map[string]string
+
+		expectedName        string
+		expectedLabels      map[string]string
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:           "database",
+			releaseName:    "production",
+			values:         map[string]string{"application.initializeCommand": "true", "application.migrateCommand": "true"},
+			expectedLabels: map[string]string{"app": "production", "release": "production", "heritage": "Helm", "chart": chartName},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			metaObj := metav1.PartialObjectMetadata{}
+			helm.UnmarshalK8SYaml(t, output, &metaObj)
+			for key, value := range tc.expectedLabels {
+				require.Equal(t, metaObj.ObjectMeta.Labels[key], value)
+			}
+		})
+	}
+
+	for _, tc := range dbtcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, tc.releaseName, databaseTemplates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			metaObj := metav1.PartialObjectMetadata{}
+			helm.UnmarshalK8SYaml(t, output, &metaObj)
+			for key, value := range tc.expectedLabels {
+				require.Equal(t, metaObj.ObjectMeta.Labels[key], value)
+			}
 		})
 	}
 }

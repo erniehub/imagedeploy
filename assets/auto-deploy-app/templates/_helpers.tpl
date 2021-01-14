@@ -48,3 +48,17 @@ Get SecRule's arguments with unescaped single&double quotes
 {{- $action := .action | quote | replace "\"" "\\\"" | replace "'" "\\'" -}}
 {{- printf "SecRule %s %s %s" .variable $operator $action -}}
 {{- end -}}
+
+{{- define "sharedlabels" -}}
+app: {{ template "appname" . }}
+chart: "{{ .Chart.Name }}-{{ .Chart.Version| replace "+" "_" }}"
+release: {{ .Release.Name }}
+heritage: {{ .Release.Service }}
+app.kubernetes.io/name: {{ template "appname" . }}
+helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version| replace "+" "_" }}"
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- if .Values.extraLabels }}
+{{ toYaml $.Values.extraLabels }}
+{{- end }}
+{{- end -}}

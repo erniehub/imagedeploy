@@ -1,6 +1,8 @@
 .test-job: &test-job
   stage: test
   image: "$BUILD_IMAGE_NAME"
+  interruptible: true
+  retry: 1
   parallel:
     matrix:
       - K3S_VERSION:
@@ -421,6 +423,8 @@ test-upgrade-from-helm2-fails:
     - docker:19.03.12-dind
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
       alias: k3s
+  interruptible: true
+  retry: 1
   before_script:
     - cat /etc/hosts
     - apk add curl

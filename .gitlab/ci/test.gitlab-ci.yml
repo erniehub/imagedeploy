@@ -205,6 +205,7 @@ test-install-postgres:
     CI_ENVIRONMENT_SLUG: production
     KUBE_NAMESPACE: default
     AUTO_DEVOPS_POSTGRES_CHANNEL: 2
+    POSTGRES_ENABLED: "true"
     POSTGRES_USER: user
     POSTGRES_PASSWORD: testing-password
     POSTGRES_DB: $CI_ENVIRONMENT_SLUG

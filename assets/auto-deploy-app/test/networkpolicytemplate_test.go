@@ -14,10 +14,14 @@ func TestNetworkPolicy(t *testing.T) {
 	releaseName := "network-policy-test"
 	templates := []string{"templates/network-policy.yaml"}
 	expectedLabels := map[string]string{
-		"app":      releaseName,
-		"chart":    chartName,
-		"release":  releaseName,
-		"heritage": "Helm",
+		"app":                          releaseName,
+		"chart":                        chartName,
+		"release":                      releaseName,
+		"heritage":                     "Helm",
+		"app.kubernetes.io/name":       releaseName,
+		"helm.sh/chart":                chartName,
+		"app.kubernetes.io/managed-by": "Helm",
+		"app.kubernetes.io/instance":   releaseName,
 	}
 
 	tcs := []struct {

@@ -90,12 +90,16 @@ func TestDeploymentTemplate(t *testing.T) {
 				"app.gitlab.com/env": "prod",
 			}, deployment.Annotations)
 			require.Equal(t, map[string]string{
-				"app":      tc.ExpectedName,
-				"chart":    chartName,
-				"heritage": "Helm",
-				"release":  tc.ExpectedRelease,
-				"tier":     "web",
-				"track":    "stable",
+				"app":                          tc.ExpectedName,
+				"chart":                        chartName,
+				"heritage":                     "Helm",
+				"release":                      tc.ExpectedRelease,
+				"tier":                         "web",
+				"track":                        "stable",
+				"app.kubernetes.io/name":       tc.ExpectedName,
+				"helm.sh/chart":                chartName,
+				"app.kubernetes.io/managed-by": "Helm",
+				"app.kubernetes.io/instance":   tc.ExpectedRelease,
 			}, deployment.Labels)
 
 			require.Equal(t, map[string]string{
@@ -104,10 +108,16 @@ func TestDeploymentTemplate(t *testing.T) {
 				"checksum/application-secrets": "",
 			}, deployment.Spec.Template.Annotations)
 			require.Equal(t, map[string]string{
-				"app":     tc.ExpectedName,
-				"release": tc.ExpectedRelease,
-				"tier":    "web",
-				"track":   "stable",
+				"app":                          tc.ExpectedName,
+				"chart":                        chartName,
+				"heritage":                     "Helm",
+				"release":                      tc.ExpectedRelease,
+				"tier":                         "web",
+				"track":                        "stable",
+				"app.kubernetes.io/name":       tc.ExpectedName,
+				"helm.sh/chart":                chartName,
+				"app.kubernetes.io/managed-by": "Helm",
+				"app.kubernetes.io/instance":   tc.ExpectedRelease,
 			}, deployment.Spec.Template.Labels)
 		})
 	}
@@ -301,21 +311,31 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)
 			require.Equal(t, map[string]string{
-				"app":      tc.ExpectedName,
-				"chart":    chartName,
-				"heritage": "Helm",
-				"release":  tc.ExpectedRelease,
-				"tier":     "web",
-				"track":    "stable",
+				"app":                          tc.ExpectedName,
+				"chart":                        chartName,
+				"heritage":                     "Helm",
+				"release":                      tc.ExpectedRelease,
+				"tier":                         "web",
+				"track":                        "stable",
+				"app.kubernetes.io/name":       tc.ExpectedName,
+				"helm.sh/chart":                chartName,
+				"app.kubernetes.io/managed-by": "Helm",
+				"app.kubernetes.io/instance":   tc.ExpectedRelease,
 			}, deployment.Labels)
 
 			require.Equal(t, tc.ExpectedSelector, deployment.Spec.Selector)
 
 			require.Equal(t, map[string]string{
-				"app":     tc.ExpectedName,
-				"release": tc.ExpectedRelease,
-				"tier":    "web",
-				"track":   "stable",
+				"app":                          tc.ExpectedName,
+				"chart":                        chartName,
+				"heritage":                     "Helm",
+				"release":                      tc.ExpectedRelease,
+				"tier":                         "web",
+				"track":                        "stable",
+				"app.kubernetes.io/name":       tc.ExpectedName,
+				"helm.sh/chart":                chartName,
+				"app.kubernetes.io/managed-by": "Helm",
+				"app.kubernetes.io/instance":   tc.ExpectedRelease,
 			}, deployment.Spec.Template.Labels)
 		})
 	}

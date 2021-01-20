@@ -62,7 +62,9 @@ function download_chart() {
 function add_chart_repositories() {
   helm repo add stable https://charts.helm.sh/stable
   # bitnami repository is used for in-cluster PostgreSQL installation.
-  helm repo add bitnami https://charts.bitnami.com/bitnami
+  if [[ "$POSTGRES_ENABLED" == "true" ]]; then
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+  fi
   # Additionaly, users can specify their custom chart repository.
   add_custom_chart_repository
 }

@@ -6,7 +6,6 @@
   parallel:
     matrix:
       - K3S_VERSION:
-        - v0.8.1 # kube 1.14.6, see https://github.com/rancher/k3s/releases/tag/v0.8.1
         - v0.9.1 # kube 1.15.4, see https://github.com/rancher/k3s/releases/tag/v0.9.1 and https://github.com/rancher/k3s/releases/tag/v0.9.0
         - v1.16.15-k3s1
         - v1.17.13-k3s1

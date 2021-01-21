@@ -1,3 +1,8 @@
+.shared-rules:
+  skip-if-docs-only: &skip-if-docs-only
+    if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+    when: never
+
 variables:
   SAST_DISABLE_DIND: "true"
   SCAN_KUBERNETES_MANIFESTS: "true"
@@ -11,6 +16,9 @@ stages:
 
 .chart-job:
   image: "$BUILD_IMAGE_NAME"
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   before_script:
     - cd assets/auto-deploy-app
 
@@ -30,6 +38,7 @@ kubesec-sast:
     - helm dependency build .
   # we are using merge request pipelines, so we need to override the rules
   rules:
+    - <<: *skip-if-docs-only
     - if: $SCAN_KUBERNETES_MANIFESTS == 'true'
 
 chart:test:

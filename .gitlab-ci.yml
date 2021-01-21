@@ -25,3 +25,14 @@ include:
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/release.gitlab-ci.yml
   - local: .gitlab/ci/chart.gitlab-ci.yml
+
+# This complements the skip-if-docs-only rule to ensure that
+# we are not skipping tests when code is *actually* changed.
+assert-docs-only:
+  image: alpine
+  rules:
+    - if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+  before_script:
+    - apk add git
+  script:
+    - git diff --name-only HEAD~1 | grep -v '.md$' && exit 1 || exit 0

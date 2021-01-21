@@ -1,3 +1,8 @@
+.shared-rules:
+  skip-if-docs-only: &skip-if-docs-only
+    if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+    when: never
+
 build:
   stage: build
   image: docker:19.03.5
@@ -5,6 +10,9 @@ build:
     - docker:19.03.5-dind
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   script:
     - >-
        docker build

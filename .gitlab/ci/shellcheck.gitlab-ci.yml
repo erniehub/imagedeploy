@@ -1,7 +1,15 @@
+.shared-rules:
+  skip-if-docs-only: &skip-if-docs-only
+    if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+    when: never
+
 test-shellcheck:
   stage: test
   image: koalaman/shellcheck-alpine:stable
   needs: []
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   script:
     - shellcheck src/bin/auto-deploy test/verify-application-secret test/verify-deployment-database
 
@@ -10,5 +18,8 @@ test-shfmt:
   image:
     name: mvdan/shfmt:v3.2.1-alpine
   needs: []
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   script:
     - shfmt -i 2 -ci -l -d src/bin/auto-deploy test/verify-application-secret test/verify-deployment-database

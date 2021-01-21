@@ -1,3 +1,8 @@
+.shared-rules:
+  skip-if-docs-only: &skip-if-docs-only
+    if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+    when: never
+
 .test-job: &test-job
   stage: test
   image: "$BUILD_IMAGE_NAME"
@@ -11,6 +16,9 @@
         - v1.17.13-k3s1
         - v1.18.10-k3s1
         - v1.19.3-k3s1
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/${K3S_VERSION}
       alias: k3s
@@ -433,6 +441,9 @@ test-upgrade-from-helm2-fails:
     - curl -fs k3s:8081?service="$K3S_IP" > k3s.yaml
     - export KUBECONFIG=$(pwd)/k3s.yaml
     - cat $KUBECONFIG
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   script:
     # use an env-file to forward variables to the containers
     - |
@@ -467,6 +478,9 @@ rspec:
   image: ruby:2.7
   before_script:
     - gem install --no-document rspec
+  rules:
+    - <<: *skip-if-docs-only
+    - when: on_success
   script:
     - rspec test/rspec
 

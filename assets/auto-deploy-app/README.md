@@ -17,6 +17,8 @@
 | image.secrets                 |             | `[name: gitlab-registry]`          |
 | extraLabels                   | Allow labelling resources with custom key/value pairs | `{}` |
 | podAnnotations                | Pod annotations | `{}`                           |
+| nodeSelector                  | Node labels for pod assignment | `{}`           |
+| tolerations                   | List of node taints to tolerate | `[]`          |
 | application.track             |             | `stable`                           |
 | application.tier              |             | `web`                              |
 | application.migrateCommand    | If present, this variable will run as a shell command within an application Container as a Helm pre-upgrade Hook. Intended to run migration commands. | `nil` |

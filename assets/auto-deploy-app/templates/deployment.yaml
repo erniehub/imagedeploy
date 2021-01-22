@@ -41,6 +41,14 @@ spec:
 {{- end }}        
       imagePullSecrets:
 {{ toYaml .Values.image.secrets | indent 10 }}
+{{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}
+{{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+{{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ template "imagename" . }}

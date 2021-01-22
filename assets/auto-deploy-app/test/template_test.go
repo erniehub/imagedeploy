@@ -137,6 +137,8 @@ type workerDeploymentTestCase struct {
 	ExpectedSelector       *metav1.LabelSelector
 	ExpectedLivenessProbe  *coreV1.Probe
 	ExpectedReadinessProbe *coreV1.Probe
+	ExpectedNodeSelector   map[string]string
+	ExpectedTolerations    []coreV1.Toleration
 }
 
 type workerDeploymentSelectorTestCase struct {

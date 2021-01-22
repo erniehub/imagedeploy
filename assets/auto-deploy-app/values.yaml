@@ -12,6 +12,8 @@ image:
     - name: gitlab-registry
 extraLabels: {}
 podAnnotations: {}
+nodeSelector: {}
+tolerations: []
 application:
   track: stable
   tier: web
@@ -119,6 +121,8 @@ workers: {}
   #   - procfile
   #   - start
   #   - worker
+  #   nodeSelector: {}
+  #   tolerations: []
   #   livenessProbe:
   #     path: "/"
   #     initialDelaySeconds: 15

@@ -1,4 +1,6 @@
 .test-job: &test-job
+  extends:
+    - .rules:except-docs
   stage: test
   image: "$BUILD_IMAGE_NAME"
   interruptible: true
@@ -418,6 +420,8 @@ test-chart-major-version-upgrade:
     - grep -q "allowed to force deploy" deploy.log || exit 1
 
 test-upgrade-from-helm2-fails:
+  extends:
+    - .rules:except-docs
   image: docker:19.03.12
   services:
     - docker:19.03.12-dind
@@ -463,6 +467,8 @@ test-upgrade-from-helm2-fails:
         | grep 'Error: rendered manifests contain a resource that already exists.'
 
 rspec:
+  extends:
+    - .rules:except-docs
   stage: test
   image: ruby:2.7
   before_script:
@@ -480,3 +486,14 @@ commitlint:
     - npx --quiet commitlint --from="$CI_MERGE_REQUEST_DIFF_BASE_SHA" --help-url 'https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image#git-commit-guidelines'
   rules:
     - if: "$CI_MERGE_REQUEST_EVENT_TYPE != 'merge_train' && $CI_MERGE_REQUEST_DIFF_BASE_SHA"
+
+# This complements the except-docs rule in rules.gitlab-ci.yml to ensure that do
+# not skip tests when code is *actually* changed.
+assert-docs-only:
+  image: alpine
+  rules:
+    - if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+  before_script:
+    - apk add git
+  script:
+    - git diff --name-only HEAD~1 | grep -v '.md$' && exit 1 || exit 0

@@ -1,0 +1,11 @@
+# Shared rules to be used with `extends`.
+#
+# NOTE: Since `rules` is an array, the child job definition cannot
+# extend the rules further. Specifying rules in the child job would
+# override the inherited rules entirely.
+
+.rules:except-docs:
+  rules:
+    - if: '$CI_COMMIT_MESSAGE =~ /\Adocs:/'
+      when: never
+    - when: on_success

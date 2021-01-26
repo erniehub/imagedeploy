@@ -1,4 +1,6 @@
 test-shellcheck:
+  extends:
+    - .rules:except-docs
   stage: test
   image: koalaman/shellcheck-alpine:stable
   needs: []
@@ -6,6 +8,8 @@ test-shellcheck:
     - shellcheck src/bin/auto-deploy test/verify-application-secret test/verify-deployment-database
 
 test-shfmt:
+  extends:
+    - .rules:except-docs
   stage: test
   image:
     name: mvdan/shfmt:v3.2.1-alpine

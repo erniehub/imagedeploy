@@ -1,4 +1,6 @@
 build:
+  extends:
+    - .rules:except-docs
   stage: build
   image: docker:19.03.5
   services:

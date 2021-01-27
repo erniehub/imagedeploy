@@ -49,7 +49,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 		},
 		{
 			name:       "with custom secRules",
-			valueFiles: []string{"./testdata/modsecurity-ingress.yaml"},
+			valueFiles: []string{"../testdata/modsecurity-ingress.yaml"},
 			meta:       metav1.ObjectMeta{Annotations: secRulesAnnotations},
 		},
 	}

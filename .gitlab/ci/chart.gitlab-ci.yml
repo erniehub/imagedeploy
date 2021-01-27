@@ -51,7 +51,7 @@ chart:test:
     - go version
     - helm repo add stable https://charts.helm.sh/stable
     - helm dependency build .
-    - cd test && GO111MODULE=auto go test .
+    - cd test && GO111MODULE=auto go test ./...
 
 # auto-deploy-image doesn't need to release the chart to https://charts.gitlab.io/,
 # as it bundles a chart by default.

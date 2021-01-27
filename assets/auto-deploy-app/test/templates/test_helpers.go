@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.3.0"
-	helmChartPath = ".."
+	chartName     = "auto-deploy-app-2.4.0"
+	helmChartPath = "../.."
 )
 
 func renderTemplate(t *testing.T, values map[string]string, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string, bool) {

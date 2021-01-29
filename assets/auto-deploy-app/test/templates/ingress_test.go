@@ -7,6 +7,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
 	extensions "k8s.io/api/extensions/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -321,4 +323,40 @@ func TestIngressTemplate_TLSSecret(t *testing.T) {
 			require.Equal(t, tc.expectedsecretname, ingress.Spec.TLS[0].SecretName)
 		})
 	}
+}
+
+func TestIngressTemplate_NetworkingV1Beta1(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	releaseName := "ingress-networking-v1beta1"
+	opts := &helm.Options{
+		SetValues: map[string]string{"ingress.enabled": "true"},
+	}
+	output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates, "--api-versions", "networking.k8s.io/v1beta1/Ingress")
+	ingress := new(networkingv1beta.Ingress)
+	helm.UnmarshalK8SYaml(t, output, ingress)
+	require.Equal(t, "networking.k8s.io/v1beta1", ingress.APIVersion)
+}
+
+func TestIngressTemplate_NetworkingV1(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	releaseName := "ingress-networking-v1"
+	opts := &helm.Options{
+		SetValues: map[string]string{"ingress.enabled": "true"},
+	}
+	output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates, "--api-versions", "networking.k8s.io/v1/Ingress")
+	ingress := new(networkingv1.Ingress)
+	helm.UnmarshalK8SYaml(t, output, ingress)
+	require.Equal(t, "networking.k8s.io/v1", ingress.APIVersion)
+}
+
+func TestIngressTemplate_Extensions(t *testing.T) {
+	templates := []string{"templates/ingress.yaml"}
+	releaseName := "ingress-extensions-v1beta1"
+	opts := &helm.Options{
+		SetValues: map[string]string{"ingress.enabled": "true"},
+	}
+	output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates, "--api-versions", "extensions/v1beta1/Ingress")
+	ingress := new(extensions.Ingress)
+	helm.UnmarshalK8SYaml(t, output, ingress)
+	require.Equal(t, "extensions/v1beta1", ingress.APIVersion)
 }

@@ -112,6 +112,17 @@ networkPolicy:
           matchLabels:
             app.gitlab.com/managed_by: gitlab
 
+ciliumNetworkPolicy:
+  enabled: false
+  alerts: 
+    enabled: false
+  spec:
+    endpointSelector: {}
+    ingress:
+    - fromEndpoints:
+      - matchLabels:
+          app.gitlab.com/managed_by: gitlab
+
 workers: {}
   # worker:
   #   replicaCount: 1

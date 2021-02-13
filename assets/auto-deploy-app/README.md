@@ -70,5 +70,8 @@
 | podDisruptionBudget.maxUnavailable |             | `1`                            |
 | podDisruptionBudget.minAvailable | If present, this variable will configure minAvailable in the PodDisruptionBudget. :warning: if you have `replicaCount: 1` and `podDisruptionBudget.minAvailable: 1` `kubectl drain` will be blocked.              | `nil`                            |
 | prometheus.metrics            | Annotates the service for prometheus auto-discovery. Also denies access to the `/metrics` endpoint from external addresses with Ingress. | `false` |
-| networkPolicy.enabled         | Enable container network policy | `false` |
-| networkPolicy.spec            | [Network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) definition | `{ podSelector: { matchLabels: {} }, ingress: [{ from: [{ podSelector: { matchLabels: {} } }, { namespaceSelector: { matchLabels: { app.gitlab.com/managed_by: gitlab } } }] }] }` |
+| networkPolicy.enabled(**DEPRECATED**)         | Enable container network policy | `false` |
+| networkPolicy.spec(**DEPRECATED**)            | [Network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) definition | `{ podSelector: { matchLabels: {} }, ingress: [{ from: [{ podSelector: { matchLabels: {} } }, { namespaceSelector: { matchLabels: { app.gitlab.com/managed_by: gitlab } } }] }] }` |
+| ciliumNetworkPolicy.enabled         | Enable container cilium network policy | `false` |
+| ciliumNetworkPolicy.alerts.enabled         | Enable alert generation for container cilium network policy | `false` |
+| ciliumNetworkPolicy.spec            | [Cilium network policy](https://docs.cilium.io/en/v1.8/concepts/kubernetes/policy/#ciliumnetworkpolicy/) definition | `{ endpointSelector: {}, ingress: [{ fromEndpoints: [{ matchLabels: { app.gitlab.com/managed_by: gitlab } }] }] }` |

@@ -8,7 +8,7 @@ metadata:
     "app.gitlab.com/alert": "true"
 {{- end }}
   labels:
-    app.gitlab.com/proj: {{ .Values.gitlab.projectID | default "" | quote }}
+    app.gitlab.com/proj: {{ .Values.gitlab.projectID | quote }}
 {{ include "sharedlabels" . | indent 4}}
 spec:
 {{ toYaml .Values.ciliumNetworkPolicy.spec | indent 2 }}

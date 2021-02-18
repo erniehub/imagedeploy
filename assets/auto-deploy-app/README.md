@@ -33,6 +33,7 @@
 | gitlab.env                    | GitLab environment slug. | `nil` |
 | gitlab.envName                | GitLab environment name. | `nil` |
 | gitlab.envURL                 | GitLab environment URL.  | `nil` |
+| gitlab.projectID              | Gitlab project ID.       | `nil` |
 | service.enabled               |             | `true`                             |
 | service.annotations           | Service annotations | `{}`                       |
 | service.name                  |             | `web`                              |

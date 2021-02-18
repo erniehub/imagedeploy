@@ -24,6 +24,17 @@ func TestCiliumNetworkPolicy(t *testing.T) {
 		"helm.sh/chart":                chartName,
 		"app.kubernetes.io/managed-by": "Helm",
 		"app.kubernetes.io/instance":   releaseName,
+		"app.gitlab.com/proj":          "",
+	}
+	expectedLabelsWithProjectID := map[string]string{
+		"app":                          releaseName,
+		"chart":                        chartName,
+		"release":                      releaseName,
+		"heritage":                     "Helm",
+		"app.kubernetes.io/name":       releaseName,
+		"helm.sh/chart":                chartName,
+		"app.kubernetes.io/managed-by": "Helm",
+		"app.kubernetes.io/instance":   releaseName,
 		"app.gitlab.com/proj":          "91",
 	}
 
@@ -44,9 +55,26 @@ func TestCiliumNetworkPolicy(t *testing.T) {
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/cilium-network-policy.yaml in chart"),
 		},
 		{
-			name:   "with default policy",
-			values: map[string]string{"ciliumNetworkPolicy.enabled": "true", "gitlab.proj": "91"},
+			name:   "with default policy without project ID",
+			values: map[string]string{"ciliumNetworkPolicy.enabled": "true"},
 			meta:   metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabels},
+			endpointSelector: api.EndpointSelector{
+				LabelSelector: &slim_metav1.LabelSelector{MatchLabels: map[string]string(nil)},
+			},
+			ingress: []api.IngressRule{
+				{
+					FromEndpoints: []api.EndpointSelector{
+						{LabelSelector: &slim_metav1.LabelSelector{
+							MatchLabels: map[string]string{"any.app.gitlab.com/managed_by": "gitlab"},
+						}},
+					},
+				},
+			},
+		},
+		{
+			name:   "with default policy",
+			values: map[string]string{"ciliumNetworkPolicy.enabled": "true", "gitlab.projectID": "91"},
+			meta:   metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabelsWithProjectID},
 			endpointSelector: api.EndpointSelector{
 				LabelSelector: &slim_metav1.LabelSelector{MatchLabels: map[string]string(nil)},
 			},
@@ -63,8 +91,8 @@ func TestCiliumNetworkPolicy(t *testing.T) {
 		{
 			name:       "with custom policy without alerts",
 			valueFiles: []string{"../testdata/custom-cilium-policy.yaml"},
-			values:     map[string]string{"ciliumNetworkPolicy.enabled": "true", "gitlab.proj": "91", "ciliumNetworkPolicy.alerts.enabled": "false"},
-			meta:       metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabels},
+			values:     map[string]string{"ciliumNetworkPolicy.enabled": "true", "gitlab.projectID": "91", "ciliumNetworkPolicy.alerts.enabled": "false"},
+			meta:       metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabelsWithProjectID},
 			endpointSelector: api.EndpointSelector{
 				LabelSelector: &slim_metav1.LabelSelector{MatchLabels: map[string]string(nil)},
 			},
@@ -81,8 +109,8 @@ func TestCiliumNetworkPolicy(t *testing.T) {
 		{
 			name:       "with custom policy with alerts",
 			valueFiles: []string{"../testdata/custom-cilium-policy.yaml"},
-			values:     map[string]string{"ciliumNetworkPolicy.enabled": "true", "gitlab.proj": "91"},
-			meta:       metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabels, Annotations: map[string]string{"app.gitlab.com/alert": "true"}},
+			values:     map[string]string{"ciliumNetworkPolicy.enabled": "true", "gitlab.projectID": "91"},
+			meta:       metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabelsWithProjectID, Annotations: map[string]string{"app.gitlab.com/alert": "true"}},
 			endpointSelector: api.EndpointSelector{
 				LabelSelector: &slim_metav1.LabelSelector{MatchLabels: map[string]string(nil)},
 			},

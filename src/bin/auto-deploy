@@ -303,7 +303,7 @@ channel 1 database.'
       --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
       --set gitlab.envName="$CI_ENVIRONMENT_NAME" \
       --set gitlab.envURL="$CI_ENVIRONMENT_URL" \
-      --set gitlab.proj="$CI_PROJECT_ID" \
+      --set gitlab.projectID="$CI_PROJECT_ID" \
       --set releaseOverride="$RELEASE_NAME" \
       --set image.repository="$image_repository" \
       --set-string image.tag="$image_tag" \
@@ -338,7 +338,7 @@ channel 1 database.'
     --set gitlab.env="$CI_ENVIRONMENT_SLUG" \
     --set gitlab.envName="$CI_ENVIRONMENT_NAME" \
     --set gitlab.envURL="$CI_ENVIRONMENT_URL" \
-    --set gitlab.proj="$CI_PROJECT_ID" \
+    --set gitlab.projectID="$CI_PROJECT_ID" \
     --set releaseOverride="$RELEASE_NAME" \
     --set image.repository="$image_repository" \
     --set-string image.tag="$image_tag" \

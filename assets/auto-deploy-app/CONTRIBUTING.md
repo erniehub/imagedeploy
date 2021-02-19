@@ -51,3 +51,7 @@ helm dependency build .               # required any time the dependencies chang
 cd test
 GO111MODULE=auto go test ./...        # required for every change to the tests or the template
 ```
+
+### Windows users
+
+Some of the dependencies might not be available on Windows (e.g., `github.com/sirupsen/logrus/hooks/syslog`). Therefore we recommend running tests on docker, vagrant boxes or similar virtualization tools.

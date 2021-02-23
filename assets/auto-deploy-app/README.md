@@ -19,6 +19,7 @@
 | podAnnotations                | Pod annotations | `{}`                           |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |
+| affinity                      | Node affinity for pod assignment | `{}`          |
 | application.track             |             | `stable`                           |
 | application.tier              |             | `web`                              |
 | application.migrateCommand    | If present, this variable will run as a shell command within an application Container as a Helm pre-upgrade Hook. Intended to run migration commands. | `nil` |

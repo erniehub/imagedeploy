@@ -16,6 +16,7 @@
 | image.pullPolicy              |             | `Always`                           |
 | image.secrets                 |             | `[name: gitlab-registry]`          |
 | extraLabels                   | Allow labelling resources with custom key/value pairs | `{}` |
+| lifecycle                     |             | `{}`                               |
 | podAnnotations                | Pod annotations | `{}`                           |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |

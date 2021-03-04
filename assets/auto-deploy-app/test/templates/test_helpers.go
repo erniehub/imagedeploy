@@ -48,6 +48,7 @@ type workerDeploymentTestCase struct {
 	ExpectedReadinessProbe *coreV1.Probe
 	ExpectedNodeSelector   map[string]string
 	ExpectedTolerations    []coreV1.Toleration
+	ExpectedAffinity       *coreV1.Affinity
 }
 
 type workerDeploymentSelectorTestCase struct {

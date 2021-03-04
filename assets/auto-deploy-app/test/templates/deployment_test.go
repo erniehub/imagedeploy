@@ -275,7 +275,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		ExpectedSelector     *metav1.LabelSelector
 		ExpectedNodeSelector map[string]string
 		ExpectedTolerations  []coreV1.Toleration
-		ExpectedAffinity	 *coreV1.Affinity
+		ExpectedAffinity     *coreV1.Affinity
 	}{
 		{
 			CaseName:        "selector",
@@ -340,13 +340,13 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:		  "affinity",
-			Release:		  "production",
+			CaseName:     "affinity",
+			Release:      "production",
 			Values: map[string]string{
 				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":	  "key1",
 				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator": "DoesNotExist",
 			},
-			ExpectedName: 	  "production",
+			ExpectedName:     "production",
 			ExpectedRelease:  "production",
 			ExpectedSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
@@ -363,7 +363,7 @@ func TestDeploymentTemplate(t *testing.T) {
 							{
 								MatchExpressions: []coreV1.NodeSelectorRequirement{
 									{
-										Key:	  "key1",
+										Key:      "key1",
 										Operator: "DoesNotExist",
 									},
 								},

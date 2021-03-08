@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.6.0"
+	chartName     = "auto-deploy-app-2.7.0"
 	helmChartPath = "../.."
 )
 
@@ -48,6 +48,7 @@ type workerDeploymentTestCase struct {
 	ExpectedReadinessProbe *coreV1.Probe
 	ExpectedNodeSelector   map[string]string
 	ExpectedTolerations    []coreV1.Toleration
+	ExpectedAffinity       *coreV1.Affinity
 }
 
 type workerDeploymentSelectorTestCase struct {

@@ -124,6 +124,41 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			CaseName:        "affinity",
+			Release:         "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+				"workers.worker1.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":      "key1",
+				"workers.worker1.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator": "DoesNotExist",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:         "production" + "-worker1",
+					ExpectedCmd:          []string{"echo", "worker1"},
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedAffinity:     &coreV1.Affinity{
+						NodeAffinity: &coreV1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &coreV1.NodeSelector{
+								NodeSelectorTerms: []coreV1.NodeSelectorTerm{
+									{
+										MatchExpressions: []coreV1.NodeSelectorRequirement{
+											{
+												Key:      "key1",
+												Operator: "DoesNotExist",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
 			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
@@ -189,6 +224,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 				require.Equal(t, expectedDeployment.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
 				require.Equal(t, expectedDeployment.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
+				require.Equal(t, expectedDeployment.ExpectedAffinity, deployment.Spec.Template.Spec.Affinity)
 			}
 		})
 	}

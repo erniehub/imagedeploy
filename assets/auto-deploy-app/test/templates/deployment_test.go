@@ -275,6 +275,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		ExpectedSelector     *metav1.LabelSelector
 		ExpectedNodeSelector map[string]string
 		ExpectedTolerations  []coreV1.Toleration
+		ExpectedAffinity     *coreV1.Affinity
 	}{
 		{
 			CaseName:        "selector",
@@ -338,6 +339,40 @@ func TestDeploymentTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			CaseName:     "affinity",
+			Release:      "production",
+			Values: map[string]string{
+				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":	  "key1",
+				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator": "DoesNotExist",
+			},
+			ExpectedName:     "production",
+			ExpectedRelease:  "production",
+			ExpectedSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":     "production",
+					"release": "production",
+					"tier":    "web",
+					"track":   "stable",
+				},
+			},
+			ExpectedAffinity: &coreV1.Affinity{
+				NodeAffinity: &coreV1.NodeAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: &coreV1.NodeSelector{
+						NodeSelectorTerms: []coreV1.NodeSelectorTerm{
+							{
+								MatchExpressions: []coreV1.NodeSelectorRequirement{
+									{
+										Key:      "key1",
+										Operator: "DoesNotExist",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
 			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
@@ -390,6 +425,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
 			require.Equal(t, tc.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
+			require.Equal(t, tc.ExpectedAffinity, deployment.Spec.Template.Spec.Affinity)
 		})
 	}
 }

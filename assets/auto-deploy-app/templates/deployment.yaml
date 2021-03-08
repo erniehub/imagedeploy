@@ -38,7 +38,7 @@ spec:
     spec:
 {{- if .Values.serviceAccountName }}
       serviceAccountName: {{ .Values.serviceAccountName | quote }}
-{{- end }}        
+{{- end }}
       imagePullSecrets:
 {{ toYaml .Values.image.secrets | indent 10 }}
 {{- if .Values.nodeSelector }}
@@ -48,6 +48,10 @@ spec:
 {{- if .Values.tolerations }}
       tolerations:
 {{ toYaml .Values.tolerations | indent 8 }}
+{{- end }}
+{{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
 {{- end }}
       containers:
       - name: {{ .Chart.Name }}

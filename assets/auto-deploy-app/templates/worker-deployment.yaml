@@ -55,6 +55,12 @@ items:
 {{ toYaml $tolerationsConfig | indent 10 }}
 {{- end }}
 {{- end }}
+{{- with $affinityConfig := default $.Values.affinity $workerConfig.affinity -}}
+{{- if $affinityConfig  }}
+        affinity:
+{{ toYaml $affinityConfig | indent 10 }}
+{{- end }}
+{{- end }}
         terminationGracePeriodSeconds: {{ $workerConfig.terminationGracePeriodSeconds }}
         containers:
         - name: {{ $.Chart.Name }}-{{ $workerName }}

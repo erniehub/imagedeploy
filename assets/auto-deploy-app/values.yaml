@@ -13,6 +13,7 @@ image:
 extraLabels: {}
 podAnnotations: {}
 nodeSelector: {}
+affinity: {}
 tolerations: []
 application:
   track: stable
@@ -115,7 +116,7 @@ networkPolicy:
 
 ciliumNetworkPolicy:
   enabled: false
-  alerts: 
+  alerts:
     enabled: false
   spec:
     endpointSelector: {}

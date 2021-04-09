@@ -422,9 +422,9 @@ test-chart-major-version-upgrade:
 test-upgrade-from-helm2-fails:
   extends:
     - .rules:except-docs
-  image: docker:19.03.12
+  image: docker:20.10.5
   services:
-    - docker:19.03.12-dind
+    - docker:20.10.5-dind
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
       alias: k3s
   interruptible: true

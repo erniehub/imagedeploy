@@ -10,9 +10,9 @@
 
 release-tag:
   stage: release
-  image: docker:19.03.5
+  image: docker:20.10.5
   services:
-    - docker:19.03.5-dind
+    - docker:20.10.5-dind
   script:
     - 'echo ${CI_JOB_TOKEN} | docker login --password-stdin -u $CI_REGISTRY_USER $CI_REGISTRY'
     - export ci_image="${CI_REGISTRY_IMAGE}"

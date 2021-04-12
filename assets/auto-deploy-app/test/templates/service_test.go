@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
 	coreV1 "k8s.io/api/core/v1"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestServiceTemplate_DifferentTracks(t *testing.T) {
@@ -96,6 +98,63 @@ func TestServiceTemplate_Disable(t *testing.T) {
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)
 			require.Equal(t, tc.expectedName, service.ObjectMeta.Name)
+		})
+	}
+}
+
+func TestServiceDefinition(t *testing.T) {
+	releaseName := "service-definition-test"
+	templates := []string{"templates/service.yaml"}
+
+	tcs := []struct {
+		name   string
+		values map[string]string
+		valueFiles []string
+		expectedPorts []coreV1.ServicePort
+
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:                "with additional service port",
+			valueFiles:  []string{"../testdata/service-definition.yaml"},
+			expectedPorts: []coreV1.ServicePort{
+				coreV1.ServicePort {
+					Name: "web",
+					Protocol: "TCP",
+					Port: 5000,
+					TargetPort: intstr.FromInt(5000),
+					NodePort: 0,
+				},
+				coreV1.ServicePort {
+					Name: "port_443",
+					Protocol: "TCP",
+					Port: 443,
+					TargetPort: intstr.FromInt(443),
+					NodePort: 0,
+				},
+			},
+			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				ValuesFiles: tc.valueFiles,
+				SetValues:   tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			service := new(coreV1.Service)
+			helm.UnmarshalK8SYaml(t, output, service)
+			fmt.Println(service.Spec.Ports)
+			fmt.Println(tc.expectedPorts)
+			require.Equal(t, tc.expectedPorts, service.Spec.Ports)
 		})
 	}
 }

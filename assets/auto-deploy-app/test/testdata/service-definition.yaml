@@ -1,0 +1,5 @@
+additionalServicePorts:
+  - port: 443
+    targetPort: 443
+    protocol: TCP
+    name: port_443

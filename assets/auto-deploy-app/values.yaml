@@ -43,6 +43,7 @@ service:
   commonName:
   externalPort: 5000
   internalPort: 5000
+additionalServicePorts: []
 ingress:
   enabled: true
   path: "/"

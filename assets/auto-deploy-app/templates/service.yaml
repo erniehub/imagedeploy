@@ -21,6 +21,9 @@ spec:
     targetPort: {{ .Values.service.internalPort }}
     protocol: TCP
     name: {{ .Values.service.name }}
+{{- if .Values.additionalServicePorts }}
+{{ toYaml .Values.additionalServicePorts | indent 2 }}
+{{- end }}
   selector:
     app: {{ template "appname" . }}
     tier: "{{ .Values.application.tier }}"

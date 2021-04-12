@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 
@@ -102,7 +101,7 @@ func TestServiceTemplate_Disable(t *testing.T) {
 	}
 }
 
-func TestServiceDefinition(t *testing.T) {
+func TestAdditionalServiceDefinition(t *testing.T) {
 	releaseName := "service-definition-test"
 	templates := []string{"templates/service.yaml"}
 
@@ -126,7 +125,7 @@ func TestServiceDefinition(t *testing.T) {
 					NodePort: 0,
 				},
 				coreV1.ServicePort {
-					Name: "port_443",
+					Name: "port-443",
 					Protocol: "TCP",
 					Port: 443,
 					TargetPort: intstr.FromInt(443),
@@ -152,8 +151,6 @@ func TestServiceDefinition(t *testing.T) {
 
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)
-			fmt.Println(service.Spec.Ports)
-			fmt.Println(tc.expectedPorts)
 			require.Equal(t, tc.expectedPorts, service.Spec.Ports)
 		})
 	}

@@ -93,6 +93,7 @@ spec:
 {{- range .Values.additionalServicePorts }}
         - name: {{ .name }}
           containerPort: {{ .targetPort }}
+          protocol: {{ .protocol }} 
 {{- end}}
 {{- end }}
         livenessProbe:

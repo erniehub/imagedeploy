@@ -448,11 +448,12 @@ func TestAdditionalServicePortDefinition(t *testing.T) {
 			expectedPorts: []coreV1.ContainerPort{
 				coreV1.ContainerPort {
 					Name: "web",
-					ContainerPort : 5000,
+					ContainerPort: 5000,
 				},
 				coreV1.ContainerPort {
 					Name: "port-443",
 					ContainerPort: 443,
+					Protocol: "TCP",
 				},
 			},
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),

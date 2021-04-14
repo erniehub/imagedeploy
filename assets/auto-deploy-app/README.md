@@ -44,6 +44,11 @@
 | service.commonName            | If present, this will define the ssl certificate common name to be used by CertManager. `service.url` and `service.additionalHosts` will be added as Subject Alternative Names (SANs) | `nil` |
 | service.externalPort          |             | `5000`                             |
 | service.internalPort          |             | `5000`                             |
+| additionalServicePorts        | List of additional service port definitions | `[]` |
+| additionalServicePorts.port   | Integer external port number | `nil` |
+| additionalServicePorts.targetPort | Integer container port number | `nil` |
+| additionalServicePorts.protocol | Protocol of the service port definition | `nil` |
+| additionalServicePorts.name | Name of the service port definition | `nil` |
 | ingress.enabled               | If true, enables ingress | `true`                |
 | ingress.path                  | Default path for the ingress | `/` |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |

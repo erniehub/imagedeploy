@@ -223,6 +223,55 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// deployment lifecycle
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedLifecycle *coreV1.Lifecycle
+	}{
+		{
+			CaseName:          "lifecycle",
+			Release:           "production",
+			Values: map[string]string{
+				"lifecycle.preStop.exec.command[0]": "/bin/sh",
+				"lifecycle.preStop.exec.command[1]": "-c",
+				"lifecycle.preStop.exec.command[2]": "sleep 10",
+			},
+			ExpectedLifecycle: &coreV1.Lifecycle{
+				PreStop: &coreV1.Handler{
+					Exec: &coreV1.ExecAction{
+						Command: []string{"/bin/sh", "-c", "sleep 10"},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedLifecycle, deployment.Spec.Template.Spec.Containers[0].Lifecycle)
+		})
+	}
+
 	// deployment livenessProbe, and readinessProbe tests
 	for _, tc := range []struct {
 		CaseName string

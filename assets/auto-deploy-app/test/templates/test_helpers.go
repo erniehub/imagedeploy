@@ -44,6 +44,7 @@ type workerDeploymentTestCase struct {
 	ExpectedCmd            []string
 	ExpectedStrategyType   appsV1.DeploymentStrategyType
 	ExpectedSelector       *metav1.LabelSelector
+	ExpectedLifecycle      *coreV1.Lifecycle
 	ExpectedLivenessProbe  *coreV1.Probe
 	ExpectedReadinessProbe *coreV1.Probe
 	ExpectedNodeSelector   map[string]string

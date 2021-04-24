@@ -120,14 +120,19 @@ items:
             timeoutSeconds: {{ $readinessProbeConfig.timeoutSeconds }}
 {{- end }}
 {{- end }}
-          {{- if $workerConfig.preStopCommand }}
+          {{- if or $workerConfig.lifecycle $workerConfig.preStopCommand }}
           lifecycle:
+          {{- if $workerConfig.lifecycle }}
+{{ toYaml $workerConfig.lifecycle | indent 12 }}
+          {{- end }}
+            {{- if $workerConfig.preStopCommand }}
             preStop:
               exec:
                 command:
                 {{- range $workerConfig.preStopCommand }}
                 - {{ . }}
                 {{- end }}
+            {{- end}}
           {{- end }}
           resources:
 {{ toYaml $.Values.resources | indent 12 }}

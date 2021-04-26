@@ -16,7 +16,7 @@
 | image.pullPolicy              |             | `Always`                           |
 | image.secrets                 |             | `[name: gitlab-registry]`          |
 | extraLabels                   | Allow labelling resources with custom key/value pairs | `{}` |
-| lifecycle                     |             | `{}`                               |
+| lifecycle                     | [Pod lifecycle](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/) configuration | `{}` |
 | podAnnotations                | Pod annotations | `{}`                           |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |

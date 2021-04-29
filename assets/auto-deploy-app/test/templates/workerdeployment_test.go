@@ -319,6 +319,127 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// worker lifecycle
+	for _, tc := range []struct {
+		CaseName string
+		Values   map[string]string
+		Release  string
+
+		ExpectedDeployments []workerDeploymentTestCase
+	}{
+		{
+			CaseName: "lifecycle",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+				"workers.worker1.lifecycle.preStop.exec.command[0]": "/bin/sh",
+				"workers.worker1.lifecycle.preStop.exec.command[1]": "-c",
+				"workers.worker1.lifecycle.preStop.exec.command[2]": "sleep 10",
+				"workers.worker2.command[0]": "echo",
+				"workers.worker2.command[1]": "worker2",
+				"workers.worker2.lifecycle.preStop.exec.command[0]": "/bin/sh",
+				"workers.worker2.lifecycle.preStop.exec.command[1]": "-c",
+				"workers.worker2.lifecycle.preStop.exec.command[2]": "sleep 15",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:       "production-worker1",
+					ExpectedCmd:        []string{"echo", "worker1"},
+					ExpectedLifecycle: &coreV1.Lifecycle{
+						PreStop: &coreV1.Handler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"/bin/sh", "-c", "sleep 10"},
+							},
+						},
+					},
+				},
+				{
+					ExpectedName:       "production-worker2",
+					ExpectedCmd:        []string{"echo", "worker2"},
+					ExpectedLifecycle: &coreV1.Lifecycle{
+						PreStop: &coreV1.Handler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"/bin/sh", "-c", "sleep 15"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			CaseName: "preStopCommand",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+				"workers.worker1.preStopCommand[0]": "/bin/sh",
+				"workers.worker1.preStopCommand[1]": "-c",
+				"workers.worker1.preStopCommand[2]": "sleep 10",
+				"workers.worker2.command[0]": "echo",
+				"workers.worker2.command[1]": "worker2",
+				"workers.worker2.preStopCommand[0]": "/bin/sh",
+				"workers.worker2.preStopCommand[1]": "-c",
+				"workers.worker2.preStopCommand[2]": "sleep 15",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:       "production-worker1",
+					ExpectedCmd:        []string{"echo", "worker1"},
+					ExpectedLifecycle: &coreV1.Lifecycle{
+						PreStop: &coreV1.Handler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"/bin/sh", "-c", "sleep 10"},
+							},
+						},
+					},
+				},
+				{
+					ExpectedName:       "production-worker2",
+					ExpectedCmd:        []string{"echo", "worker2"},
+					ExpectedLifecycle: &coreV1.Lifecycle{
+						PreStop: &coreV1.Handler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"/bin/sh", "-c", "sleep 15"},
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+
+			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+
+			for i, expectedDeployment := range tc.ExpectedDeployments {
+				deployment := deployments.Items[i]
+				require.Equal(t, expectedDeployment.ExpectedName, deployment.Name)
+				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
+				require.Equal(t, expectedDeployment.ExpectedLifecycle, deployment.Spec.Template.Spec.Containers[0].Lifecycle)
+			}
+		})
+	}
+
 	// worker livenessProbe, and readinessProbe tests
 	for _, tc := range []struct {
 		CaseName string

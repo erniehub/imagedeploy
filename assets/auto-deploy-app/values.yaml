@@ -11,6 +11,10 @@ image:
   secrets:
     - name: gitlab-registry
 extraLabels: {}
+lifecycle: {}
+# preStop:
+#   exec:
+#     command: ["/bin/sh", "-c", "sleep 10"]
 podAnnotations: {}
 nodeSelector: {}
 affinity: {}
@@ -148,6 +152,10 @@ workers: {}
   #     timeoutSeconds: 3
   #     scheme: "HTTP"
   #     probeType: "httpGet"
+  #   lifecycle:
+  #     preStop:
+  #       exec:
+  #         command: ["/bin/sh", "-c", "sleep 10"]
   #   preStopCommand:
   #   - /bin/herokuish
   #   - procfile

@@ -87,10 +87,10 @@ items:
             httpGet:
               path: {{ $livenessProbeConfig.path }}
               scheme: {{ $livenessProbeConfig.scheme }}
-              port: {{ $.Values.service.internalPort }}
+              port: {{ $livenessProbeConfig.port | default $.Values.service.internalPort }}
 {{- else if eq $livenessProbeConfig.probeType "tcpSocket" }}
             tcpSocket:
-              port: {{ $.Values.service.internalPort }}
+              port: {{ $livenessProbeConfig.port | default $.Values.service.internalPort }}
 {{- else if eq $livenessProbeConfig.probeType "exec" }}
             exec:
               command:
@@ -107,10 +107,10 @@ items:
             httpGet:
               path: {{ $readinessProbeConfig.path }}
               scheme: {{ $readinessProbeConfig.scheme }}
-              port: {{ $.Values.service.internalPort }}
+              port: {{ $readinessProbeConfig.port | default $.Values.service.internalPort }}
 {{- else if eq $readinessProbeConfig.probeType "tcpSocket" }}
             tcpSocket:
-              port: {{ $.Values.service.internalPort }}
+              port: {{ $readinessProbeConfig.port | default $.Values.service.internalPort }}
 {{- else if eq $readinessProbeConfig.probeType "exec" }}
             exec:
               command:

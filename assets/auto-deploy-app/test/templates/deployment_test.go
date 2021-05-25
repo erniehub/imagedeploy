@@ -12,6 +12,7 @@ import (
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestDeploymentTemplate(t *testing.T) {
@@ -232,8 +233,8 @@ func TestDeploymentTemplate(t *testing.T) {
 		ExpectedLifecycle *coreV1.Lifecycle
 	}{
 		{
-			CaseName:          "lifecycle",
-			Release:           "production",
+			CaseName: "lifecycle",
+			Release:  "production",
 			Values: map[string]string{
 				"lifecycle.preStop.exec.command[0]": "/bin/sh",
 				"lifecycle.preStop.exec.command[1]": "-c",
@@ -286,6 +287,44 @@ func TestDeploymentTemplate(t *testing.T) {
 			Release:                "production",
 			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
+		},
+		{
+			CaseName: "custom liveness probe",
+			Release:  "production",
+			Values: map[string]string{
+				"livenessProbe.port": "1234",
+			},
+			ExpectedLivenessProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(1234),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 15,
+				TimeoutSeconds:      15,
+			},
+			ExpectedReadinessProbe: defaultReadinessProbe(),
+		},
+		{
+			CaseName: "custom readiness probe",
+			Release:  "production",
+			Values: map[string]string{
+				"readinessProbe.port": "2345",
+			},
+			ExpectedLivenessProbe: defaultLivenessProbe(),
+			ExpectedReadinessProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(2345),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 5,
+				TimeoutSeconds:      3,
+			},
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -341,8 +380,8 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:        "nodeSelector",
-			Release:         "production",
+			CaseName: "nodeSelector",
+			Release:  "production",
 			Values: map[string]string{
 				"nodeSelector.disktype": "ssd",
 			},
@@ -361,8 +400,8 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:        "tolerations",
-			Release:         "production",
+			CaseName: "tolerations",
+			Release:  "production",
 			Values: map[string]string{
 				"tolerations[0].key":      "key1",
 				"tolerations[0].operator": "Equal",
@@ -389,14 +428,14 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:     "affinity",
-			Release:      "production",
+			CaseName: "affinity",
+			Release:  "production",
 			Values: map[string]string{
-				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":	  "key1",
+				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":      "key1",
 				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator": "DoesNotExist",
 			},
-			ExpectedName:     "production",
-			ExpectedRelease:  "production",
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
 			ExpectedSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app":     "production",

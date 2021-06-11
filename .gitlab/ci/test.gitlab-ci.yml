@@ -73,6 +73,22 @@ test-download-chart:
     - auto-deploy download_chart
     - ./test/verify-chart-version 2
 
+test-download-chart-url:
+  <<: *test-job
+  script:
+    # package the chart for the chart server
+    - (cd assets && helm package auto-deploy-app)
+    # install a helm chart server and serve the local chart
+    - curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+    - chmod +x ./chartmuseum
+    - ./chartmuseum --port=8080 --storage=local  --storage-local-rootdir="./assets" &
+    # instruct auto-deploy to use the chart server
+    - export AUTO_DEVOPS_CHART_REPOSITORY_NAME=chartmuseum
+    - export AUTO_DEVOPS_CHART_REPOSITORY=http://localhost:8080
+    - export AUTO_DEVOPS_CHART=chartmuseum/auto-deploy-app
+    - auto-deploy download_chart
+    - ./test/verify-chart-version 2
+
 test-deploy-name:
   <<: *test-job
   variables:

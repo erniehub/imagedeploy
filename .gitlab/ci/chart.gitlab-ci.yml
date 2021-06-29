@@ -43,11 +43,18 @@ kubesec-sast:
 chart:test:
   extends: .chart-job
   stage: test
+  variables:
+    GLIBC_VERSION: 2.31-r0
   script:
+    # install dependencies
     - apk add build-base
+    - curl -sSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+    - curl -sSL -O https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk
+    - apk add glibc-${GLIBC_VERSION}.apk
     - wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
     - tar -C /usr/local -xzf go1.15.2.linux-amd64.tar.gz
     - export PATH=$PATH:/usr/local/go/bin
+    # run tests
     - go version
     - helm repo add stable https://charts.helm.sh/stable
     - helm dependency build .

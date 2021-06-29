@@ -13,7 +13,6 @@ build:
        --build-arg "HELM_VERSION=$HELM_VERSION"
        --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION"
        --build-arg "ALPINE_VERSION=$ALPINE_VERSION"
-       --build-arg "GLIBC_VERSION=$GLIBC_VERSION"
        --tag "$BUILD_IMAGE_NAME" .
     - docker push "$BUILD_IMAGE_NAME"
     - export latest_tag="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}:latest"

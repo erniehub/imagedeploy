@@ -150,6 +150,11 @@ function install_postgresql() {
     debug_flag=('--debug')
   fi
 
+  local atomic_flag=()
+  if [[ "$AUTO_DEVOPS_ATOMIC_RELEASE" != "false" ]]; then
+    atomic_flag=('--atomic')
+  fi
+
   local postgres_helm_values_args=()
   local postgres_helm_values_file=${POSTGRES_HELM_UPGRADE_VALUES_FILE:-.gitlab/auto-deploy-postgres-values.yaml}
   if [[ -f "${postgres_helm_values_file}" ]]; then
@@ -161,7 +166,7 @@ function install_postgresql() {
 
   # shellcheck disable=SC2086 # POSTGRES_HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
-    --atomic \
+    "${atomic_flag[@]}" \
     "${debug_flag[@]}" \
     --wait \
     --version 8.2.1 \
@@ -391,7 +396,7 @@ function scale() {
 function delete_postgresql() {
   local name="$POSTGRESQL_RELEASE_NAME"
 
-  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$" --failed --pending --deployed)" ]]; then
     helm delete "$name" --namespace "$KUBE_NAMESPACE"
     kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
@@ -403,7 +408,7 @@ function delete() {
   local name
   name=$(deploy_name "$track")
 
-  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$" --failed --pending --deployed)" ]]; then
     helm delete "$name" --namespace "$KUBE_NAMESPACE"
   fi
 

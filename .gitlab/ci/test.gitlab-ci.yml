@@ -389,6 +389,21 @@ test-delete:
     - auto-deploy delete
     - helm get all production && expected_error || failed_as_expected
 
+test-delete-failed:
+  extends: test-deploy
+  script:
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    # make sure that the helm release deployments always fails very fast
+    - export HELM_UPGRADE_EXTRA_ARGS="--timeout 1s"
+    - export CI_APPLICATION_REPOSITORY=this-registry-does-not-exist.test
+    - export AUTO_DEVOPS_ATOMIC_RELEASE=false
+    # Deployment will fail, but we wnat to continue anyway and delete the failed application
+    - auto-deploy deploy || failed_as_expected
+    - helm get all production
+    - auto-deploy delete
+    - helm get all production && expected_error || failed_as_expected
+
 test-delete-postgresql:
   extends: test-deploy
   script:
@@ -403,6 +418,26 @@ test-delete-postgresql:
     - helm get all production-postgresql && expected_error || failed_as_expected
     - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
+
+test-delete-postgresql-failed:
+  extends: test-deploy
+  script:
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    # make sure that the helm release deployments always fails very fast
+    - export POSTGRES_HELM_UPGRADE_EXTRA_ARGS="--timeout 1s"
+    - export POSTGRES_VERSION=9.99.99
+    - export AUTO_DEVOPS_ATOMIC_RELEASE=false
+    # Deployment will fail, but we wnat to continue anyway and delete the failed application
+    - auto-deploy deploy || failed_as_expected
+    - helm get all production
+    - helm get all production-postgresql
+    - auto-deploy delete
+    - helm get all production && expected_error || failed_as_expected
+    - helm get all production-postgresql && expected_error || failed_as_expected
+    - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
+    - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
+
 
 test-delete-canary-postgresql:
   extends: test-deploy

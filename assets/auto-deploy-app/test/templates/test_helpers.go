@@ -1,11 +1,15 @@
 package main
 
 import (
+	"io"
+	"log"
+	"os"
 	"regexp"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,9 +17,28 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-2.11.1"
 	helmChartPath = "../.."
 )
+
+var chartName string // dynamically initialized
+
+func init() {
+	// init chartName dynamically because it is annoying to update this value, but it is needed for some expected labels
+	f, err := os.Open(helmChartPath + "/Chart.yaml")
+	if err != nil {
+		log.Fatalf("Failed to open Chart.yaml: %v", err)
+	}
+	b, err := io.ReadAll(f)
+	if err != nil {
+		log.Fatalf("Failed to read Chart.yaml: %v", err)
+	}
+	m := make(map[interface{}]interface{})
+	err = yaml.Unmarshal(b, m)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal Chart.yaml: %v", err)
+	}
+	chartName = "auto-deploy-app-" + m["version"].(string)
+}
 
 func renderTemplate(t *testing.T, values map[string]string, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string, bool) {
 	opts := &helm.Options{

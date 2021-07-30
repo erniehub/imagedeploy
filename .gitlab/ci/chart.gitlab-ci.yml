@@ -43,24 +43,14 @@ kubesec-sast:
 chart:test:
   extends: .chart-job
   stage: test
+  variables:
+    GO_VERSION: "1.16.6"
   script:
     - apk add build-base
-    - wget https://golang.org/dl/go1.15.2.linux-amd64.tar.gz
-    - tar -C /usr/local -xzf go1.15.2.linux-amd64.tar.gz
+    - wget https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz
+    - tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
     - export PATH=$PATH:/usr/local/go/bin
     - go version
     - helm repo add stable https://charts.helm.sh/stable
     - helm dependency build .
-    - cd test && GO111MODULE=auto go test ./...
-
-# auto-deploy-image doesn't need to release the chart to https://charts.gitlab.io/,
-# as it bundles a chart by default.
-# release-chart:
-#   stage: release
-#   script:
-#     - curl --fail --request POST --form "token=${CHARTS_TRIGGER_TOKEN}" --form ref=master
-#         --form "variables[CHART_NAME]=$CI_PROJECT_NAME"
-#         --form "variables[RELEASE_REF]=$CI_COMMIT_REF_NAME"
-#         https://gitlab.com/api/v4/projects/2860651/trigger/pipeline
-#   only:
-#     - /\Av[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?\Z/@gitlab-org/charts/auto-deploy-app
+    - cd test && go test ./...

@@ -84,6 +84,12 @@ function add_custom_chart_repository() {
   if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD" ]]; then
     helm_repo_auth+=('--password' "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD")
   fi
+
+  # Necessary when chart repo's index.yaml and the chart archives are in different domains
+  if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_PASS_CREDENTIALS" ]]; then
+    helm_repo_auth+=('--pass-credentials')
+  fi
+
   helm repo add \
     "${AUTO_DEVOPS_CHART_REPOSITORY_NAME}" \
     "${AUTO_DEVOPS_CHART_REPOSITORY}" \

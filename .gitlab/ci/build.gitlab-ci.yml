@@ -5,17 +5,28 @@ build:
   image: docker:20.10.5
   services:
     - docker:20.10.5-dind
+  variables:
+    PLATFORMS: linux/amd64,linux/arm64
   before_script:
+    # install buildx
+    - mkdir -p ~/.docker/cli-plugins
+    - wget https://github.com/docker/buildx/releases/download/v0.6.1/buildx-v0.6.1.linux-amd64 -O ~/.docker/cli-plugins/docker-buildx
+    - chmod a+x ~/.docker/cli-plugins/docker-buildx
+    # See https://www.docker.com/blog/multi-platform-docker-builds/
+    - docker run --rm --privileged docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64
+
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
+    - export BUILD_IMAGE_LATEST="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}:latest"
+    - docker buildx create --use
     - >-
-       docker build
+       docker buildx build
+       --platform "$PLATFORMS"
        --build-arg "HELM_VERSION=$HELM_VERSION"
        --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION"
        --build-arg "ALPINE_VERSION=$ALPINE_VERSION"
        --build-arg "GLIBC_VERSION=$GLIBC_VERSION"
-       --tag "$BUILD_IMAGE_NAME" .
-    - docker push "$BUILD_IMAGE_NAME"
-    - export latest_tag="${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}:latest"
-    - docker tag "$BUILD_IMAGE_NAME" $latest_tag
-    - docker push $latest_tag
+       --tag "$BUILD_IMAGE_NAME"
+       --tag "$BUILD_IMAGE_LATEST"
+       --push
+       .

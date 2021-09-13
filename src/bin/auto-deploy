@@ -10,6 +10,7 @@ export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
 export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
+export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
 
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then

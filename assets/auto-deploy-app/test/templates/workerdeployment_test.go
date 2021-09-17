@@ -319,6 +319,176 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+    // serviceAccountName
+    for _, tc := range []struct {
+        CaseName                   string
+        Release                    string
+        Values                     map[string]string
+
+        ExpectedDeployments []workerDeploymentServiceAccountTestCase
+    }{
+        {
+            CaseName:                   "default service account",
+            Release:                    "production",
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+                    ExpectedServiceAccountName: "",
+                },
+            },
+        },
+        {
+            CaseName: "empty service account name",
+            Release:  "production",
+            Values: map[string]string{
+                "serviceAccountName": "",
+            },
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+                    ExpectedServiceAccountName: "",
+                },
+            },
+        },
+        {
+            CaseName: "custom service account name - myServiceAccount",
+            Release:  "production",
+            Values: map[string]string{
+                "serviceAccountName": "myServiceAccount",
+            },
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+                    ExpectedServiceAccountName: "myServiceAccount",
+                },
+            },
+        },
+    } {
+        t.Run(tc.CaseName, func(t *testing.T) {
+            namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+            values := map[string]string{
+                "gitlab.app": "auto-devops-examples/minimal-ruby-app",
+                "gitlab.env": "prod",
+                "workers.worker1.command[0]": "echo",
+                "workers.worker1.command[1]": "worker1",
+            }
+
+            mergeStringMap(values, tc.Values)
+
+            options := &helm.Options{
+                SetValues:      values,
+                KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+            }
+
+            output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+
+            var deployments deploymentAppsV1List
+            helm.UnmarshalK8SYaml(t, output, &deployments)
+
+            require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+
+            for i, expectedDeployment := range tc.ExpectedDeployments {
+                deployment := deployments.Items[i]
+                require.Equal(t, expectedDeployment.ExpectedServiceAccountName, deployment.Spec.Template.Spec.ServiceAccountName)
+            }
+        })
+    }
+
+    // serviceAccount
+    for _, tc := range []struct {
+        CaseName string
+        Release  string
+        Values   map[string]string
+
+        ExpectedDeployments []workerDeploymentServiceAccountTestCase
+    }{
+        {
+            CaseName:                   "default service account",
+            Release:                    "production",
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+                    ExpectedServiceAccountName: "",
+                },
+            },
+        },
+        {
+            CaseName: "empty service account name",
+            Release:  "production",
+            Values: map[string]string{
+                "serviceAccount.name": "",
+            },
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+                    ExpectedServiceAccountName: "",
+                },
+            },
+        },
+        {
+            CaseName: "custom service account name - myServiceAccount",
+            Release:  "production",
+            Values: map[string]string{
+                "serviceAccount.name": "myServiceAccount",
+            },
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+                {
+                    ExpectedServiceAccountName: "myServiceAccount",
+                },
+            },
+        },
+        {
+            CaseName: "serviceAccount.name takes precedence over serviceAccountName",
+            Release:  "production",
+            Values: map[string]string{
+                "serviceAccount.name": "myServiceAccount1",
+                "serviceAccountName":  "myServiceAccount2",
+            },
+            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+                {
+                    ExpectedServiceAccountName: "myServiceAccount1",
+                },
+            },
+        },
+    } {
+        t.Run(tc.CaseName, func(t *testing.T) {
+            namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+            values := map[string]string{
+                "gitlab.app": "auto-devops-examples/minimal-ruby-app",
+                "gitlab.env": "prod",
+                "workers.worker1.command[0]": "echo",
+                "workers.worker1.command[1]": "worker1",
+            }
+
+            mergeStringMap(values, tc.Values)
+
+            options := &helm.Options{
+                SetValues:      values,
+                KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+            }
+
+            output := helm.RenderTemplate(
+                t,
+                options,
+                helmChartPath,
+                tc.Release,
+                []string{"templates/worker-deployment.yaml"},
+            )
+
+            var deployments deploymentAppsV1List
+            helm.UnmarshalK8SYaml(t, output, &deployments)
+
+            require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+
+            for i, expectedDeployment := range tc.ExpectedDeployments {
+                deployment := deployments.Items[i]
+                require.Equal(
+                    t,
+                    expectedDeployment.ExpectedServiceAccountName,
+                    deployment.Spec.Template.Spec.ServiceAccountName,
+                )
+            }
+        })
+    }
+
+
 	// worker lifecycle
 	for _, tc := range []struct {
 		CaseName string

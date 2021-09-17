@@ -5,7 +5,7 @@
 #   * If there is a new release it will tag the repository with the new release as the `ops-gitlab-net`
 #     user
 .semantic-release:
-  image: node:12
+  image: node:14
   stage: release
 
 release-tag:

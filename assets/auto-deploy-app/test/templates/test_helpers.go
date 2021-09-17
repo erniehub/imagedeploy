@@ -80,6 +80,10 @@ type workerDeploymentSelectorTestCase struct {
 	ExpectedSelector *metav1.LabelSelector
 }
 
+type workerDeploymentServiceAccountTestCase struct {
+	ExpectedServiceAccountName     string
+}
+
 type deploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 

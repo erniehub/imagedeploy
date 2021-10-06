@@ -35,7 +35,17 @@ hpa:
   enabled: false
   minReplicas: 1
   maxReplicas: 5
-  targetCPUUtilizationPercentage: 80
+  # Choose `targetCPUUtilizationPercentage` or `metrics` based on your use case
+  # targetCPUUtilizationPercentage: 80
+  # metrics:
+  # - type: Object
+  #   object:
+  #     target:
+  #       kind: Service
+  #       name: production-auto-deploy
+  #     metricName: nginx_ingress_controller_requests_per_second
+  #     targetValue: 40
+
 gitlab:
   app:
   env:

@@ -72,6 +72,7 @@ type workerDeploymentTestCase struct {
 	ExpectedReadinessProbe *coreV1.Probe
 	ExpectedNodeSelector   map[string]string
 	ExpectedTolerations    []coreV1.Toleration
+	ExpectedInitContainers []coreV1.Container
 	ExpectedAffinity       *coreV1.Affinity
 }
 
@@ -81,7 +82,7 @@ type workerDeploymentSelectorTestCase struct {
 }
 
 type workerDeploymentServiceAccountTestCase struct {
-	ExpectedServiceAccountName     string
+	ExpectedServiceAccountName string
 }
 
 type deploymentList struct {

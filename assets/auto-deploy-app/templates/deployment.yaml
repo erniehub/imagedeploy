@@ -53,6 +53,10 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
 {{- end }}
+{{- if .Values.initContainers }}
+      initContainers:
+{{ toYaml .Values.initContainers | indent 8 }}
+{{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ template "imagename" . }}

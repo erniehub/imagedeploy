@@ -20,6 +20,10 @@ podAnnotations: {}
 nodeSelector: {}
 affinity: {}
 tolerations: []
+initContainers: []
+# - name: init-myservice
+#   image: busybox
+#   command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;']
 application:
   track: stable
   tier: web
@@ -146,6 +150,7 @@ workers: {}
   #   - worker
   #   nodeSelector: {}
   #   tolerations: []
+  #   initContainers: []
   #   livenessProbe:
   #     path: "/"
   #     initialDelaySeconds: 15

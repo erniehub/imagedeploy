@@ -76,8 +76,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:        "nodeSelector",
-			Release:         "production",
+			CaseName: "nodeSelector",
+			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.command[0]":            "echo",
 				"workers.worker1.command[1]":            "worker1",
@@ -93,11 +93,10 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedNodeSelector: map[string]string{"disktype": "ssd"},
 				},
 			},
-
 		},
 		{
-			CaseName:        "tolerations",
-			Release:         "production",
+			CaseName: "tolerations",
+			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.command[0]":              "echo",
 				"workers.worker1.command[1]":              "worker1",
@@ -113,7 +112,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
 					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
-					ExpectedTolerations:  []coreV1.Toleration{
+					ExpectedTolerations: []coreV1.Toleration{
 						{
 							Key:      "key1",
 							Operator: "Equal",
@@ -125,8 +124,37 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:        "affinity",
-			Release:         "production",
+			CaseName: "initContainers",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":                   "echo",
+				"workers.worker1.command[1]":                   "worker1",
+				"workers.worker1.initContainers[0].name":       "myservice",
+				"workers.worker1.initContainers[0].image":      "myimage:1",
+				"workers.worker1.initContainers[0].command[0]": "sh",
+				"workers.worker1.initContainers[0].command[1]": "-c",
+				"workers.worker1.initContainers[0].command[2]": "until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:         "production" + "-worker1",
+					ExpectedCmd:          []string{"echo", "worker1"},
+					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+					ExpectedInitContainers: []coreV1.Container{
+						{
+							Name:    "myservice",
+							Image:   "myimage:1",
+							Command: []string{"sh", "-c", "until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;"},
+						},
+					},
+				},
+			},
+		},
+		{
+			CaseName: "affinity",
+			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.command[0]": "echo",
 				"workers.worker1.command[1]": "worker1",
@@ -140,7 +168,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName:         "production" + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
 					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
-					ExpectedAffinity:     &coreV1.Affinity{
+					ExpectedAffinity: &coreV1.Affinity{
 						NodeAffinity: &coreV1.NodeAffinity{
 							RequiredDuringSchedulingIgnoredDuringExecution: &coreV1.NodeSelector{
 								NodeSelectorTerms: []coreV1.NodeSelectorTerm{
@@ -224,6 +252,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 				require.Equal(t, expectedDeployment.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
 				require.Equal(t, expectedDeployment.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
+				require.Equal(t, expectedDeployment.ExpectedInitContainers, deployment.Spec.Template.Spec.InitContainers)
 				require.Equal(t, expectedDeployment.ExpectedAffinity, deployment.Spec.Template.Spec.Affinity)
 			}
 		})
@@ -319,175 +348,174 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
-    // serviceAccountName
-    for _, tc := range []struct {
-        CaseName                   string
-        Release                    string
-        Values                     map[string]string
+	// serviceAccountName
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
 
-        ExpectedDeployments []workerDeploymentServiceAccountTestCase
-    }{
-        {
-            CaseName:                   "default service account",
-            Release:                    "production",
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+		ExpectedDeployments []workerDeploymentServiceAccountTestCase
+	}{
+		{
+			CaseName: "default service account",
+			Release:  "production",
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
 				{
-                    ExpectedServiceAccountName: "",
-                },
-            },
-        },
-        {
-            CaseName: "empty service account name",
-            Release:  "production",
-            Values: map[string]string{
-                "serviceAccountName": "",
-            },
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+					ExpectedServiceAccountName: "",
+				},
+			},
+		},
+		{
+			CaseName: "empty service account name",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccountName": "",
+			},
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
 				{
-                    ExpectedServiceAccountName: "",
-                },
-            },
-        },
-        {
-            CaseName: "custom service account name - myServiceAccount",
-            Release:  "production",
-            Values: map[string]string{
-                "serviceAccountName": "myServiceAccount",
-            },
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+					ExpectedServiceAccountName: "",
+				},
+			},
+		},
+		{
+			CaseName: "custom service account name - myServiceAccount",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccountName": "myServiceAccount",
+			},
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
 				{
-                    ExpectedServiceAccountName: "myServiceAccount",
-                },
-            },
-        },
-    } {
-        t.Run(tc.CaseName, func(t *testing.T) {
-            namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+					ExpectedServiceAccountName: "myServiceAccount",
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
 
-            values := map[string]string{
-                "gitlab.app": "auto-devops-examples/minimal-ruby-app",
-                "gitlab.env": "prod",
-                "workers.worker1.command[0]": "echo",
-                "workers.worker1.command[1]": "worker1",
-            }
+			values := map[string]string{
+				"gitlab.app":                 "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env":                 "prod",
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+			}
 
-            mergeStringMap(values, tc.Values)
+			mergeStringMap(values, tc.Values)
 
-            options := &helm.Options{
-                SetValues:      values,
-                KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
-            }
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
 
-            output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
 
-            var deployments deploymentAppsV1List
-            helm.UnmarshalK8SYaml(t, output, &deployments)
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
 
-            require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
 
-            for i, expectedDeployment := range tc.ExpectedDeployments {
-                deployment := deployments.Items[i]
-                require.Equal(t, expectedDeployment.ExpectedServiceAccountName, deployment.Spec.Template.Spec.ServiceAccountName)
-            }
-        })
-    }
+			for i, expectedDeployment := range tc.ExpectedDeployments {
+				deployment := deployments.Items[i]
+				require.Equal(t, expectedDeployment.ExpectedServiceAccountName, deployment.Spec.Template.Spec.ServiceAccountName)
+			}
+		})
+	}
 
-    // serviceAccount
-    for _, tc := range []struct {
-        CaseName string
-        Release  string
-        Values   map[string]string
+	// serviceAccount
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
 
-        ExpectedDeployments []workerDeploymentServiceAccountTestCase
-    }{
-        {
-            CaseName:                   "default service account",
-            Release:                    "production",
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+		ExpectedDeployments []workerDeploymentServiceAccountTestCase
+	}{
+		{
+			CaseName: "default service account",
+			Release:  "production",
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
 				{
-                    ExpectedServiceAccountName: "",
-                },
-            },
-        },
-        {
-            CaseName: "empty service account name",
-            Release:  "production",
-            Values: map[string]string{
-                "serviceAccount.name": "",
-            },
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+					ExpectedServiceAccountName: "",
+				},
+			},
+		},
+		{
+			CaseName: "empty service account name",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccount.name": "",
+			},
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
 				{
-                    ExpectedServiceAccountName: "",
-                },
-            },
-        },
-        {
-            CaseName: "custom service account name - myServiceAccount",
-            Release:  "production",
-            Values: map[string]string{
-                "serviceAccount.name": "myServiceAccount",
-            },
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
-                {
-                    ExpectedServiceAccountName: "myServiceAccount",
-                },
-            },
-        },
-        {
-            CaseName: "serviceAccount.name takes precedence over serviceAccountName",
-            Release:  "production",
-            Values: map[string]string{
-                "serviceAccount.name": "myServiceAccount1",
-                "serviceAccountName":  "myServiceAccount2",
-            },
-            ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
-                {
-                    ExpectedServiceAccountName: "myServiceAccount1",
-                },
-            },
-        },
-    } {
-        t.Run(tc.CaseName, func(t *testing.T) {
-            namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+					ExpectedServiceAccountName: "",
+				},
+			},
+		},
+		{
+			CaseName: "custom service account name - myServiceAccount",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccount.name": "myServiceAccount",
+			},
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+					ExpectedServiceAccountName: "myServiceAccount",
+				},
+			},
+		},
+		{
+			CaseName: "serviceAccount.name takes precedence over serviceAccountName",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccount.name": "myServiceAccount1",
+				"serviceAccountName":  "myServiceAccount2",
+			},
+			ExpectedDeployments: []workerDeploymentServiceAccountTestCase{
+				{
+					ExpectedServiceAccountName: "myServiceAccount1",
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
 
-            values := map[string]string{
-                "gitlab.app": "auto-devops-examples/minimal-ruby-app",
-                "gitlab.env": "prod",
-                "workers.worker1.command[0]": "echo",
-                "workers.worker1.command[1]": "worker1",
-            }
+			values := map[string]string{
+				"gitlab.app":                 "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env":                 "prod",
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+			}
 
-            mergeStringMap(values, tc.Values)
+			mergeStringMap(values, tc.Values)
 
-            options := &helm.Options{
-                SetValues:      values,
-                KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
-            }
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
 
-            output := helm.RenderTemplate(
-                t,
-                options,
-                helmChartPath,
-                tc.Release,
-                []string{"templates/worker-deployment.yaml"},
-            )
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
 
-            var deployments deploymentAppsV1List
-            helm.UnmarshalK8SYaml(t, output, &deployments)
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
 
-            require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
 
-            for i, expectedDeployment := range tc.ExpectedDeployments {
-                deployment := deployments.Items[i]
-                require.Equal(
-                    t,
-                    expectedDeployment.ExpectedServiceAccountName,
-                    deployment.Spec.Template.Spec.ServiceAccountName,
-                )
-            }
-        })
-    }
-
+			for i, expectedDeployment := range tc.ExpectedDeployments {
+				deployment := deployments.Items[i]
+				require.Equal(
+					t,
+					expectedDeployment.ExpectedServiceAccountName,
+					deployment.Spec.Template.Spec.ServiceAccountName,
+				)
+			}
+		})
+	}
 
 	// worker lifecycle
 	for _, tc := range []struct {
@@ -501,21 +529,21 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			CaseName: "lifecycle",
 			Release:  "production",
 			Values: map[string]string{
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "worker1",
+				"workers.worker1.command[0]":                        "echo",
+				"workers.worker1.command[1]":                        "worker1",
 				"workers.worker1.lifecycle.preStop.exec.command[0]": "/bin/sh",
 				"workers.worker1.lifecycle.preStop.exec.command[1]": "-c",
 				"workers.worker1.lifecycle.preStop.exec.command[2]": "sleep 10",
-				"workers.worker2.command[0]": "echo",
-				"workers.worker2.command[1]": "worker2",
+				"workers.worker2.command[0]":                        "echo",
+				"workers.worker2.command[1]":                        "worker2",
 				"workers.worker2.lifecycle.preStop.exec.command[0]": "/bin/sh",
 				"workers.worker2.lifecycle.preStop.exec.command[1]": "-c",
 				"workers.worker2.lifecycle.preStop.exec.command[2]": "sleep 15",
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:       "production-worker1",
-					ExpectedCmd:        []string{"echo", "worker1"},
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
 						PreStop: &coreV1.Handler{
 							Exec: &coreV1.ExecAction{
@@ -525,8 +553,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					},
 				},
 				{
-					ExpectedName:       "production-worker2",
-					ExpectedCmd:        []string{"echo", "worker2"},
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
 						PreStop: &coreV1.Handler{
 							Exec: &coreV1.ExecAction{
@@ -541,21 +569,21 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			CaseName: "preStopCommand",
 			Release:  "production",
 			Values: map[string]string{
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "worker1",
+				"workers.worker1.command[0]":        "echo",
+				"workers.worker1.command[1]":        "worker1",
 				"workers.worker1.preStopCommand[0]": "/bin/sh",
 				"workers.worker1.preStopCommand[1]": "-c",
 				"workers.worker1.preStopCommand[2]": "sleep 10",
-				"workers.worker2.command[0]": "echo",
-				"workers.worker2.command[1]": "worker2",
+				"workers.worker2.command[0]":        "echo",
+				"workers.worker2.command[1]":        "worker2",
 				"workers.worker2.preStopCommand[0]": "/bin/sh",
 				"workers.worker2.preStopCommand[1]": "-c",
 				"workers.worker2.preStopCommand[2]": "sleep 15",
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:       "production-worker1",
-					ExpectedCmd:        []string{"echo", "worker1"},
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
 						PreStop: &coreV1.Handler{
 							Exec: &coreV1.ExecAction{
@@ -565,8 +593,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					},
 				},
 				{
-					ExpectedName:       "production-worker2",
-					ExpectedCmd:        []string{"echo", "worker2"},
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
 						PreStop: &coreV1.Handler{
 							Exec: &coreV1.ExecAction{

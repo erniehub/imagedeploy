@@ -428,12 +428,13 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
-		ExpectedName         string
-		ExpectedRelease      string
-		ExpectedSelector     *metav1.LabelSelector
-		ExpectedNodeSelector map[string]string
-		ExpectedTolerations  []coreV1.Toleration
-		ExpectedAffinity     *coreV1.Affinity
+		ExpectedName           string
+		ExpectedRelease        string
+		ExpectedSelector       *metav1.LabelSelector
+		ExpectedNodeSelector   map[string]string
+		ExpectedTolerations    []coreV1.Toleration
+		ExpectedInitContainers []coreV1.Container
+		ExpectedAffinity       *coreV1.Affinity
 	}{
 		{
 			CaseName:        "selector",
@@ -494,6 +495,35 @@ func TestDeploymentTemplate(t *testing.T) {
 					Operator: "Equal",
 					Value:    "value1",
 					Effect:   "NoSchedule",
+				},
+			},
+		},
+		{
+			CaseName: "initContainers",
+			Release:  "production",
+			Values: map[string]string{
+				"initContainers[0].name":       "myservice",
+				"initContainers[0].image":      "myimage:1",
+				"initContainers[0].command[0]": "sh",
+				"initContainers[0].command[1]": "-c",
+				"initContainers[0].command[2]": "until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;",
+			},
+
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":     "production",
+					"release": "production",
+					"tier":    "web",
+					"track":   "stable",
+				},
+			},
+			ExpectedInitContainers: []coreV1.Container{
+				{
+					Name:    "myservice",
+					Image:   "myimage:1",
+					Command: []string{"sh", "-c", "until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;"},
 				},
 			},
 		},
@@ -583,6 +613,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
 			require.Equal(t, tc.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
+			require.Equal(t, tc.ExpectedInitContainers, deployment.Spec.Template.Spec.InitContainers)
 			require.Equal(t, tc.ExpectedAffinity, deployment.Spec.Template.Spec.Affinity)
 		})
 	}

@@ -34,8 +34,8 @@
 | hpa.enabled                   | If true, enables horizontal pod autoscaler. A resource request is also required to be set, such as `resources.requests.cpu: 200m`.| `false` |
 | hpa.minReplicas               |             | `1`                                |
 | hpa.maxReplicas               |             | `5`                                |
-| hpa.targetCPUUtilizationPercentage | Percentage threshold when HPA begins scaling out pods | `nil` |
-| hpa.metrics                   | Resource/custom metric configuration when HPA begins scaling out pods | `nil` |
+| hpa.targetCPUUtilizationPercentage | `autoscaling/v1` - Percentage threshold for when HPA begins scaling out pods. Ignored if `hpa.metrics` is present. | `nil` |
+| hpa.metrics                   | `autoscaling/v2beta2`  [metrics](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/) definitions for when HPA begins scaling out pods.  | `nil` |
 | gitlab.app                    | GitLab project slug. | `nil` |
 | gitlab.env                    | GitLab environment slug. | `nil` |
 | gitlab.envName                | GitLab environment name. | `nil` |

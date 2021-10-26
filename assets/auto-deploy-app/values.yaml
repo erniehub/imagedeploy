@@ -35,16 +35,20 @@ hpa:
   enabled: false
   minReplicas: 1
   maxReplicas: 5
-  # Choose `targetCPUUtilizationPercentage` or `metrics` based on your use case
-  # targetCPUUtilizationPercentage: 80
+  # Only one of targetCPUUtilizationPercentage and metrics can be chosen.
+  # This is because targetCPUUtilizationPercentage is from autoscaling/v1,
+  # whereas metrics is from autoscaling/v2beta2. If both are provided, only
+  # metrics will be used.
+  # See https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/
+  # for examples of each.
+  targetCPUUtilizationPercentage: 80
   # metrics:
-  # - type: Object
-  #   object:
+  # - type: Resource
+  #   resource:
+  #     name: cpu
   #     target:
-  #       kind: Service
-  #       name: production-auto-deploy
-  #     metricName: nginx_ingress_controller_requests_per_second
-  #     targetValue: 40
+  #       type: Utilization
+  #       averageUtilization: 80
 
 gitlab:
   app:

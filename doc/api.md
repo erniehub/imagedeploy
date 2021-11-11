@@ -15,8 +15,9 @@ auto-deploy-image provides the following APIs to orchestrate [GitLab Auto Deploy
 | `CI_PROJECT_PATH_SLUG`                 | string | yes       | See [GitLab CI Predefined Variables](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html). | v0.1.0 ~ |
 | `CI_PROJECT_VISIBILITY`                | string | yes       | See [GitLab CI Predefined Variables](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html). | v0.1.0 ~ |
 | `CI_REGISTRY_IMAGE`                    | string | yes       | See [GitLab CI Predefined Variables](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html). | v0.1.0 ~ |
+| `KUBE_CONTEXT`                         | string | no        | Context to use from within `KUBECONFIG` | v2.16.0 ~ |
 | `KUBE_INGRESS_BASE_DOMAIN`             | string | yes       | See [GitLab Cluster Integration Deployment Variables](https://docs.gitlab.com/ee/user/project/clusters/). | v0.1.0 ~ |
-| `KUBE_NAMESPACE`                       | string | yes       | See [GitLab Cluster Integration Deployment Variables](https://docs.gitlab.com/ee/user/project/clusters/). | v0.1.0 ~ |
+| `KUBE_NAMESPACE`                       | string | no        | The deployment namespace. If not specified, the context default will be used. If the context has no default, falls back to `default` | v0.1.0 ~ |
 | `KUBECONFIG`                           | string | yes       | See [GitLab Cluster Integration Deployment Variables](https://docs.gitlab.com/ee/user/project/clusters/). | v0.1.0 ~ |
 | `AUTO_DEVOPS_DEPLOY_DEBUG`             | boolean | no       | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | [v0.16.0](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/compare/v0.15.0...v0.16.0) ~ |
 | `HELM_RELEASE_NAME`                    | string | no        | See [Customizing Auto DevOps](https://docs.gitlab.com/ee/topics/autodevops/customize.html). | v0.1.0 ~ |

@@ -23,6 +23,7 @@
 | podAnnotations                | Pod annotations | `{}`                           |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |
+| terminationGracePeriodSeconds | The amount of time in seconds an application is given to terminate | `30`          |
 | initContainers                | Containers that are run before the app containers are started. | `[]`          |
 | affinity                      | Node affinity for pod assignment | `{}`          |
 | application.track             |             | `stable`                           |

@@ -46,6 +46,7 @@
 | service.annotations           | Service annotations | `{}`                       |
 | service.name                  |             | `web`                              |
 | service.type                  |             | `ClusterIP`                        |
+| service.nodePort              | Used to set NodePort number if service.type == 'NodePort' | `30001`                        |
 | service.url                   |             | `http://my.host.com/`              |
 | service.additionalHosts       | If present, this list will add additional hostnames to the server configuration. | `nil` |
 | service.commonName            | If present, this will define the ssl certificate common name to be used by CertManager. `service.url` and `service.additionalHosts` will be added as Subject Alternative Names (SANs) | `nil` |

@@ -668,24 +668,24 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 	templates := []string{"templates/deployment.yaml"}
 
 	tcs := []struct {
-		name   string
-		values map[string]string
-		valueFiles []string
-		expectedPorts []coreV1.ContainerPort
+		name                string
+		values              map[string]string
+		valueFiles          []string
+		expectedPorts       []coreV1.ContainerPort
 		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:                "with extra ports service port",
-			valueFiles:  []string{"../testdata/service-definition.yaml"},
+			name:       "with extra ports service port",
+			valueFiles: []string{"../testdata/service-definition.yaml"},
 			expectedPorts: []coreV1.ContainerPort{
-				coreV1.ContainerPort {
-					Name: "web",
+				coreV1.ContainerPort{
+					Name:          "web",
 					ContainerPort: 5000,
 				},
-				coreV1.ContainerPort {
-					Name: "port-443",
+				coreV1.ContainerPort{
+					Name:          "port-443",
 					ContainerPort: 443,
-					Protocol: "TCP",
+					Protocol:      "TCP",
 				},
 			},
 		},
@@ -707,6 +707,83 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
 			require.Equal(t, tc.expectedPorts, deployment.Spec.Template.Spec.Containers[0].Ports)
+		})
+	}
+}
+
+func TestDeploymentTemplateWithVolumeMounts(t *testing.T) {
+	releaseName := "deployment-with-volume-mounts-test"
+	templates := []string{"templates/deployment.yaml"}
+
+	tcs := []struct {
+		name                 string
+		values               map[string]string
+		valueFiles           []string
+		expectedVolumes      []coreV1.Volume
+		expectedVolumeMounts []coreV1.VolumeMount
+		expectedErrorRegexp  *regexp.Regexp
+	}{
+		{
+			name:       "with volume mounts",
+			valueFiles: []string{"../testdata/volume-mounts.yaml"},
+			expectedVolumes: []coreV1.Volume{
+				coreV1.Volume{
+					Name: "log-dir",
+					VolumeSource: coreV1.VolumeSource{
+						PersistentVolumeClaim: &coreV1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "deployment-with-volume-mounts-test-auto-deploy-log-dir",
+						},
+					},
+				},
+				coreV1.Volume{
+					Name: "config",
+					VolumeSource: coreV1.VolumeSource{
+						PersistentVolumeClaim: &coreV1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "deployment-with-volume-mounts-test-auto-deploy-config",
+						},
+					},
+				},
+			},
+			expectedVolumeMounts: []coreV1.VolumeMount{
+				coreV1.VolumeMount{
+					Name:      "log-dir",
+					MountPath: "/log",
+				},
+				coreV1.VolumeMount{
+					Name:      "config",
+					MountPath: "/app-config",
+					SubPath:   "config.txt",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				ValuesFiles: tc.valueFiles,
+				SetValues:   tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			deployment := new(appsV1.Deployment)
+			helm.UnmarshalK8SYaml(t, output, deployment)
+
+			for i, expectedVolume := range tc.expectedVolumes {
+				require.Equal(t, expectedVolume.Name, deployment.Spec.Template.Spec.Volumes[i].Name)
+				require.Equal(t, expectedVolume.PersistentVolumeClaim.ClaimName, deployment.Spec.Template.Spec.Volumes[i].PersistentVolumeClaim.ClaimName)
+			}
+
+			for i, expectedVolumeMount := range tc.expectedVolumeMounts {
+				require.Equal(t, expectedVolumeMount.Name, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[i].Name)
+				require.Equal(t, expectedVolumeMount.MountPath, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[i].MountPath)
+				require.Equal(t, expectedVolumeMount.SubPath, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[i].SubPath)
+			}
 		})
 	}
 }

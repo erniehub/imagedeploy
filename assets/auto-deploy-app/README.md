@@ -91,3 +91,10 @@
 | ciliumNetworkPolicy.enabled         | Enable container cilium network policy | `false` |
 | ciliumNetworkPolicy.alerts.enabled         | Enable alert generation for container cilium network policy | `false` |
 | ciliumNetworkPolicy.spec            | [Cilium network policy](https://docs.cilium.io/en/v1.8/concepts/kubernetes/policy/#ciliumnetworkpolicy/) definition | `{ endpointSelector: {}, ingress: [{ fromEndpoints: [{ matchLabels: { app.gitlab.com/managed_by: gitlab } }] }] }` |
+| persistence.enabled           | Allow a [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) to be mounted as a volume. <br/> **Warning:** Auto-created PVCs are deleted any time `persistence.enabled` is set to `false`. | `false` |
+| persistence.volumes[].name         | The name of the volume. | `data` |
+| persistence.volumes[].mount.path         | The mount path in the deployment containers. | `/pvc-mount` |
+| persistence.volumes[].mount.subPath      | (Optional) The [subPath](https://kubernetes.io/docs/concepts/storage/volumes/#using-subpath) of the path. | |
+| persistence.volumes[].claim.accessMode   | The access mode of the PVC. | `ReadWriteOnce` |
+| persistence.volumes[].claim.size         | The storage size of the PVC. | `8Gi` |
+| persistence.volumes[].claim.storageClass | (Optional) The storage class of the PVC. If not specified, it falls back to the default storage class from the provider. | `nil` |

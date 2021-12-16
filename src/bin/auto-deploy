@@ -2,7 +2,7 @@
 
 set -e
 
-[[ "$TRACE" ]] && set -x
+set -x
 
 export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
@@ -11,6 +11,8 @@ export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
+
+kubectl config view
 
 if [[ -z "$KUBE_NAMESPACE" ]]; then
   context_namespace=$(kubectl config view --minify -o jsonpath='{..namespace}')

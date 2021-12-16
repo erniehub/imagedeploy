@@ -14,6 +14,8 @@ export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
 
 echo $KUBECONFIG
 kubectl config view
+kubectl config current-context
+kubectl config view --minify -o jsonpath='{..namespace}'
 
 if [[ -z "$KUBE_NAMESPACE" ]]; then
   context_namespace=$(kubectl config view --minify -o jsonpath='{..namespace}')

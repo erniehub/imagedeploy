@@ -25,6 +25,7 @@
 | tolerations                   | List of node taints to tolerate | `[]`          |
 | terminationGracePeriodSeconds | The amount of time in seconds a pod is given to terminate | [See the Kubernetes API for reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#lifecycle)          |
 | initContainers                | Containers that are run before the app containers are started. | `[]`          |
+| topologySpreadConstraints     | [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) | `[]`          |
 | affinity                      | Node affinity for pod assignment | `{}`          |
 | application.track             |             | `stable`                           |
 | application.tier              |             | `web`                              |

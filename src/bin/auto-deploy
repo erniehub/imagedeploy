@@ -12,6 +12,7 @@ export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
 
+echo $KUBECONFIG
 kubectl config view
 
 if [[ -z "$KUBE_NAMESPACE" ]]; then

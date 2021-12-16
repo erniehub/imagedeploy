@@ -57,6 +57,10 @@ spec:
       initContainers:
 {{ toYaml .Values.initContainers | indent 8 }}
 {{- end }}
+{{- if and (ge .Capabilities.KubeVersion.Major 19) (.Values.topologySpreadConstraints) }}
+      topologySpreadConstraints:
+{{ toYaml .Values.topologySpreadConstraints | indent 8 }}
+{{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       containers:
       - name: {{ .Chart.Name }}

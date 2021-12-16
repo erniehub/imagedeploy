@@ -428,13 +428,14 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
-		ExpectedName           string
-		ExpectedRelease        string
-		ExpectedSelector       *metav1.LabelSelector
-		ExpectedNodeSelector   map[string]string
-		ExpectedTolerations    []coreV1.Toleration
-		ExpectedInitContainers []coreV1.Container
-		ExpectedAffinity       *coreV1.Affinity
+		ExpectedName                      string
+		ExpectedRelease                   string
+		ExpectedSelector                  *metav1.LabelSelector
+		ExpectedNodeSelector              map[string]string
+		ExpectedTolerations               []coreV1.Toleration
+		ExpectedInitContainers            []coreV1.Container
+		ExpectedAffinity                  *coreV1.Affinity
+		ExpectedTopologySpreadConstraints []coreV1.TopologySpreadConstraint
 	}{
 		{
 			CaseName:        "selector",
@@ -561,6 +562,48 @@ func TestDeploymentTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			CaseName: "topologySpreadConstraints",
+			Release:  "production",
+			Values: map[string]string{
+				"topologySpreadConstraints[0].maxSkew":                                     "1",
+				"topologySpreadConstraints[0].topologyKey":                                 "zone",
+				"topologySpreadConstraints[0].whenUnsatisfiable":                           "DoNotSchedule",
+				"topologySpreadConstraints[0].labelSelector.matchLabels.foo":               "bar",
+				"topologySpreadConstraints[0].labelSelector.matchExpressions[0].key":       "key1",
+				"topologySpreadConstraints[0].labelSelector.matchExpressions[0].operator":  "DoesNotExist",
+				"topologySpreadConstraints[0].labelSelector.matchExpressions[0].values[0]": "value1",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":     "production",
+					"release": "production",
+					"tier":    "web",
+					"track":   "stable",
+				},
+			},
+			ExpectedTopologySpreadConstraints: []coreV1.TopologySpreadConstraint{
+				{
+					MaxSkew:           1,
+					TopologyKey:       "zone",
+					WhenUnsatisfiable: "DoNotSchedule",
+					LabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"foo": "bar",
+						},
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							{
+								Key:      "key1",
+								Operator: "DoesNotExist",
+								Values:   []string{"value1"},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
 			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
@@ -615,6 +658,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			require.Equal(t, tc.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
 			require.Equal(t, tc.ExpectedInitContainers, deployment.Spec.Template.Spec.InitContainers)
 			require.Equal(t, tc.ExpectedAffinity, deployment.Spec.Template.Spec.Affinity)
+			require.Equal(t, tc.ExpectedTopologySpreadConstraints, deployment.Spec.Template.Spec.TopologySpreadConstraints)
 		})
 	}
 }

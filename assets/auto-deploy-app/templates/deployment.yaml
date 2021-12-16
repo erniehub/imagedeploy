@@ -57,7 +57,7 @@ spec:
       initContainers:
 {{ toYaml .Values.initContainers | indent 8 }}
 {{- end }}
-{{- if and (ge .Capabilities.KubeVersion.Major 19) (.Values.topologySpreadConstraints) }}
+{{- if and (or (gt .Capabilities.KubeVersion.Major "1") (ge .Capabilities.KubeVersion.Minor "19")) (.Values.topologySpreadConstraints) }}
       topologySpreadConstraints:
 {{ toYaml .Values.topologySpreadConstraints | indent 8 }}
 {{- end }}

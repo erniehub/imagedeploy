@@ -34,6 +34,24 @@
           echo "Failed as expected and exited with $?"
         }
 
+test-use-kube-context:
+  <<: *test-job
+  variables:
+    KUBE_CONTEXT: default
+  script:
+    # This test that any function will be properly
+    # loaded. Even when calling `kubectl config --minify`
+    # without a current context pre-setup
+    - kubectl config unset current-context
+    - kubectl config get-contexts
+    - auto-deploy use_kube_context
+    - context=$(kubectl config current-context)
+    - |
+      if [[ "$context" != "default" ]]; then
+        echo "Failed to assign context"
+        exit 1
+      fi
+
 test-dependencies:
   <<: *test-job
   variables:

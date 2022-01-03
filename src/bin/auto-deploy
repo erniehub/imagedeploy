@@ -13,12 +13,8 @@ export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
 
 if [[ -z "$KUBE_NAMESPACE" ]]; then
-  context_namespace=$(kubectl config view --minify -o jsonpath='{..namespace}' || true)
-  if [[ -n "$context_namespace" ]]; then
-    export KUBE_NAMESPACE="$context_namespace"
-  else
-    export KUBE_NAMESPACE='default'
-  fi
+  context_namespace=$(kubectl config view --minify -o jsonpath='{..namespace}' 2>/dev/null || true)
+  export KUBE_NAMESPACE="${context_namespace:-"default"}"
 fi
 
 function use_kube_context() {

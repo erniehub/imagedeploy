@@ -1,4 +1,5 @@
-additionalServicePorts:
+service:
+  extraPorts:
   - port: 443
     targetPort: 443
     protocol: TCP

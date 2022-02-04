@@ -619,8 +619,8 @@ func TestDeploymentTemplate(t *testing.T) {
 	}
 }
 
-func TestAdditionalServicePortDefinition(t *testing.T) {
-	releaseName := "deployment-additional-service-port-definition-test"
+func TestServiceExtraPortServicePortDefinition(t *testing.T) {
+	releaseName := "deployment-extra-ports-service-port-definition-test"
 	templates := []string{"templates/deployment.yaml"}
 
 	tcs := []struct {
@@ -632,7 +632,7 @@ func TestAdditionalServicePortDefinition(t *testing.T) {
 		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:                "with additional service port",
+			name:                "with extra ports service port",
 			valueFiles:  []string{"../testdata/service-definition.yaml"},
 			expectedPorts: []coreV1.ContainerPort{
 				coreV1.ContainerPort {

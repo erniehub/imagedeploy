@@ -144,7 +144,7 @@ func TestServiceTemplate_Disable(t *testing.T) {
 	}
 }
 
-func TestAdditionalServiceDefinition(t *testing.T) {
+func TestServiceExtraPortsServiceDefinition(t *testing.T) {
 	releaseName := "service-definition-test"
 	templates := []string{"templates/service.yaml"}
 
@@ -154,10 +154,9 @@ func TestAdditionalServiceDefinition(t *testing.T) {
 		valueFiles []string
 		expectedPorts []coreV1.ServicePort
 
-		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
-			name:                "with additional service port",
+			name:                "with extra service port",
 			valueFiles:  []string{"../testdata/service-definition.yaml"},
 			expectedPorts: []coreV1.ServicePort{
 				coreV1.ServicePort {
@@ -175,7 +174,6 @@ func TestAdditionalServiceDefinition(t *testing.T) {
 					NodePort: 0,
 				},
 			},
-			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 	}
 

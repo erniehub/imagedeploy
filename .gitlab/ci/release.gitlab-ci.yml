@@ -5,27 +5,24 @@
 #   * If there is a new release it will tag the repository with the new release as the `ops-gitlab-net`
 #     user
 .semantic-release:
-  image: node:12
+  image: node:14
   stage: release
 
 release-tag:
   stage: release
-  image: docker:19.03.5
-  services:
-    - docker:19.03.5-dind
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
   script:
-    - 'echo ${CI_JOB_TOKEN} | docker login --password-stdin -u $CI_REGISTRY_USER $CI_REGISTRY'
+    # https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane_copy.md
+    - crane auth login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - export ci_image="${CI_REGISTRY_IMAGE}"
     - export ci_image_tag=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - export ci_image_tag_major=$(echo $CI_COMMIT_TAG | sed 's/\(v[0-9]\+\)\.[0-9]\+\.[0-9]\+/\1/')
     - echo "Using tag $ci_image_tag for image"
-    - docker pull "$BUILD_IMAGE_NAME"
-    - docker tag "$BUILD_IMAGE_NAME" $ci_image:latest
-    - docker tag "$BUILD_IMAGE_NAME" $ci_image:$ci_image_tag
-    - docker tag "$BUILD_IMAGE_NAME" $ci_image:$ci_image_tag_major
-    - docker push $ci_image:latest
-    - docker push $ci_image:$ci_image_tag
-    - docker push $ci_image:$ci_image_tag_major
+    - crane cp "$BUILD_IMAGE_NAME" "${ci_image}:latest"
+    - crane cp "$BUILD_IMAGE_NAME" "${ci_image}:${ci_image_tag}"
+    - crane cp "$BUILD_IMAGE_NAME" "${ci_image}:${ci_image_tag_major}"
   rules:
     - if: $CI_COMMIT_TAG
 

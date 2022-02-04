@@ -8,11 +8,9 @@
   parallel:
     matrix:
       - K3S_VERSION:
-        - v0.9.1 # kube 1.15.4, see https://github.com/rancher/k3s/releases/tag/v0.9.1 and https://github.com/rancher/k3s/releases/tag/v0.9.0
-        - v1.16.15-k3s1
-        - v1.17.13-k3s1
-        - v1.18.10-k3s1
-        - v1.19.3-k3s1
+        - v1.18.19-k3s1
+        - v1.22.2-k3s2
+
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/${K3S_VERSION}
       alias: k3s
@@ -36,6 +34,24 @@
           echo "Failed as expected and exited with $?"
         }
 
+test-use-kube-context:
+  <<: *test-job
+  variables:
+    KUBE_CONTEXT: default
+  script:
+    # This test that any function will be properly
+    # loaded. Even when calling `kubectl config --minify`
+    # without a current context pre-setup
+    - kubectl config unset current-context
+    - kubectl config get-contexts
+    - auto-deploy use_kube_context
+    - context=$(kubectl config current-context)
+    - |
+      if [[ "$context" != "default" ]]; then
+        echo "Failed to assign context"
+        exit 1
+      fi
+
 test-dependencies:
   <<: *test-job
   variables:
@@ -52,14 +68,6 @@ test-kube-domain:
   script:
     - auto-deploy check_kube_domain
 
-test-kube-domain-legacy:
-  <<: *test-job
-  variables:
-    GIT_STRATEGY: none
-    AUTO_DEVOPS_DOMAIN: example.com
-  script:
-    - auto-deploy check_kube_domain && expected_error || failed_as_expected
-
 test-kube-domain_error:
   <<: *test-job
   variables:
@@ -70,6 +78,40 @@ test-kube-domain_error:
 test-download-chart:
   <<: *test-job
   script:
+    - auto-deploy download_chart
+    - ./test/verify-chart-version 2
+
+test-download-chart-url:
+  <<: *test-job
+  script:
+    # package the chart for the chart server
+    - (cd assets && helm package auto-deploy-app)
+    # install a helm chart server and serve the local chart
+    - curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+    - chmod +x ./chartmuseum
+    - ./chartmuseum --port=8080 --storage=local --storage-local-rootdir="./assets" &
+    # instruct auto-deploy to use the chart server
+    - export AUTO_DEVOPS_CHART_REPOSITORY_NAME=chartmuseum
+    - export AUTO_DEVOPS_CHART_REPOSITORY=http://localhost:8080
+    - export AUTO_DEVOPS_CHART=chartmuseum/auto-deploy-app
+    - auto-deploy download_chart
+    - ./test/verify-chart-version 2
+
+test-download-protected-chart-url:
+  <<: *test-job
+  script:
+    # package the chart for the chart server
+    - (cd assets && helm package auto-deploy-app)
+    # install a helm chart server and serve the local chart
+    - curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+    - chmod +x ./chartmuseum
+    - ./chartmuseum --port=8080 --storage=local --storage-local-rootdir="./assets" --basic-auth-user="user" --basic-auth-pass="pass" &
+    # instruct auto-deploy to use the chart server
+    - export AUTO_DEVOPS_CHART_REPOSITORY_NAME=chartmuseum
+    - export AUTO_DEVOPS_CHART_REPOSITORY=http://localhost:8080
+    - export AUTO_DEVOPS_CHART=chartmuseum/auto-deploy-app
+    - export AUTO_DEVOPS_CHART_REPOSITORY_USERNAME=user
+    - export AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD=pass
     - auto-deploy download_chart
     - ./test/verify-chart-version 2
 
@@ -172,7 +214,7 @@ test-create-secret:
   <<: *test-job
   variables:
     GIT_STRATEGY: none
-    KUBE_NAMESPACE: default
+    EXPECTED_NAMESPACE: default
     CI_REGISTRY: example.com
     CI_DEPLOY_USER: ci-deploy-user
     CI_DEPLOY_PASSWORD: ci-deploy-password
@@ -180,7 +222,7 @@ test-create-secret:
     CI_PROJECT_VISIBILITY: private
   script:
     - auto-deploy create_secret
-    - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $KUBE_NAMESPACE
+    - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $EXPECTED_NAMESPACE
 
 test-create-secret-public-project:
   <<: *test-job
@@ -190,7 +232,7 @@ test-create-secret-public-project:
     KUBE_NAMESPACE: default
   script:
     - auto-deploy create_secret
-    - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $KUBE_NAMESPACE && expected_error || failed_as_expected
+    - kubectl get secret "gitlab-registry-${CI_PROJECT_PATH_SLUG}" -n $EXPECTED_NAMESPACE && expected_error || failed_as_expected
 
 test-persist-environment-url:
   <<: *test-job
@@ -201,66 +243,55 @@ test-persist-environment-url:
     - auto-deploy persist_environment_url
     - grep review-app.example.com environment_url.txt
 
-test-install-postgres:
-  <<: *test-job
-  variables:
-    GIT_STRATEGY: none
-    CI_ENVIRONMENT_SLUG: production
-    KUBE_NAMESPACE: default
-    AUTO_DEVOPS_POSTGRES_CHANNEL: 2
-    POSTGRES_ENABLED: "true"
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: testing-password
-    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
-  script:
-    - mkdir -p .gitlab
-    - "echo 'custom_key: custom_value' > .gitlab/auto-deploy-postgres-values.yaml"
-    - auto-deploy download_chart
-    - auto-deploy install_postgresql
-    - helm get values production-postgresql --namespace "$KUBE_NAMESPACE" --output json | grep -q '"custom_key":"custom_value"' || exit 1
-    - kubectl get statefulset production-postgresql -n $KUBE_NAMESPACE
-
 test-deploy:
   <<: *test-job
-  variables: &deploy-variables
+  variables:
     CI_APPLICATION_REPOSITORY: "registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/auto-build-image-with-psql"
     CI_APPLICATION_TAG: "5d248f6fa69a"
     CI_ENVIRONMENT_SLUG: production
     CI_ENVIRONMENT_URL: example.com
-    ADDITIONAL_HOSTS: '*.example.com, extra.host.com'
     CI_PROJECT_PATH_SLUG: "gitlab-org/cluster-integration/auto-build-image"
     CI_PROJECT_VISIBILITY: public
-    KUBE_NAMESPACE: default
     KUBE_INGRESS_BASE_DOMAIN: example.com
-    ROLLOUT_RESOURCE_TYPE: deployment
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: testing-password
-    POSTGRES_ENABLED: "true"
-    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
+    POSTGRES_ENABLED: "false"
     HELM_HOST: "localhost:44134"
+    EXPECTED_NAMESPACE: default
   script:
+    - auto-deploy use_kube_context
     - auto-deploy download_chart
+    - auto-deploy ensure_namespace
     - auto-deploy deploy
-    - helm get all production
-    - helm get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
-    - ./test/verify-deployment-database production postgresql
+    - helm -n "$EXPECTED_NAMESPACE" get all production
 
-test-deploy-postgres-disabled:
+test-deploy-custom-context:
   extends: test-deploy
   variables:
-    POSTGRES_ENABLED: "false"
+    KUBE_CONTEXT: default
+
+test-deploy-custom-namespace:
+  extends: test-deploy
+  variables:
+    KUBE_NAMESPACE: custom-namespace
+    EXPECTED_NAMESPACE: custom-namespace
+
+test-deploy-postgres-enabled:
+  extends: test-deploy
+  variables:
+    POSTGRES_ENABLED: "true"
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: testing-password
+    POSTGRES_DB: $CI_ENVIRONMENT_SLUG
   script:
     - auto-deploy initialize_tiller
     - auto-deploy download_chart
     - auto-deploy deploy
-    - helm get production
-    - helm list > releases.txt
-    - if grep -q "postgres" releases.txt; then echo "postgresql should not be installed"; exit 1; fi
+    - helm -n "$EXPECTED_NAMESPACE" get production
+    - helm -n "$EXPECTED_NAMESPACE" get values production --output json | grep "postgres://user:testing-password@production-postgresql:5432/production"
+    - ./test/verify-deployment-database production postgresql
 
 test-deploy-atomic:
   extends: test-deploy
   variables:
-    POSTGRES_ENABLED: "false"
     KUBE_INGRESS_BASE_DOMAIN: ""
   script:
     - auto-deploy download_chart
@@ -295,8 +326,6 @@ test-deploy-debug:
 
 test-deploy-when-stable-chart-repository-is-unreachable:
   extends: test-deploy
-  variables:
-    <<: *deploy-variables
   script:
     - echo "127.0.0.1 kubernetes-charts.storage.googleapis.com" >> /etc/hosts
     - auto-deploy initialize_tiller
@@ -318,14 +347,14 @@ test-scale-does-not-create-old-postgres:
       fi
 
 test-show-warning-for-legacy-in-cluster-postgresql:
-  extends: test-deploy
+  extends: test-deploy-postgres-enabled
   script:
     # Create a release/deployment
     - auto-deploy download_chart
     - auto-deploy deploy
     # Forcibly update the release that a legacy in-cluster postgresql exists in it
-    - helm upgrade --reuse-values --wait --set postgresql.enabled="true" --namespace="$KUBE_NAMESPACE" "${CI_ENVIRONMENT_SLUG}" chart/
-    - helm get values --namespace "$KUBE_NAMESPACE" --output json "${CI_ENVIRONMENT_SLUG}"
+    - helm upgrade --reuse-values --wait --set postgresql.enabled="true" --namespace="$EXPECTED_NAMESPACE" "${CI_ENVIRONMENT_SLUG}" chart/
+    - helm get values --namespace "$EXPECTED_NAMESPACE" --output json "${CI_ENVIRONMENT_SLUG}"
     # It should see an error when the deployment is upgraded
     - auto-deploy deploy| tee deploy.log || true
     - grep -q "Detected an existing PostgreSQL database" deploy.log || exit 1
@@ -337,32 +366,43 @@ test-deploy-canary:
     - auto-deploy deploy canary
     - helm get all production-canary
     # It should have Canary Ingress
-    - kubectl describe ingress production-canary-auto-deploy -n $KUBE_NAMESPACE > ingress.spec
+    - kubectl describe ingress production-canary-auto-deploy -n $EXPECTED_NAMESPACE > ingress.spec
     - grep -q 'nginx.ingress.kubernetes.io/canary:.*true' ingress.spec || exit 1
 
 test-deploy-modsecurity:
   extends: test-deploy
   variables:
-    <<: *deploy-variables
     AUTO_DEVOPS_MODSECURITY_SEC_RULE_ENGINE: "On"
   script:
     - auto-deploy download_chart
     - auto-deploy deploy
-    - $([[ $(kubectl get ingress production-auto-deploy -n $KUBE_NAMESPACE --no-headers=true -o custom-columns=:"metadata.annotations.nginx\.ingress\.kubernetes\.io/modsecurity-snippet") != "<none>" ]])
+    - $([[ $(kubectl get ingress production-auto-deploy -n $EXPECTED_NAMESPACE --no-headers=true -o custom-columns=:"metadata.annotations.nginx\.ingress\.kubernetes\.io/modsecurity-snippet") != "<none>" ]])
 
 test-create-application-secret:
   <<: *test-job
   variables:
-    KUBE_NAMESPACE: default
+    EXPECTED_NAMESPACE: default
     CI_ENVIRONMENT_SLUG: production
     K8S_SECRET_CODE: 12345
     K8S_SECRET_CODE_MULTILINE: "12345
     NEW LINE"
   script:
     - auto-deploy create_application_secret "stable"
-    - kubectl get secrets -n $KUBE_NAMESPACE
-    - kubectl get secrets production-secret -n $KUBE_NAMESPACE
+    - kubectl get secrets -n $EXPECTED_NAMESPACE
+    - kubectl get secrets production-secret -n $EXPECTED_NAMESPACE
     - ./test/verify-application-secret
+
+test-install-postgres:
+  extends: test-deploy-postgres-enabled
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - mkdir -p .gitlab
+    - "echo 'custom_key: custom_value' > .gitlab/auto-deploy-postgres-values.yaml"
+    - auto-deploy download_chart
+    - auto-deploy install_postgresql
+    - helm get values production-postgresql --namespace "$EXPECTED_NAMESPACE" --output json | grep -q '"custom_key":"custom_value"' || exit 1
+    - kubectl get statefulset production-postgresql -n $EXPECTED_NAMESPACE
 
 test-delete:
   extends: test-deploy
@@ -373,23 +413,58 @@ test-delete:
     - auto-deploy delete
     - helm get all production && expected_error || failed_as_expected
 
-test-delete-postgresql:
+test-delete-failed:
   extends: test-deploy
+  script:
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    # make sure that the helm release deployments always fails very fast
+    - export HELM_UPGRADE_EXTRA_ARGS="--timeout 1s"
+    - export CI_APPLICATION_REPOSITORY=this-registry-does-not-exist.test
+    - export AUTO_DEVOPS_ATOMIC_RELEASE=false
+    # Deployment will fail, but we wnat to continue anyway and delete the failed application
+    - auto-deploy deploy || failed_as_expected
+    - helm get all production
+    - auto-deploy delete
+    - helm get all production && expected_error || failed_as_expected
+
+test-delete-postgresql:
+  extends: test-deploy-postgres-enabled
   script:
     - auto-deploy download_chart
     - auto-deploy deploy
     - helm get all production
     - helm get all production-postgresql
-    - pvc_before_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
+    - pvc_before_delete=$(kubectl -n $EXPECTED_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -z "$pvc_before_delete" ]]; then "expected to find a postgresql pvc"; exit 1; fi
     - auto-deploy delete
     - helm get all production && expected_error || failed_as_expected
     - helm get all production-postgresql && expected_error || failed_as_expected
-    - pvc_after_delete=$(kubectl -n $KUBE_NAMESPACE get pvc -l release=production-postgresql)
+    - pvc_after_delete=$(kubectl -n $EXPECTED_NAMESPACE get pvc -l release=production-postgresql)
     - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
 
+test-delete-postgresql-failed:
+  extends: test-deploy-postgres-enabled
+  script:
+    - auto-deploy download_chart
+    - auto-deploy deploy
+    # make sure that the helm release deployments always fails very fast
+    - export POSTGRES_HELM_UPGRADE_EXTRA_ARGS="--timeout 1s"
+    - export POSTGRES_VERSION=9.99.99
+    - export AUTO_DEVOPS_ATOMIC_RELEASE=false
+    # Deployment will fail, but we wnat to continue anyway and delete the failed application
+    - auto-deploy deploy || failed_as_expected
+    - helm get all production
+    - helm get all production-postgresql
+    - auto-deploy delete
+    - helm get all production && expected_error || failed_as_expected
+    - helm get all production-postgresql && expected_error || failed_as_expected
+    - pvc_after_delete=$(kubectl -n $EXPECTED_NAMESPACE get pvc -l release=production-postgresql)
+    - if [[ -n "$pvc_after_delete" ]]; then echo "no postgresql pvc should be present"; exit 1; fi
+
+
 test-delete-canary-postgresql:
-  extends: test-deploy
+  extends: test-deploy-postgres-enabled
   script:
     - auto-deploy download_chart
     - auto-deploy deploy canary
@@ -422,9 +497,9 @@ test-chart-major-version-upgrade:
 test-upgrade-from-helm2-fails:
   extends:
     - .rules:except-docs
-  image: docker:19.03.12
+  image: docker:20.10.5
   services:
-    - docker:19.03.12-dind
+    - docker:20.10.5-dind
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/v1.16.7-k3s1
       alias: k3s
   interruptible: true

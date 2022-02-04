@@ -10,15 +10,21 @@
 | ---                           | ---         | ---                                |
 | replicaCount                  |             | `1`                                |
 | strategyType                  | Pod deployment [strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy) | `nil` |
-| serviceAccountName            | Pod service account name override  | `nil` |
+| serviceAccountName(**DEPRECATED**)            | Pod service account name override  | `nil` |
+| serviceAccount.name           | Name of service account to use for running the pods | `nil` |
+| serviceAccount.createNew      | If set to `true`, a new service account will be created with the details specified in the other fields under `serviceAccount`. If set to `false`, the service account specified in `serviceAccount.name` is expected to already exist. | `false` |
+| serviceAccount.annotations    | Annotations for the service account to be created | `nil` |
 | image.repository              |             | `gitlab.example.com/group/project` |
 | image.tag                     |             | `stable`                           |
 | image.pullPolicy              |             | `Always`                           |
 | image.secrets                 |             | `[name: gitlab-registry]`          |
 | extraLabels                   | Allow labelling resources with custom key/value pairs | `{}` |
+| lifecycle                     | [Container lifecycle hooks](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) | `{}` |
 | podAnnotations                | Pod annotations | `{}`                           |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |
+| terminationGracePeriodSeconds | The amount of time in seconds a pod is given to terminate | [See the Kubernetes API for reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#lifecycle)          |
+| initContainers                | Containers that are run before the app containers are started. | `[]`          |
 | affinity                      | Node affinity for pod assignment | `{}`          |
 | application.track             |             | `stable`                           |
 | application.tier              |             | `web`                              |
@@ -29,7 +35,8 @@
 | hpa.enabled                   | If true, enables horizontal pod autoscaler. A resource request is also required to be set, such as `resources.requests.cpu: 200m`.| `false` |
 | hpa.minReplicas               |             | `1`                                |
 | hpa.maxReplicas               |             | `5`                                |
-| hpa.targetCPUUtilizationPercentage | Percentage threshold when HPA begins scaling out pods | `80` |
+| hpa.targetCPUUtilizationPercentage | `autoscaling/v1` - Percentage threshold for when HPA begins scaling out pods. Ignored if `hpa.metrics` is present. | `nil` |
+| hpa.metrics                   | `autoscaling/v2beta2`  [metrics](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/) definitions for when HPA begins scaling out pods.  | `nil` |
 | gitlab.app                    | GitLab project slug. | `nil` |
 | gitlab.env                    | GitLab environment slug. | `nil` |
 | gitlab.envName                | GitLab environment name. | `nil` |
@@ -39,6 +46,7 @@
 | service.annotations           | Service annotations | `{}`                       |
 | service.name                  |             | `web`                              |
 | service.type                  |             | `ClusterIP`                        |
+| service.nodePort              | Used to set NodePort number if service.type == 'NodePort' | `30001`                        |
 | service.url                   |             | `http://my.host.com/`              |
 | service.additionalHosts       | If present, this list will add additional hostnames to the server configuration. | `nil` |
 | service.commonName            | If present, this will define the ssl certificate common name to be used by CertManager. `service.url` and `service.additionalHosts` will be added as Subject Alternative Names (SANs) | `nil` |

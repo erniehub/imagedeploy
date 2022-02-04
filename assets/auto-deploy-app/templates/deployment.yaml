@@ -36,8 +36,8 @@ spec:
         tier: "{{ .Values.application.tier }}"
 {{ include "sharedlabels" . | indent 8 }}
     spec:
-{{- if .Values.serviceAccountName }}
-      serviceAccountName: {{ .Values.serviceAccountName | quote }}
+{{- if or (.Values.serviceAccount.name) (.Values.serviceAccountName) }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default .Values.serviceAccountName | quote }}
 {{- end }}
       imagePullSecrets:
 {{ toYaml .Values.image.secrets | indent 10 }}
@@ -53,6 +53,11 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
 {{- end }}
+{{- if .Values.initContainers }}
+      initContainers:
+{{ toYaml .Values.initContainers | indent 8 }}
+{{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ template "imagename" . }}
@@ -86,6 +91,10 @@ spec:
           value: {{ .Values.gitlab.envName | quote }}
         - name: GITLAB_ENVIRONMENT_URL
           value: {{ .Values.gitlab.envURL | quote }}
+{{- if .Values.lifecycle }}
+        lifecycle:
+{{ toYaml .Values.lifecycle | indent 10 }}
+{{- end }}
         ports:
         - name: "{{ .Values.service.name }}"
           containerPort: {{ .Values.service.internalPort }}
@@ -103,10 +112,10 @@ spec:
           httpGet:
             path: {{ .Values.livenessProbe.path }}
             scheme: {{ .Values.livenessProbe.scheme }}
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.livenessProbe.port | default .Values.service.internalPort }}
 {{- else if eq .Values.livenessProbe.probeType "tcpSocket" }}
           tcpSocket:
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.livenessProbe.port | default .Values.service.internalPort }}
 {{- else if eq .Values.livenessProbe.probeType "exec" }}
           exec:
             command:
@@ -119,10 +128,10 @@ spec:
           httpGet:
             path: {{ .Values.readinessProbe.path }}
             scheme: {{ .Values.readinessProbe.scheme }}
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.readinessProbe.port | default .Values.service.internalPort }}
 {{- else if eq .Values.readinessProbe.probeType "tcpSocket" }}
           tcpSocket:
-            port: {{ .Values.service.internalPort }}
+            port: {{ .Values.readinessProbe.port | default .Values.service.internalPort }}
 {{- else if eq .Values.readinessProbe.probeType "exec" }}
           exec:
             command:

@@ -7,8 +7,51 @@ import (
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
 	coreV1 "k8s.io/api/core/v1"
-	intstr "k8s.io/apimachinery/pkg/util/intstr"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+func TestServiceTemplate_ServiceType(t *testing.T) {
+	templates := []string{"templates/service.yaml"}
+	releaseName := "test"
+	tcs := []struct {
+		name   string
+		values map[string]string
+
+		expectedName        string
+		expectedType        string
+		expectedPort        coreV1.ServicePort
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:         "defaults",
+			expectedType: "ClusterIP",
+			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), Protocol: "TCP", Name: "web"},
+
+		},
+		{
+			name:         "with NodePort",
+			values: map[string]string{ "service.type": "NodePort" },
+			expectedType: "NodePort",
+			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 30001, Protocol: "TCP", Name: "web"},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
+
+			if ret == false {
+				return
+			}
+
+			service := new(coreV1.Service)
+			helm.UnmarshalK8SYaml(t, output, service)
+			require.Equal(t, service.Spec.Type, v1.ServiceType(tc.expectedType))
+			require.Equal(t, service.Spec.Ports, []coreV1.ServicePort{tc.expectedPort})
+		})
+	}
+}
 
 func TestServiceTemplate_DifferentTracks(t *testing.T) {
 	templates := []string{"templates/service.yaml"}

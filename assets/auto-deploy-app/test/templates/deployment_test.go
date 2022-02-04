@@ -12,6 +12,7 @@ import (
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestDeploymentTemplate(t *testing.T) {
@@ -171,6 +172,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// serviceAccountName
 	for _, tc := range []struct {
 		CaseName                   string
 		Release                    string
@@ -223,6 +225,124 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// serviceAccount
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedServiceAccountName string
+	}{
+		{
+			CaseName:                   "default service account",
+			Release:                    "production",
+			ExpectedServiceAccountName: "",
+		},
+		{
+			CaseName: "empty service account name",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccount.name": "",
+			},
+			ExpectedServiceAccountName: "",
+		},
+		{
+			CaseName: "custom service account name - myServiceAccount",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccount.name": "myServiceAccount",
+			},
+			ExpectedServiceAccountName: "myServiceAccount",
+		},
+		{
+			CaseName: "serviceAccount.name takes precedence over serviceAccountName",
+			Release:  "production",
+			Values: map[string]string{
+				"serviceAccount.name": "myServiceAccount1",
+				"serviceAccountName":  "myServiceAccount2",
+			},
+			ExpectedServiceAccountName: "myServiceAccount1",
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/deployment.yaml"},
+			)
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedServiceAccountName, deployment.Spec.Template.Spec.ServiceAccountName)
+		})
+	}
+
+	// deployment lifecycle
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedLifecycle *coreV1.Lifecycle
+	}{
+		{
+			CaseName: "lifecycle",
+			Release:  "production",
+			Values: map[string]string{
+				"lifecycle.preStop.exec.command[0]": "/bin/sh",
+				"lifecycle.preStop.exec.command[1]": "-c",
+				"lifecycle.preStop.exec.command[2]": "sleep 10",
+			},
+			ExpectedLifecycle: &coreV1.Lifecycle{
+				PreStop: &coreV1.Handler{
+					Exec: &coreV1.ExecAction{
+						Command: []string{"/bin/sh", "-c", "sleep 10"},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedLifecycle, deployment.Spec.Template.Spec.Containers[0].Lifecycle)
+		})
+	}
+
 	// deployment livenessProbe, and readinessProbe tests
 	for _, tc := range []struct {
 		CaseName string
@@ -237,6 +357,44 @@ func TestDeploymentTemplate(t *testing.T) {
 			Release:                "production",
 			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
+		},
+		{
+			CaseName: "custom liveness probe",
+			Release:  "production",
+			Values: map[string]string{
+				"livenessProbe.port": "1234",
+			},
+			ExpectedLivenessProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(1234),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 15,
+				TimeoutSeconds:      15,
+			},
+			ExpectedReadinessProbe: defaultReadinessProbe(),
+		},
+		{
+			CaseName: "custom readiness probe",
+			Release:  "production",
+			Values: map[string]string{
+				"readinessProbe.port": "2345",
+			},
+			ExpectedLivenessProbe: defaultLivenessProbe(),
+			ExpectedReadinessProbe: &coreV1.Probe{
+				Handler: coreV1.Handler{
+					HTTPGet: &coreV1.HTTPGetAction{
+						Path:   "/",
+						Port:   intstr.FromInt(2345),
+						Scheme: coreV1.URISchemeHTTP,
+					},
+				},
+				InitialDelaySeconds: 5,
+				TimeoutSeconds:      3,
+			},
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -270,12 +428,13 @@ func TestDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
-		ExpectedName         string
-		ExpectedRelease      string
-		ExpectedSelector     *metav1.LabelSelector
-		ExpectedNodeSelector map[string]string
-		ExpectedTolerations  []coreV1.Toleration
-		ExpectedAffinity     *coreV1.Affinity
+		ExpectedName           string
+		ExpectedRelease        string
+		ExpectedSelector       *metav1.LabelSelector
+		ExpectedNodeSelector   map[string]string
+		ExpectedTolerations    []coreV1.Toleration
+		ExpectedInitContainers []coreV1.Container
+		ExpectedAffinity       *coreV1.Affinity
 	}{
 		{
 			CaseName:        "selector",
@@ -292,8 +451,8 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:        "nodeSelector",
-			Release:         "production",
+			CaseName: "nodeSelector",
+			Release:  "production",
 			Values: map[string]string{
 				"nodeSelector.disktype": "ssd",
 			},
@@ -312,8 +471,8 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:        "tolerations",
-			Release:         "production",
+			CaseName: "tolerations",
+			Release:  "production",
 			Values: map[string]string{
 				"tolerations[0].key":      "key1",
 				"tolerations[0].operator": "Equal",
@@ -340,14 +499,43 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName:     "affinity",
-			Release:      "production",
+			CaseName: "initContainers",
+			Release:  "production",
 			Values: map[string]string{
-				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":	  "key1",
+				"initContainers[0].name":       "myservice",
+				"initContainers[0].image":      "myimage:1",
+				"initContainers[0].command[0]": "sh",
+				"initContainers[0].command[1]": "-c",
+				"initContainers[0].command[2]": "until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;",
+			},
+
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":     "production",
+					"release": "production",
+					"tier":    "web",
+					"track":   "stable",
+				},
+			},
+			ExpectedInitContainers: []coreV1.Container{
+				{
+					Name:    "myservice",
+					Image:   "myimage:1",
+					Command: []string{"sh", "-c", "until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;"},
+				},
+			},
+		},
+		{
+			CaseName: "affinity",
+			Release:  "production",
+			Values: map[string]string{
+				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].key":      "key1",
 				"affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator": "DoesNotExist",
 			},
-			ExpectedName:     "production",
-			ExpectedRelease:  "production",
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
 			ExpectedSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app":     "production",
@@ -425,6 +613,7 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedNodeSelector, deployment.Spec.Template.Spec.NodeSelector)
 			require.Equal(t, tc.ExpectedTolerations, deployment.Spec.Template.Spec.Tolerations)
+			require.Equal(t, tc.ExpectedInitContainers, deployment.Spec.Template.Spec.InitContainers)
 			require.Equal(t, tc.ExpectedAffinity, deployment.Spec.Template.Spec.Affinity)
 		})
 	}

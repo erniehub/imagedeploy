@@ -10,6 +10,21 @@ export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
 export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
+export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
+
+if [[ -z "$KUBE_NAMESPACE" ]]; then
+  context_namespace=$(kubectl config view --minify -o jsonpath='{..namespace}' 2>/dev/null || true)
+  export KUBE_NAMESPACE="${context_namespace:-"default"}"
+fi
+
+function use_kube_context() {
+  if [[ -z "$KUBE_CONTEXT" ]]; then
+    echo "KUBE_CONTEXT not defined. The default context (if present) will be used"
+    return
+  fi
+  echo "Using context '$KUBE_CONTEXT'"
+  kubectl config use-context "$KUBE_CONTEXT"
+}
 
 function check_kube_domain() {
   if [[ -z "$KUBE_INGRESS_BASE_DOMAIN" ]]; then
@@ -56,7 +71,6 @@ function download_chart() {
   else
     helm dependency update chart/
   fi
-
 }
 
 function add_chart_repositories() {
@@ -84,6 +98,12 @@ function add_custom_chart_repository() {
   if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD" ]]; then
     helm_repo_auth+=('--password' "$AUTO_DEVOPS_CHART_REPOSITORY_PASSWORD")
   fi
+
+  # Necessary when chart repo's index.yaml and the chart archives are in different domains
+  if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_PASS_CREDENTIALS" ]]; then
+    helm_repo_auth+=('--pass-credentials')
+  fi
+
   helm repo add \
     "${AUTO_DEVOPS_CHART_REPOSITORY_NAME}" \
     "${AUTO_DEVOPS_CHART_REPOSITORY}" \
@@ -150,6 +170,11 @@ function install_postgresql() {
     debug_flag=('--debug')
   fi
 
+  local atomic_flag=()
+  if [[ "$AUTO_DEVOPS_ATOMIC_RELEASE" != "false" ]]; then
+    atomic_flag=('--atomic')
+  fi
+
   local postgres_helm_values_args=()
   local postgres_helm_values_file=${POSTGRES_HELM_UPGRADE_VALUES_FILE:-.gitlab/auto-deploy-postgres-values.yaml}
   if [[ -f "${postgres_helm_values_file}" ]]; then
@@ -161,7 +186,7 @@ function install_postgresql() {
 
   # shellcheck disable=SC2086 # POSTGRES_HELM_UPGRADE_EXTRA_ARGS -- double quote variables to prevent globbing
   helm upgrade --install \
-    --atomic \
+    "${atomic_flag[@]}" \
     "${debug_flag[@]}" \
     --wait \
     --version 8.2.1 \
@@ -391,7 +416,7 @@ function scale() {
 function delete_postgresql() {
   local name="$POSTGRESQL_RELEASE_NAME"
 
-  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$" --failed --pending --deployed)" ]]; then
     helm delete "$name" --namespace "$KUBE_NAMESPACE"
     kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
@@ -403,7 +428,7 @@ function delete() {
   local name
   name=$(deploy_name "$track")
 
-  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$")" ]]; then
+  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$" --failed --pending --deployed)" ]]; then
     helm delete "$name" --namespace "$KUBE_NAMESPACE"
   fi
 
@@ -522,7 +547,7 @@ function get_replicas() {
 
 option=$1
 case $option in
-
+  use_kube_context) use_kube_context ;;
   check_kube_domain) check_kube_domain ;;
   download_chart) download_chart ;;
   ensure_namespace) ensure_namespace ;;

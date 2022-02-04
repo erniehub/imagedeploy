@@ -7,9 +7,9 @@ workflow:
 variables:
   DOCKER_DRIVER: overlay2
 
-  HELM_VERSION: 3.2.4
-  KUBERNETES_VERSION: 1.15.12
-  ALPINE_VERSION: '3.12'
+  HELM_VERSION: '3.7.1'
+  KUBERNETES_VERSION: '1.20.11'
+  ALPINE_VERSION: '3.14'
   GLIBC_VERSION: 2.31-r0
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
@@ -26,3 +26,5 @@ include:
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/release.gitlab-ci.yml
   - local: .gitlab/ci/chart.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+

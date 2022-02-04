@@ -628,7 +628,6 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 		values map[string]string
 		valueFiles []string
 		expectedPorts []coreV1.ContainerPort
-
 		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
@@ -645,7 +644,6 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 					Protocol: "TCP",
 				},
 			},
-			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/service.yaml in chart"),
 		},
 	}
 

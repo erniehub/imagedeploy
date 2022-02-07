@@ -67,6 +67,7 @@ service:
   externalPort: 5000
   internalPort: 5000
   nodePort: 30001
+  extraPorts: []
 ingress:
   enabled: true
   path: "/"

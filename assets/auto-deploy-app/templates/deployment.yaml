@@ -98,6 +98,15 @@ spec:
         ports:
         - name: "{{ .Values.service.name }}"
           containerPort: {{ .Values.service.internalPort }}
+{{- if .Values.service.extraPorts }}
+{{- range $servicePort := .Values.service.extraPorts }}
+        - name: {{ $servicePort.name }}
+          containerPort: {{ $servicePort.targetPort }}
+          {{- if $servicePort.protocol }}
+          protocol: {{ $servicePort.protocol }} 
+          {{- end }}
+{{- end }}
+{{- end }}
         livenessProbe:
 {{- if eq .Values.livenessProbe.probeType "httpGet" }}
           httpGet:

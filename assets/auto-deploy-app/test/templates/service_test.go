@@ -143,3 +143,56 @@ func TestServiceTemplate_Disable(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceExtraPortsServiceDefinition(t *testing.T) {
+	releaseName := "service-definition-test"
+	templates := []string{"templates/service.yaml"}
+
+	tcs := []struct {
+		name   string
+		values map[string]string
+		valueFiles []string
+		expectedPorts []coreV1.ServicePort
+
+	}{
+		{
+			name:                "with extra service port",
+			valueFiles:  []string{"../testdata/service-definition.yaml"},
+			expectedPorts: []coreV1.ServicePort{
+				coreV1.ServicePort {
+					Name: "web",
+					Protocol: "TCP",
+					Port: 5000,
+					TargetPort: intstr.FromInt(5000),
+					NodePort: 0,
+				},
+				coreV1.ServicePort {
+					Name: "port-443",
+					Protocol: "TCP",
+					Port: 443,
+					TargetPort: intstr.FromInt(443),
+					NodePort: 0,
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				ValuesFiles: tc.valueFiles,
+				SetValues:   tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			service := new(coreV1.Service)
+			helm.UnmarshalK8SYaml(t, output, service)
+			require.Equal(t, tc.expectedPorts, service.Spec.Ports)
+		})
+	}
+}

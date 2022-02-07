@@ -618,3 +618,51 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceExtraPortServicePortDefinition(t *testing.T) {
+	releaseName := "deployment-extra-ports-service-port-definition-test"
+	templates := []string{"templates/deployment.yaml"}
+
+	tcs := []struct {
+		name   string
+		values map[string]string
+		valueFiles []string
+		expectedPorts []coreV1.ContainerPort
+		expectedErrorRegexp *regexp.Regexp
+	}{
+		{
+			name:                "with extra ports service port",
+			valueFiles:  []string{"../testdata/service-definition.yaml"},
+			expectedPorts: []coreV1.ContainerPort{
+				coreV1.ContainerPort {
+					Name: "web",
+					ContainerPort: 5000,
+				},
+				coreV1.ContainerPort {
+					Name: "port-443",
+					ContainerPort: 443,
+					Protocol: "TCP",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				ValuesFiles: tc.valueFiles,
+				SetValues:   tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			deployment := new(appsV1.Deployment)
+			helm.UnmarshalK8SYaml(t, output, deployment)
+			require.Equal(t, tc.expectedPorts, deployment.Spec.Template.Spec.Containers[0].Ports)
+		})
+	}
+}

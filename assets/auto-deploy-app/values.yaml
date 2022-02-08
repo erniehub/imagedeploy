@@ -24,6 +24,7 @@ initContainers: []
 # - name: init-myservice
 #   image: busybox
 #   command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice to start; sleep 1; done;']
+topologySpreadConstraints: []
 application:
   track: stable
   tier: web

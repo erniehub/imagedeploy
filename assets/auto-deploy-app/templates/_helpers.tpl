@@ -49,6 +49,13 @@ Get SecRule's arguments with unescaped single&double quotes
 {{- printf "SecRule %s %s %s" .variable $operator $action -}}
 {{- end -}}
 
+{{/*
+Generate a name for a Persistent Volume Claim
+*/}}
+{{- define "pvcName" -}}
+{{- printf "%s-%s" (include "fullname" .context) .name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "sharedlabels" -}}
 app: {{ template "appname" . }}
 chart: "{{ .Chart.Name }}-{{ .Chart.Version| replace "+" "_" }}"

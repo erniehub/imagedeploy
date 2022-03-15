@@ -30,10 +30,16 @@ func TestServiceTemplate_ServiceType(t *testing.T) {
 
 		},
 		{
-			name:         "with NodePort",
+			name:         "with type NodePort but no nodePort value",
 			values: map[string]string{ "service.type": "NodePort" },
 			expectedType: "NodePort",
-			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 30001, Protocol: "TCP", Name: "web"},
+			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 0, Protocol: "TCP", Name: "web"},
+		},
+		{
+			name:         "with type NodePort and nodePort set",
+			values: map[string]string{ "service.type": "NodePort", "service.nodePort": "12345" },
+			expectedType: "NodePort",
+			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 12345, Protocol: "TCP", Name: "web"},
 		},
 	}
 
@@ -159,14 +165,14 @@ func TestServiceExtraPortsServiceDefinition(t *testing.T) {
 			name:                "with extra service port",
 			valueFiles:  []string{"../testdata/service-definition.yaml"},
 			expectedPorts: []coreV1.ServicePort{
-				coreV1.ServicePort {
+				{
 					Name: "web",
 					Protocol: "TCP",
 					Port: 5000,
 					TargetPort: intstr.FromInt(5000),
 					NodePort: 0,
 				},
-				coreV1.ServicePort {
+				{
 					Name: "port-443",
 					Protocol: "TCP",
 					Port: 443,

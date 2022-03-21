@@ -176,6 +176,8 @@ workers: {}
   # worker:
   #   replicaCount: 1
   #   terminationGracePeriodSeconds: 60
+  #   labels:
+  #     worker-type: worker
   #   command:
   #   - /bin/herokuish
   #   - procfile

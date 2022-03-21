@@ -40,6 +40,9 @@ items:
           track: "{{ $.Values.application.track }}"
           tier: worker
           release: {{ $.Release.Name }}
+{{- with $workerConfig.labels  }}
+{{ toYaml . | indent 10 }}
+{{- end }}
       spec:
 {{- if or ($.Values.serviceAccount.name) ($.Values.serviceAccountName) }}
         serviceAccountName: {{ $.Values.serviceAccount.name | default $.Values.serviceAccountName | quote }}

@@ -27,17 +27,16 @@ func TestServiceTemplate_ServiceType(t *testing.T) {
 			name:         "defaults",
 			expectedType: "ClusterIP",
 			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), Protocol: "TCP", Name: "web"},
-
 		},
 		{
 			name:         "with type NodePort but no nodePort value",
-			values: map[string]string{ "service.type": "NodePort" },
+			values:       map[string]string{"service.type": "NodePort"},
 			expectedType: "NodePort",
 			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 0, Protocol: "TCP", Name: "web"},
 		},
 		{
 			name:         "with type NodePort and nodePort set",
-			values: map[string]string{ "service.type": "NodePort", "service.nodePort": "12345" },
+			values:       map[string]string{"service.type": "NodePort", "service.nodePort": "12345"},
 			expectedType: "NodePort",
 			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 12345, Protocol: "TCP", Name: "web"},
 		},
@@ -155,29 +154,28 @@ func TestServiceExtraPortsServiceDefinition(t *testing.T) {
 	templates := []string{"templates/service.yaml"}
 
 	tcs := []struct {
-		name   string
-		values map[string]string
-		valueFiles []string
+		name          string
+		values        map[string]string
+		valueFiles    []string
 		expectedPorts []coreV1.ServicePort
-
 	}{
 		{
-			name:                "with extra service port",
-			valueFiles:  []string{"../testdata/service-definition.yaml"},
+			name:       "with extra service port",
+			valueFiles: []string{"../testdata/service-definition.yaml"},
 			expectedPorts: []coreV1.ServicePort{
 				{
-					Name: "web",
-					Protocol: "TCP",
-					Port: 5000,
+					Name:       "web",
+					Protocol:   "TCP",
+					Port:       5000,
 					TargetPort: intstr.FromInt(5000),
-					NodePort: 0,
+					NodePort:   0,
 				},
 				{
-					Name: "port-443",
-					Protocol: "TCP",
-					Port: 443,
+					Name:       "port-443",
+					Protocol:   "TCP",
+					Port:       443,
 					TargetPort: intstr.FromInt(443),
-					NodePort: 0,
+					NodePort:   0,
 				},
 			},
 		},

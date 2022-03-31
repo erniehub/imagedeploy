@@ -764,3 +764,70 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkerDatabaseUrlEnvironmentVariable(t *testing.T) {
+	releaseName := "worker-application-database-url-test"
+
+	tcs := []struct {
+		CaseName            string
+		Values              map[string]string
+		ExpectedDatabaseUrl string
+		Template            string
+	}{
+		{
+			CaseName: "present-worker",
+			Values: map[string]string{
+				"application.database_url":   "PRESENT",
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+			},
+			ExpectedDatabaseUrl: "PRESENT",
+			Template:            "templates/worker-deployment.yaml",
+		},
+		{
+			CaseName: "missing-db-migrate",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+			},
+			Template: "templates/worker-deployment.yaml",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.CaseName, func(t *testing.T) {
+
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, releaseName, []string{tc.Template})
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+
+			if tc.ExpectedDatabaseUrl != "" {
+				require.Contains(t, deployments.Items[0].Spec.Template.Spec.Containers[0].Env, coreV1.EnvVar{Name: "DATABASE_URL", Value: tc.ExpectedDatabaseUrl})
+			} else {
+				for _, envVar := range deployments.Items[0].Spec.Template.Spec.Containers[0].Env {
+					require.NotEqual(t, "DATABASE_URL", envVar.Name)
+				}
+			}
+		})
+	}
+}

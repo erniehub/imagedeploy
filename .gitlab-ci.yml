@@ -27,4 +27,6 @@ include:
   - local: .gitlab/ci/release.gitlab-ci.yml
   - local: .gitlab/ci/chart.gitlab-ci.yml
   - template: Security/Dependency-Scanning.gitlab-ci.yml
-
+  - project: 'gitlab-org/quality/pipeline-common'
+    file:
+      - '/ci/danger-review.yml'

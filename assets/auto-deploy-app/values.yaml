@@ -105,6 +105,13 @@ readinessProbe:
   timeoutSeconds: 3
   scheme: "HTTP"
   probeType: "httpGet"
+
+#hostAliases:
+#- ip: X.X.X.X
+#  hostnames:
+#  - dns1.DOMAIN1
+#  - dns2.DOMAIN2
+
 postgresql:
   managed: false
   managedClassSelector:
@@ -179,6 +186,11 @@ workers: {}
   # worker:
   #   replicaCount: 1
   #   terminationGracePeriodSeconds: 60
+  #   hostAliases:
+  #   - ip: X.X.X.X
+  #     hostnames:
+  #     - dns1.DOMAIN1
+  #     - dns2.DOMAIN2
   #   labels:
   #     worker-type: worker
   #   command:

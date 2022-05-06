@@ -61,6 +61,7 @@
 | service.extraPorts.protocol | Protocol of the service port definition | `nil` |
 | service.extraPorts.name | Name of the service port definition | `nil` |
 | ingress.enabled               | If true, enables ingress | `true`                |
+| ingress.className             | The name of the ingress class to use | `nginx`                |
 | ingress.path                  | Default path for the ingress | `/` |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |
 | ingress.tls.acme              | Controls `kubernetes.io/tls-acme` annotation | `true` |

@@ -12,6 +12,9 @@ metadata:
   labels:
 {{ include "sharedlabels" . | indent 4 }}
   annotations:
+{{- if not (.Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress") }}
+    kubernetes.io/ingress.class: {{ .Values.ingress.className | quote }}
+{{- end }}
 {{- if .Values.ingress.annotations }}
 {{ toYaml .Values.ingress.annotations | indent 4 }}
 {{- end }}
@@ -43,6 +46,9 @@ metadata:
 
 {{- end }}
 spec:
+{{- if .Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress" }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
+{{- end }}
 {{- if .Values.ingress.tls.enabled }}
   tls:
   - hosts:

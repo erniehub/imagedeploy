@@ -347,6 +347,8 @@ func TestIngressTemplate_NetworkingV1(t *testing.T) {
 	ingress := new(networkingv1.Ingress)
 	helm.UnmarshalK8SYaml(t, output, ingress)
 	require.Equal(t, "networking.k8s.io/v1", ingress.APIVersion)
+	require.Equal(t, "nginx", *ingress.Spec.IngressClassName)
+	require.NotContains(t, "kubernetes.io/ingress.class", ingress.Annotations)
 }
 
 func TestIngressTemplate_Extensions(t *testing.T) {
@@ -359,4 +361,5 @@ func TestIngressTemplate_Extensions(t *testing.T) {
 	ingress := new(extensions.Ingress)
 	helm.UnmarshalK8SYaml(t, output, ingress)
 	require.Equal(t, "extensions/v1beta1", ingress.APIVersion)
+	require.Equal(t, "nginx", ingress.Annotations["kubernetes.io/ingress.class"])
 }

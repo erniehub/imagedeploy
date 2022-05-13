@@ -80,7 +80,7 @@ ingress:
     acme: true
     secretName: ""
     useDefaultSecret: false
-  className: nginx
+  # className: nginx
   modSecurity:
     enabled: false
     secRuleEngine: "DetectionOnly"
@@ -90,6 +90,7 @@ ingress:
     #     action: ""
   canary:
     weight:
+  annotations: {}
 prometheus:
   metrics: false
 livenessProbe:

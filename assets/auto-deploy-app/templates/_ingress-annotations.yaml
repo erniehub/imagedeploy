@@ -1,4 +1,4 @@
-kubernetes.io/ingress.class: {{ .Values.ingress.className | quote }}
+kubernetes.io/ingress.class: {{ .Values.ingress.className | default "nginx" | quote }}
 {{- if .Values.ingress.tls.enabled }}
 kubernetes.io/tls-acme: {{ .Values.ingress.tls.acme | quote }}
 {{- end }}

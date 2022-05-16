@@ -14,7 +14,7 @@ metadata:
   annotations:
 {{ include "ingress.annotations" . | indent 4 }}
 spec:
-{{- if .Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress" }}
+{{- if and .Values.ingress.className (.Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress") }}
   ingressClassName: {{ .Values.ingress.className | quote }}
 {{- end }}
 {{- if .Values.ingress.tls.enabled }}

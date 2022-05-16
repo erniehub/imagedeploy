@@ -14,6 +14,7 @@ metadata:
   annotations:
 {{ include "ingress.annotations" . | indent 4 }}
 spec:
+{{/* We don't set a default value because old ingress controllers may not provide an IngressClass, causing deployments to fail */}}
 {{- if and .Values.ingress.className (.Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress") }}
   ingressClassName: {{ .Values.ingress.className | quote }}
 {{- end }}

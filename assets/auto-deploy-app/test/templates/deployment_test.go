@@ -172,6 +172,59 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	for _, tc := range []struct {
+		CaseName        string
+		Release         string
+		Values          map[string]string
+		ExpectedCommand []string
+		ExpectedArgs    []string
+	}{
+		{
+			CaseName: "application-command",
+			Release:  "production",
+			Values: map[string]string{
+				"application.command[0]": "foo",
+				"application.command[1]": "bar",
+				"application.command[2]": "baz",
+			},
+			ExpectedCommand: []string{"foo", "bar", "baz"},
+		},
+		{
+			CaseName: "application-args",
+			Release:  "production",
+			Values: map[string]string{
+				"application.args[0]": "foo",
+				"application.args[1]": "bar",
+				"application.args[2]": "baz",
+			},
+			ExpectedArgs: []string{"foo", "bar", "baz"},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedCommand, deployment.Spec.Template.Spec.Containers[0].Command)
+			require.Equal(t, tc.ExpectedArgs, deployment.Spec.Template.Spec.Containers[0].Args)
+		})
+	}
+
 	// serviceAccountName
 	for _, tc := range []struct {
 		CaseName                   string

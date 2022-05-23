@@ -69,3 +69,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{ toYaml $.Values.extraLabels }}
 {{- end }}
 {{- end -}}
+
+{{- define "ingress.annotations" -}}
+{{- $defaults := include (print $.Template.BasePath "/_ingress-annotations.yaml") . | fromYaml -}}
+{{- $custom := .Values.ingress.annotations | default dict -}}
+{{- $merged := deepCopy $custom | mergeOverwrite $defaults -}}
+{{- $merged | toYaml -}}
+{{- end -}}

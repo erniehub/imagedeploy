@@ -61,7 +61,7 @@
 | service.extraPorts.protocol | Protocol of the service port definition | `nil` |
 | service.extraPorts.name | Name of the service port definition | `nil` |
 | ingress.enabled               | If true, enables ingress | `true`                |
-| ingress.className             | The name of the ingress class to use | `nginx`                |
+| ingress.className             | The name of the ingress class to use. When present, sets `ingressClassName` and `kubernetes.io/ingress.class` as appropriate. | `nil`                |
 | ingress.path                  | Default path for the ingress | `/` |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |
 | ingress.tls.acme              | Controls `kubernetes.io/tls-acme` annotation | `true` |
@@ -70,7 +70,7 @@
 | ingress.modSecurity.enabled | Enable custom configuration for modsecurity, defaulting to [the Core Rule Set](https://coreruleset.org) | `false` |
 | ingress.modSecurity.secRuleEngine | Configuration for [ModSecurity's rule engine](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#SecRuleEngine) | `DetectionOnly` |
 | ingress.modSecurity.secRules | Configuration for custom [ModSecurity's rules](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#secrule) | `nil` |
-| ingress.annotations           | Ingress annotations | `{kubernetes.io/ingress.class: "nginx"}` |
+| ingress.annotations           | Ingress annotations | See [`_ingress-annotations.yaml`](./templates/_ingress-annotations.yaml) |
 | livenessProbe.path            | Path to access on the HTTP server on periodic probe of container liveness. | `/`                                |
 | livenessProbe.scheme          | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
 | livenessProbe.initialDelaySeconds | # of seconds after the container has started before liveness probes are initiated. | `15`                               |

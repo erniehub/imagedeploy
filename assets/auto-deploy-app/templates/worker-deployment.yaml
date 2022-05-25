@@ -83,7 +83,7 @@ items:
           image: {{ template "imagename" $ }}
           command:
           {{- range $workerConfig.command }}
-          - {{ . }}
+          - {{ toYaml . }}
           {{- end }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           {{- if $.Values.application.secretName }}
@@ -150,7 +150,7 @@ items:
               exec:
                 command:
                 {{- range $workerConfig.preStopCommand }}
-                - {{ . }}
+                - {{ toYaml . }}
                 {{- end }}
             {{- end}}
           {{- end }}

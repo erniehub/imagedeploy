@@ -80,6 +80,14 @@ spec:
       - name: {{ .Chart.Name }}
         image: {{ template "imagename" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{- if .Values.application.command }}
+        command:
+{{ toYaml .Values.application.command | indent 8 }}
+{{- end }}
+{{- if .Values.application.args }}
+        args:
+{{ toYaml .Values.application.args | indent 8 }}
+{{- end }}
         {{- if .Values.application.secretName }}
         envFrom:
         - secretRef:

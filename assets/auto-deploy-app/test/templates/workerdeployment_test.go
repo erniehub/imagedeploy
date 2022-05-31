@@ -19,7 +19,6 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		CaseName string
 		Release  string
 		Values   map[string]string
-		StrValues   map[string]string
 
 		ExpectedErrorRegexp *regexp.Regexp
 
@@ -49,27 +48,6 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName:         "productionOverridden-worker2",
 					ExpectedCmd:          []string{"echo", "worker2"},
 					ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
-				},
-			},
-		}, {
-			CaseName: "handle-numbers",
-			Release:  "production",
-			StrValues: map[string]string{
-				"workers.worker1.command[0]": "echo",
-				"workers.worker1.command[1]": "1",
-				"workers.worker2.command[0]": "echo",
-				"workers.worker2.command[1]": "2",
-			},
-			ExpectedName:    "production",
-			ExpectedRelease: "production",
-			ExpectedDeployments: []workerDeploymentTestCase{
-				{
-					ExpectedName:         "production-worker1",
-					ExpectedCmd:          []string{"echo", "1"},
-				},
-				{
-					ExpectedName:         "production-worker2",
-					ExpectedCmd:          []string{"echo", "2"},
 				},
 			},
 		}, {
@@ -222,7 +200,6 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 
 			options := &helm.Options{
 				SetValues:      values,
-				SetStrValues:   tc.StrValues,
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 

@@ -82,9 +82,7 @@ items:
         - name: {{ $.Chart.Name }}-{{ $workerName }}
           image: {{ template "imagename" $ }}
           command:
-          {{- range $workerConfig.command }}
-          - {{ toYaml . }}
-          {{- end }}
+{{ toYaml $workerConfig.command | indent 10 }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           {{- if $.Values.application.secretName }}
           envFrom:
@@ -149,9 +147,7 @@ items:
             preStop:
               exec:
                 command:
-                {{- range $workerConfig.preStopCommand }}
-                - {{ toYaml . }}
-                {{- end }}
+{{ toYaml $workerConfig.preStopCommand | indent 16 }}
             {{- end}}
           {{- end }}
           resources:

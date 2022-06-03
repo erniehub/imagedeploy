@@ -115,6 +115,23 @@ test-download-protected-chart-url:
     - auto-deploy download_chart
     - ./test/verify-chart-version 2
 
+test-default-postgres-chart:
+  <<: *test-job
+  variables:
+    POSTGRES_ENABLED: "true"
+  script:
+    - auto-deploy download_chart
+    - (helm repo ls | grep -q 'https://raw.githubusercontent.com/bitnami/charts/eb5f9a9513d987b519f0ecd732e7031241c50328/bitnami') || exit 1
+
+test-override-postgres-chart:
+  <<: *test-job
+  variables:
+    POSTGRES_ENABLED: "true"
+    POSTGRES_CHART_REPOSITORY: https://charts.bitnami.com/bitnami
+  script:
+    - auto-deploy download_chart
+    - (helm repo ls | grep -q https://charts.bitnami.com/bitnami) || exit 1
+
 test-deploy-name:
   <<: *test-job
   variables:

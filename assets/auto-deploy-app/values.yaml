@@ -18,6 +18,16 @@ lifecycle: {}
 #     command: ["/bin/sh", "-c", "sleep 10"]
 podAnnotations: {}
 nodeSelector: {}
+dnsPolicy: {}
+dnsConfig: {}
+#    nameservers:
+#      - 8.8.8.8
+#    searches:
+#      - svc.cluster.local
+#      - cluster.local
+#    options:
+#      - name: ndots
+#        value: "1"
 affinity: {}
 tolerations: []
 initContainers: []

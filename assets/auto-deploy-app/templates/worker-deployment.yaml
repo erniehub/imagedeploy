@@ -55,6 +55,17 @@ items:
 {{ toYaml $nodeSelectorConfig | indent 10 }}
 {{- end }}
 {{- end }}
+{{- with $dnsPolicyConfig := default $.Values.dnsPolicy $workerConfig.dnsPolicy -}}
+{{- if $dnsPolicyConfig  }}
+        dnsPolicy: {{ $dnsPolicyConfig }}
+{{- end }}
+{{- end }}
+{{- with $dnsConfigConfig := default $.Values.dnsConfig $workerConfig.dnsConfig -}}
+{{- if $dnsConfigConfig  }}
+        dnsConfig:
+{{ toYaml $dnsConfigConfig | indent 10 }}
+{{- end }}
+{{- end }}
 {{- with $tolerationsConfig := default $.Values.tolerations $workerConfig.tolerations -}}
 {{- if $tolerationsConfig  }}
         tolerations:

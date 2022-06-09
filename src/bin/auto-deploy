@@ -6,8 +6,12 @@ set -e
 
 export AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE=/tmp/auto-deploy-environment-values.yaml
 export RELEASE_NAME=${HELM_RELEASE_NAME:-$CI_ENVIRONMENT_SLUG}
+# See https://github.com/bitnami/charts/issues/10545
+export DEFAULT_BITNAMI_REPOSITORY="https://raw.githubusercontent.com/bitnami/charts/eb5f9a9513d987b519f0ecd732e7031241c50328/bitnami"
 export POSTGRESQL_RELEASE_NAME="${RELEASE_NAME}-postgresql"
 export POSTGRES_VERSION="${POSTGRES_VERSION:-"9.6.16"}"
+export POSTGRES_CHART_REPOSITORY=${POSTGRES_CHART_REPOSITORY:-$DEFAULT_BITNAMI_REPOSITORY}
+export POSTGRES_CHART_VERSION="${POSTGRES_CHART_VERSION:-"8.2.1"}"
 export ASSETS_DIR='/assets'
 export ASSETS_CHART_DIR="${ASSETS_DIR}/auto-deploy-app"
 export ROLLOUT_RESOURCE_TYPE="${ROLLOUT_RESOURCE_TYPE:-deployment}"
@@ -77,8 +81,7 @@ function add_chart_repositories() {
   helm repo add stable https://charts.helm.sh/stable
   # bitnami repository is used for in-cluster PostgreSQL installation.
   if [[ "$POSTGRES_ENABLED" == "true" ]]; then
-    # See https://github.com/bitnami/charts/issues/10545
-    helm repo add bitnami https://raw.githubusercontent.com/bitnami/charts/eb5f9a9513d987b519f0ecd732e7031241c50328/bitnami
+    helm repo add bitnami "$POSTGRES_CHART_REPOSITORY"
   fi
   # Additionaly, users can specify their custom chart repository.
   add_custom_chart_repository
@@ -190,7 +193,7 @@ function install_postgresql() {
     "${atomic_flag[@]}" \
     "${debug_flag[@]}" \
     --wait \
-    --version 8.2.1 \
+    --version "$POSTGRES_CHART_VERSION" \
     --set fullnameOverride="$name" \
     --set postgresqlUsername="$POSTGRES_USER" \
     --set postgresqlPassword="$POSTGRES_PASSWORD" \

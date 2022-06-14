@@ -21,6 +21,17 @@ if [[ -z "$KUBE_NAMESPACE" ]]; then
   export KUBE_NAMESPACE="${context_namespace:-"default"}"
 fi
 
+function probe_server_connection_health {
+  echo "Attempting server connection test - watch specific errors for possible problems with DNS, network routing, firewalls, network availability, SSL and service port availability."
+  timeout 3 bash -c "cat < /dev/null > /dev/tcp/$1/$2"
+  if [ "$?" -ne 0 ]; then 
+    echo "ERROR: Connection to $1 on port $2 failed"; 
+    echo "Any errors that preceeded this one should give clues as to what might be having problems.
+  else
+    echo "Connection to $1 on port $2 succeeded - the problem likely has to do with the application level or perhaps additional things this service is attempting to do on your behalf.
+  fi
+}
+
 function use_kube_context() {
   if [[ -z "$KUBE_CONTEXT" ]]; then
     echo "KUBE_CONTEXT not defined. The default context (if present) will be used"

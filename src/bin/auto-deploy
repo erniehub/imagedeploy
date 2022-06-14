@@ -22,7 +22,7 @@ if [[ -z "$KUBE_NAMESPACE" ]]; then
 fi
 
 function probe_server_connection_health {
-  echo "Attempting server connection test - watch specific errors for possible problems with DNS, network routing, firewalls, network availability, SSL and service port availability."
+  echo "Attempting service port connection test - watch specific errors for possible configuration or temporary problems with DNS, network routing, firewalls, network availability, SSL and service port availability."
   timeout 3 bash -c "cat < /dev/null > /dev/tcp/$1/$2"
   if [ "$?" -ne 0 ]; then 
     echo "ERROR: Connection to $1 on port $2 failed"; 

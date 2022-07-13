@@ -7,9 +7,9 @@ workflow:
 variables:
   DOCKER_DRIVER: overlay2
 
-  HELM_VERSION: '3.7.1'
-  KUBERNETES_VERSION: '1.20.11'
-  ALPINE_VERSION: '3.14'
+  # See https://gitlab.com/gitlab-org/cluster-integration/helm-install-image/container_registry/3232113
+  HELM_INSTALL_IMAGE_VERSION: v0.241-helm-3.7.2-kube-1.21.5-alpine-3.15
+
   GLIBC_VERSION: 2.31-r0
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"

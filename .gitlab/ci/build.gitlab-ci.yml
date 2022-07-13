@@ -22,9 +22,7 @@ build:
     - >-
        docker buildx build
        --platform "$PLATFORMS"
-       --build-arg "HELM_VERSION=$HELM_VERSION"
-       --build-arg "KUBERNETES_VERSION=$KUBERNETES_VERSION"
-       --build-arg "ALPINE_VERSION=$ALPINE_VERSION"
+       --build-arg "HELM_INSTALL_IMAGE_VERSION=$HELM_INSTALL_IMAGE_VERSION"
        --build-arg "GLIBC_VERSION=$GLIBC_VERSION"
        --tag "$BUILD_IMAGE_NAME"
        --tag "$BUILD_IMAGE_LATEST"

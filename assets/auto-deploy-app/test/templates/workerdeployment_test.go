@@ -786,12 +786,16 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:           "production-worker1",
 					ExpectedCmd:            []string{"echo", "worker1"},
-					ExpectedResources:  	coreV1.ResourceRequirements{nil},
+					ExpectedResources:  	coreV1.ResourceRequirements{
+						Requests: coreV1.ResourceList{},
+					},
 				},
 				{
 					ExpectedName:           "production-worker2",
 					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedResources:  	coreV1.ResourceRequirements{nil},
+					ExpectedResources:  	coreV1.ResourceRequirements{
+						Requests: coreV1.ResourceList{},
+					},
 				},
 			},
 		},
@@ -818,7 +822,9 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				{
 					ExpectedName:           "production-worker2",
 					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedResources:  	coreV1.ResourceRequirements{nil},
+					ExpectedResources:  	coreV1.ResourceRequirements{
+						Requests: coreV1.ResourceList{},
+					},
 				},
 			},
 		},

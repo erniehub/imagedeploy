@@ -845,7 +845,6 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName:           "production-worker1",
 					ExpectedCmd:            []string{"echo", "worker1"},
 					ExpectedResources:  	coreV1.ResourceRequirements{
-						Requests: coreV1.ResourceList{},
 						Limits: coreV1.ResourceList{
 							"memory": resource.MustParse("500m"),
 							"storage": resource.MustParse("8Gi"),
@@ -856,7 +855,6 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName:           "production-worker2",
 					ExpectedCmd:            []string{"echo", "worker2"},
 					ExpectedResources:  	coreV1.ResourceRequirements{
-						Requests: coreV1.ResourceList{},
 						Limits: coreV1.ResourceList{
 							"storage": resource.MustParse("16Gi"),
 						},

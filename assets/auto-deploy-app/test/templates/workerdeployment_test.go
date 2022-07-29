@@ -850,7 +850,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				require.Equal(t, expectedDeployment.ExpectedName, deployment.Name)
 				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
 				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
-				require.Equal(t, expectedDeployment.ExpectedResources, deployment.Spec.Template.Spec.Containers[0].Resources)
+				require.Equal(t, expectedDeployment.ExpectedResources, &deployment.Spec.Template.Spec.Containers[0].Resources)
 			}
 		})
 	}

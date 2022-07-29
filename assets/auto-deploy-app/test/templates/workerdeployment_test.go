@@ -800,7 +800,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
-			CaseName: "override workers resources",
+			CaseName: "override workers requests resources",
 			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.command[0]":                "echo",
@@ -824,6 +824,42 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedCmd:            []string{"echo", "worker2"},
 					ExpectedResources:  	coreV1.ResourceRequirements{
 						Requests: coreV1.ResourceList{},
+					},
+				},
+			},
+		},
+		{
+			CaseName: "override workers limits resources",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":                "echo",
+				"workers.worker1.command[1]":                "worker1",
+				"workers.worker1.resources.limits.memory":   "500m",
+				"workers.worker1.resources.limits.storage":  "8Gi",
+				"workers.worker2.command[0]":                "echo",
+				"workers.worker2.command[1]":                "worker2",
+				"workers.worker2.resources.limits.storage":  "16Gi",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:           "production-worker1",
+					ExpectedCmd:            []string{"echo", "worker1"},
+					ExpectedResources:  	coreV1.ResourceRequirements{
+						Requests: coreV1.ResourceList{},
+						Limits: coreV1.ResourceList{
+							"memory": resource.MustParse("500m"),
+							"storage": resource.MustParse("8Gi"),
+						},
+					},
+				},
+				{
+					ExpectedName:           "production-worker2",
+					ExpectedCmd:            []string{"echo", "worker2"},
+					ExpectedResources:  	coreV1.ResourceRequirements{
+						Requests: coreV1.ResourceList{},
+						Limits: coreV1.ResourceList{
+							"storage": resource.MustParse("16Gi"),
+						},
 					},
 				},
 			},

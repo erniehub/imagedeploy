@@ -12,6 +12,7 @@ import (
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestWorkerDeploymentTemplate(t *testing.T) {
@@ -760,6 +761,96 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
 				require.Equal(t, expectedDeployment.ExpectedLivenessProbe, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
 				require.Equal(t, expectedDeployment.ExpectedReadinessProbe, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
+			}
+		})
+	}
+
+	// worker resources tests
+	for _, tc := range []struct {
+		CaseName string
+		Values   map[string]string
+		Release  string
+
+		ExpectedDeployments []workerDeploymentTestCase
+	}{
+		{
+			CaseName: "default workers resources",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+				"workers.worker2.command[0]": "echo",
+				"workers.worker2.command[1]": "worker2",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:           "production-worker1",
+					ExpectedCmd:            []string{"echo", "worker1"},
+					ExpectedResources:  	coreV1.ResourceRequirements{},
+				},
+				{
+					ExpectedName:           "production-worker2",
+					ExpectedCmd:            []string{"echo", "worker2"},
+					ExpectedResources:  	coreV1.ResourceRequirements{},
+				},
+			},
+		},
+		{
+			CaseName: "override workers resources",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":                "echo",
+				"workers.worker1.command[1]":                "worker1",
+				"workers.worker1.resources.requests.memory": "250M",
+				"workers.worker2.command[0]":                "echo",
+				"workers.worker2.command[1]":                "worker2",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:           "production-worker1",
+					ExpectedCmd:            []string{"echo", "worker1"},
+					ExpectedResources:  	coreV1.ResourceRequirements{
+						Requests: coreV1.ResourceList{
+							"memory": resource.MustParse("250M")
+						}
+					},
+				},
+				{
+					ExpectedName:           "production-worker2",
+					ExpectedCmd:            []string{"echo", "worker2"},
+					ExpectedResources:  	coreV1.ResourceRequirements{},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/worker-deployment.yaml"})
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+
+			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+
+			for i, expectedDeployment := range tc.ExpectedDeployments {
+				deployment := deployments.Items[i]
+				require.Equal(t, expectedDeployment.ExpectedName, deployment.Name)
+				require.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+				require.Equal(t, expectedDeployment.ExpectedCmd, deployment.Spec.Template.Spec.Containers[0].Command)
+				require.Equal(t, expectedDeployment.ExpectedResources, deployment.Spec.Template.Spec.Containers[0].Resources)
 			}
 		})
 	}

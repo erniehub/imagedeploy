@@ -811,8 +811,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedCmd:            []string{"echo", "worker1"},
 					ExpectedResources:  	coreV1.ResourceRequirements{
 						Requests: coreV1.ResourceList{
-							"memory": resource.MustParse("250M")
-						}
+							"memory": resource.MustParse("250M"),
+						},
 					},
 				},
 				{

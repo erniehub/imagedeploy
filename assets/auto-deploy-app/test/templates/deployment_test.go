@@ -404,20 +404,22 @@ func TestDeploymentTemplate(t *testing.T) {
 
 		ExpectedLivenessProbe  *coreV1.Probe
 		ExpectedReadinessProbe *coreV1.Probe
-		ExpectedStartupProbe *coreV1.Probe
+		ExpectedStartupProbe   *coreV1.Probe
 	}{
 		{
 			CaseName:               "defaults",
 			Release:                "production",
 			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
-			ExpectedStartupProbe: nil,
+			ExpectedStartupProbe:   nil,
 		},
 		{
 			CaseName: "custom liveness probe",
 			Release:  "production",
 			Values: map[string]string{
-				"livenessProbe.port": "1234",
+				"livenessProbe.port":                 "1234",
+				"livenessProbe.httpHeaders[0].name":  "custom-header",
+				"livenessProbe.httpHeaders[0].value": "awesome",
 			},
 			ExpectedLivenessProbe: &coreV1.Probe{
 				Handler: coreV1.Handler{
@@ -425,19 +427,27 @@ func TestDeploymentTemplate(t *testing.T) {
 						Path:   "/",
 						Port:   intstr.FromInt(1234),
 						Scheme: coreV1.URISchemeHTTP,
+						HTTPHeaders: []coreV1.HTTPHeader{
+							coreV1.HTTPHeader{
+								Name:  "custom-header",
+								Value: "awesome",
+							},
+						},
 					},
 				},
 				InitialDelaySeconds: 15,
 				TimeoutSeconds:      15,
 			},
 			ExpectedReadinessProbe: defaultReadinessProbe(),
-			ExpectedStartupProbe: nil,
+			ExpectedStartupProbe:   nil,
 		},
 		{
 			CaseName: "custom readiness probe",
 			Release:  "production",
 			Values: map[string]string{
-				"readinessProbe.port": "2345",
+				"readinessProbe.port":                 "2345",
+				"readinessProbe.httpHeaders[0].name":  "custom-header",
+				"readinessProbe.httpHeaders[0].value": "awesome",
 			},
 			ExpectedLivenessProbe: defaultLivenessProbe(),
 			ExpectedReadinessProbe: &coreV1.Probe{
@@ -446,6 +456,12 @@ func TestDeploymentTemplate(t *testing.T) {
 						Path:   "/",
 						Port:   intstr.FromInt(2345),
 						Scheme: coreV1.URISchemeHTTP,
+						HTTPHeaders: []coreV1.HTTPHeader{
+							coreV1.HTTPHeader{
+								Name:  "custom-header",
+								Value: "awesome",
+							},
+						},
 					},
 				},
 				InitialDelaySeconds: 5,
@@ -457,10 +473,12 @@ func TestDeploymentTemplate(t *testing.T) {
 			CaseName: "custom startup probe",
 			Release:  "production",
 			Values: map[string]string{
-				"startupProbe.enabled": "true",
-				"startupProbe.port": "2345",
+				"startupProbe.enabled":              "true",
+				"startupProbe.port":                 "2345",
+				"startupProbe.httpHeaders[0].name":  "custom-header",
+				"startupProbe.httpHeaders[0].value": "awesome",
 			},
-			ExpectedLivenessProbe: defaultLivenessProbe(),
+			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
 			ExpectedStartupProbe: &coreV1.Probe{
 				Handler: coreV1.Handler{
@@ -468,6 +486,12 @@ func TestDeploymentTemplate(t *testing.T) {
 						Path:   "/",
 						Port:   intstr.FromInt(2345),
 						Scheme: coreV1.URISchemeHTTP,
+						HTTPHeaders: []coreV1.HTTPHeader{
+							coreV1.HTTPHeader{
+								Name:  "custom-header",
+								Value: "awesome",
+							},
+						},
 					},
 				},
 				InitialDelaySeconds: 5,

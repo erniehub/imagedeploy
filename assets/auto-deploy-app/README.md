@@ -77,12 +77,18 @@
 | ingress.annotations           | Ingress annotations | See [`_ingress-annotations.yaml`](./templates/_ingress-annotations.yaml) |
 | livenessProbe.path            | Path to access on the HTTP server on periodic probe of container liveness. | `/`                                |
 | livenessProbe.scheme          | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
+| livenessProbe.httpHeaders       | List of additional custom headers to send on the server | `[]`                                |
+| livenessProbe.httpHeaders.name  | Name of the custom header | `nil`                                |
+| livenessProbe.httpHeaders.value | Value of the header | `nil`                                |
 | livenessProbe.initialDelaySeconds | # of seconds after the container has started before liveness probes are initiated. | `15`                               |
 | livenessProbe.timeoutSeconds  | # of seconds after which the liveness probe times out. | `15`                               |
 | livenessProbe.probeType       | Type of [liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes) to use. | `httpGet`
 | livenessProbe.command         | Commands for use with probe type 'exec'. | `{}`
 | readinessProbe.path           | Path to access on the HTTP server on periodic probe of container readiness. | `/`                                |
 | readinessProbe.scheme         | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
+| readinessProbe.httpHeaders      | List of additional custom headers to send on the server | `[]`                                |
+| readinessProbe.httpHeaders.name | Name of the custom header | `nil`                                |
+| readinessProbe.httpHeaders.value | Value of the header | `nil`                                |
 | readinessProbe.initialDelaySeconds | # of seconds after the container has started before readiness probes are initiated. | `5`                                |
 | readinessProbe.timeoutSeconds | # of seconds after which the readiness probe times out. | `3`                                |
 | readinessProbe.probeType     | Type of [readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes) to use. | `httpGet`
@@ -90,6 +96,9 @@
 | startupProbe.enabled         | If true, enables startup probe. | `/`                                |
 | startupProbe.path            | Path to access on the HTTP server on periodic probe of container startup. | `/`                                |
 | startupProbe.scheme          | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
+| startUpProbe.httpHeaders      | List of additional custom headers to send on the server | `[]`                                |
+| startUpProbe.httpHeaders.name | Name of the custom header | `nil`                                |
+| startUpProbe.httpHeaders.value | Value of the header | `nil`                                |
 | startupProbe.initialDelaySeconds | # of seconds after the container has started before startup probes are initiated. | `5`                                |
 | startupProbe.timeoutSeconds  | # of seconds after which the startup probe times out. | `3`                                |
 | startupProbe.failureThreshold | # of times, Kubernetes will retry failed probes before giving up. | `30`                                |

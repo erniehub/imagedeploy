@@ -108,12 +108,14 @@ livenessProbe:
   timeoutSeconds: 15
   scheme: "HTTP"
   probeType: "httpGet"
+  httpHeaders: []
 readinessProbe:
   path: "/"
   initialDelaySeconds: 5
   timeoutSeconds: 3
   scheme: "HTTP"
   probeType: "httpGet"
+  httpHeaders: []
 startupProbe:
   enabled: false
   path: "/"
@@ -123,6 +125,7 @@ startupProbe:
   periodSeconds: 10
   scheme: "HTTP"
   probeType: "httpGet"
+  httpHeaders: []
 
 #hostAliases:
 #- ip: X.X.X.X
@@ -225,12 +228,18 @@ workers: {}
   #     timeoutSeconds: 15
   #     scheme: "HTTP"
   #     probeType: "httpGet"
+  #     httpHeader:
+  #     - name: "custum-header"
+  #       value: "awesome"
   #   readinessProbe:
   #     path: "/"
   #     initialDelaySeconds: 5
   #     timeoutSeconds: 3
   #     scheme: "HTTP"
   #     probeType: "httpGet"
+  #     httpHeader:
+  #     - name: "custum-header"
+  #       value: "awesome"
   #   lifecycle:
   #     preStop:
   #       exec:

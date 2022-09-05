@@ -148,6 +148,13 @@ spec:
             path: {{ .Values.livenessProbe.path }}
             scheme: {{ .Values.livenessProbe.scheme }}
             port: {{ .Values.livenessProbe.port | default .Values.service.internalPort }}
+{{- if .Values.livenessProbe.httpHeaders }}
+            httpHeaders:
+{{- range $httpHeader := .Values.livenessProbe.httpHeaders }}
+            - name: {{ $httpHeader.name }}
+              value: {{ $httpHeader.value }}
+{{- end }}
+{{- end }}
 {{- else if eq .Values.livenessProbe.probeType "tcpSocket" }}
           tcpSocket:
             port: {{ .Values.livenessProbe.port | default .Values.service.internalPort }}
@@ -164,6 +171,13 @@ spec:
             path: {{ .Values.readinessProbe.path }}
             scheme: {{ .Values.readinessProbe.scheme }}
             port: {{ .Values.readinessProbe.port | default .Values.service.internalPort }}
+{{- if .Values.readinessProbe.httpHeaders }}
+            httpHeaders:
+{{- range $httpHeader := .Values.readinessProbe.httpHeaders }}            
+            - name: {{ $httpHeader.name }}
+              value: {{ $httpHeader.value }}
+{{- end }}
+{{- end }}
 {{- else if eq .Values.readinessProbe.probeType "tcpSocket" }}
           tcpSocket:
             port: {{ .Values.readinessProbe.port | default .Values.service.internalPort }}
@@ -181,7 +195,14 @@ spec:
             path: {{ .Values.startupProbe.path }}
             scheme: {{ .Values.startupProbe.scheme }}
             port: {{ .Values.startupProbe.port | default .Values.service.internalPort }}
-{{- else if eq .Values.startupProbe.probeType "tcpSocket" }}
+{{- if .Values.startupProbe.httpHeaders }}
+            httpHeaders:
+{{- range $httpHeader := .Values.startupProbe.httpHeaders }}
+            - name: {{ $httpHeader.name }}
+              value: {{ $httpHeader.value }}
+{{- end }}
+{{- end }}
+{{- else if eq .Values.readinessProbe.probeType "tcpSocket" }}
           tcpSocket:
             port: {{ .Values.startupProbe.port | default .Values.service.internalPort }}
 {{- else if eq .Values.startupProbe.probeType "exec" }}

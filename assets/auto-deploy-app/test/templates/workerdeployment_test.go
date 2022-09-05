@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestWorkerDeploymentTemplate(t *testing.T) {
@@ -675,28 +676,60 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			CaseName: "enableWorkerLivenessProbe",
 			Release:  "production",
 			Values: map[string]string{
-				"workers.worker1.command[0]":              "echo",
-				"workers.worker1.command[1]":              "worker1",
-				"workers.worker1.livenessProbe.path":      "/worker",
-				"workers.worker1.livenessProbe.scheme":    "HTTP",
-				"workers.worker1.livenessProbe.probeType": "httpGet",
-				"workers.worker2.command[0]":              "echo",
-				"workers.worker2.command[1]":              "worker2",
-				"workers.worker2.livenessProbe.path":      "/worker",
-				"workers.worker2.livenessProbe.scheme":    "HTTP",
-				"workers.worker2.livenessProbe.probeType": "httpGet",
+				"workers.worker1.command[0]":                         "echo",
+				"workers.worker1.command[1]":                         "worker1",
+				"workers.worker1.livenessProbe.path":                 "/worker",
+				"workers.worker1.livenessProbe.scheme":               "HTTP",
+				"workers.worker1.livenessProbe.probeType":            "httpGet",
+				"workers.worker1.livenessProbe.httpHeaders[0].name":  "custom-header",
+				"workers.worker1.livenessProbe.httpHeaders[0].value": "awesome",
+				"workers.worker2.command[0]":                         "echo",
+				"workers.worker2.command[1]":                         "worker2",
+				"workers.worker2.livenessProbe.path":                 "/worker",
+				"workers.worker2.livenessProbe.scheme":               "HTTP",
+				"workers.worker2.livenessProbe.probeType":            "httpGet",
+				"workers.worker2.livenessProbe.httpHeaders[0].name":  "custom-header",
+				"workers.worker2.livenessProbe.httpHeaders[0].value": "awesome",
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:           "production-worker1",
-					ExpectedCmd:            []string{"echo", "worker1"},
-					ExpectedLivenessProbe:  workerLivenessProbe(),
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
+					ExpectedLivenessProbe: &coreV1.Probe{
+						Handler: coreV1.Handler{
+							HTTPGet: &coreV1.HTTPGetAction{
+								Path:   "/worker",
+								Port:   intstr.FromInt(5000),
+								Scheme: coreV1.URISchemeHTTP,
+								HTTPHeaders: []coreV1.HTTPHeader{
+									coreV1.HTTPHeader{
+										Name:  "custom-header",
+										Value: "awesome",
+									},
+								},
+							},
+						},
+					},
 					ExpectedReadinessProbe: defaultReadinessProbe(),
 				},
 				{
-					ExpectedName:           "production-worker2",
-					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedLivenessProbe:  workerLivenessProbe(),
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
+					ExpectedLivenessProbe: &coreV1.Probe{
+						Handler: coreV1.Handler{
+							HTTPGet: &coreV1.HTTPGetAction{
+								Path:   "/worker",
+								Port:   intstr.FromInt(5000),
+								Scheme: coreV1.URISchemeHTTP,
+								HTTPHeaders: []coreV1.HTTPHeader{
+									coreV1.HTTPHeader{
+										Name:  "custom-header",
+										Value: "awesome",
+									},
+								},
+							},
+						},
+					},
 					ExpectedReadinessProbe: defaultReadinessProbe(),
 				},
 			},
@@ -705,29 +738,61 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			CaseName: "enableWorkerReadinessProbe",
 			Release:  "production",
 			Values: map[string]string{
-				"workers.worker1.command[0]":               "echo",
-				"workers.worker1.command[1]":               "worker1",
-				"workers.worker1.readinessProbe.path":      "/worker",
-				"workers.worker1.readinessProbe.scheme":    "HTTP",
-				"workers.worker1.readinessProbe.probeType": "httpGet",
-				"workers.worker2.command[0]":               "echo",
-				"workers.worker2.command[1]":               "worker2",
-				"workers.worker2.readinessProbe.path":      "/worker",
-				"workers.worker2.readinessProbe.scheme":    "HTTP",
-				"workers.worker2.readinessProbe.probeType": "httpGet",
+				"workers.worker1.command[0]":                          "echo",
+				"workers.worker1.command[1]":                          "worker1",
+				"workers.worker1.readinessProbe.path":                 "/worker",
+				"workers.worker1.readinessProbe.scheme":               "HTTP",
+				"workers.worker1.readinessProbe.probeType":            "httpGet",
+				"workers.worker1.readinessProbe.httpHeaders[0].name":  "custom-header",
+				"workers.worker1.readinessProbe.httpHeaders[0].value": "awesome",
+				"workers.worker2.command[0]":                          "echo",
+				"workers.worker2.command[1]":                          "worker2",
+				"workers.worker2.readinessProbe.path":                 "/worker",
+				"workers.worker2.readinessProbe.scheme":               "HTTP",
+				"workers.worker2.readinessProbe.probeType":            "httpGet",
+				"workers.worker2.readinessProbe.httpHeaders[0].name":  "custom-header",
+				"workers.worker2.readinessProbe.httpHeaders[0].value": "awesome",
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:           "production-worker1",
-					ExpectedCmd:            []string{"echo", "worker1"},
-					ExpectedLivenessProbe:  defaultLivenessProbe(),
-					ExpectedReadinessProbe: workerReadinessProbe(),
+					ExpectedName:          "production-worker1",
+					ExpectedCmd:           []string{"echo", "worker1"},
+					ExpectedLivenessProbe: defaultLivenessProbe(),
+					ExpectedReadinessProbe: &coreV1.Probe{
+						Handler: coreV1.Handler{
+							HTTPGet: &coreV1.HTTPGetAction{
+								Path:   "/worker",
+								Port:   intstr.FromInt(5000),
+								Scheme: coreV1.URISchemeHTTP,
+								HTTPHeaders: []coreV1.HTTPHeader{
+									coreV1.HTTPHeader{
+										Name:  "custom-header",
+										Value: "awesome",
+									},
+								},
+							},
+						},
+					},
 				},
 				{
-					ExpectedName:           "production-worker2",
-					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedLivenessProbe:  defaultLivenessProbe(),
-					ExpectedReadinessProbe: workerReadinessProbe(),
+					ExpectedName:          "production-worker2",
+					ExpectedCmd:           []string{"echo", "worker2"},
+					ExpectedLivenessProbe: defaultLivenessProbe(),
+					ExpectedReadinessProbe: &coreV1.Probe{
+						Handler: coreV1.Handler{
+							HTTPGet: &coreV1.HTTPGetAction{
+								Path:   "/worker",
+								Port:   intstr.FromInt(5000),
+								Scheme: coreV1.URISchemeHTTP,
+								HTTPHeaders: []coreV1.HTTPHeader{
+									coreV1.HTTPHeader{
+										Name:  "custom-header",
+										Value: "awesome",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -784,16 +849,16 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:           "production-worker1",
-					ExpectedCmd:            []string{"echo", "worker1"},
-					ExpectedResources:  	coreV1.ResourceRequirements{
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
+					ExpectedResources: coreV1.ResourceRequirements{
 						Requests: coreV1.ResourceList{},
 					},
 				},
 				{
-					ExpectedName:           "production-worker2",
-					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedResources:  	coreV1.ResourceRequirements{
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
+					ExpectedResources: coreV1.ResourceRequirements{
 						Requests: coreV1.ResourceList{},
 					},
 				},
@@ -811,18 +876,18 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:           "production-worker1",
-					ExpectedCmd:            []string{"echo", "worker1"},
-					ExpectedResources:  	coreV1.ResourceRequirements{
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
+					ExpectedResources: coreV1.ResourceRequirements{
 						Requests: coreV1.ResourceList{
 							"memory": resource.MustParse("250M"),
 						},
 					},
 				},
 				{
-					ExpectedName:           "production-worker2",
-					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedResources:  	coreV1.ResourceRequirements{
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
+					ExpectedResources: coreV1.ResourceRequirements{
 						Requests: coreV1.ResourceList{},
 					},
 				},
@@ -832,29 +897,29 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			CaseName: "override workers limits resources",
 			Release:  "production",
 			Values: map[string]string{
-				"workers.worker1.command[0]":                "echo",
-				"workers.worker1.command[1]":                "worker1",
-				"workers.worker1.resources.limits.memory":   "500m",
-				"workers.worker1.resources.limits.storage":  "8Gi",
-				"workers.worker2.command[0]":                "echo",
-				"workers.worker2.command[1]":                "worker2",
-				"workers.worker2.resources.limits.storage":  "16Gi",
+				"workers.worker1.command[0]":               "echo",
+				"workers.worker1.command[1]":               "worker1",
+				"workers.worker1.resources.limits.memory":  "500m",
+				"workers.worker1.resources.limits.storage": "8Gi",
+				"workers.worker2.command[0]":               "echo",
+				"workers.worker2.command[1]":               "worker2",
+				"workers.worker2.resources.limits.storage": "16Gi",
 			},
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:           "production-worker1",
-					ExpectedCmd:            []string{"echo", "worker1"},
-					ExpectedResources:  	coreV1.ResourceRequirements{
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
+					ExpectedResources: coreV1.ResourceRequirements{
 						Limits: coreV1.ResourceList{
-							"memory": resource.MustParse("500m"),
+							"memory":  resource.MustParse("500m"),
 							"storage": resource.MustParse("8Gi"),
 						},
 					},
 				},
 				{
-					ExpectedName:           "production-worker2",
-					ExpectedCmd:            []string{"echo", "worker2"},
-					ExpectedResources:  	coreV1.ResourceRequirements{
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
+					ExpectedResources: coreV1.ResourceRequirements{
 						Limits: coreV1.ResourceList{
 							"storage": resource.MustParse("16Gi"),
 						},

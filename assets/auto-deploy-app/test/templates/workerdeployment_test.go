@@ -56,8 +56,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			// See https://github.com/helm/helm/issues/6006
 			CaseName: "long release name",
 			Release:  strings.Repeat("r", 80),
-
-			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* exceeds max length of 53"),
+			
+			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* length must not be longer than 53"),
 		},
 		{
 			CaseName: "strategyType",

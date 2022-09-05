@@ -41,7 +41,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			CaseName: "long release name",
 			Release:  strings.Repeat("r", 80),
 
-			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* exceeds max length of 53"),
+			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* length must not be longer than 53"),
 		},
 		{
 			CaseName: "strategyType",

@@ -77,6 +77,12 @@ type workerDeploymentTestCase struct {
 	ExpectedResources      coreV1.ResourceRequirements
 }
 
+type cronjobTestCase struct {
+	ExpectedName     string
+	ExpectedCmd      []string
+	ExpectedSchedule string
+}
+
 type workerDeploymentSelectorTestCase struct {
 	ExpectedName     string
 	ExpectedSelector *metav1.LabelSelector
@@ -153,6 +159,54 @@ func workerReadinessProbe() *coreV1.Probe {
 				Path:   "/worker",
 				Port:   intstr.FromInt(5000),
 				Scheme: coreV1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 0,
+		TimeoutSeconds:      0,
+	}
+}
+
+func execReadinessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			Exec: &coreV1.ExecAction{
+				Command: []string{"echo", "hello"},
+			},
+		},
+		InitialDelaySeconds: 0,
+		TimeoutSeconds:      0,
+	}
+}
+
+func execLivenessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			Exec: &coreV1.ExecAction{
+				Command: []string{"echo", "hello"},
+			},
+		},
+		InitialDelaySeconds: 0,
+		TimeoutSeconds:      0,
+	}
+}
+
+func tcpLivenessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			TCPSocket: &coreV1.TCPSocketAction{
+				Port: intstr.IntOrString{IntVal: 5000},
+			},
+		},
+		InitialDelaySeconds: 0,
+		TimeoutSeconds:      0,
+	}
+}
+
+func tcpReadinessProbe() *coreV1.Probe {
+	return &coreV1.Probe{
+		Handler: coreV1.Handler{
+			TCPSocket: &coreV1.TCPSocketAction{
+				Port: intstr.IntOrString{IntVal: 5000},
 			},
 		},
 		InitialDelaySeconds: 0,

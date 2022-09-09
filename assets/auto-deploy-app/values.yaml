@@ -249,3 +249,31 @@ workers: {}
   #   - procfile
   #   - start
   #   - stop_worker
+
+cronjobs: {}
+  # job:
+  #   schedule: "*/2 * * * *"
+  #   image:
+  #     repository: alpine
+  #     tag: latest
+  #   command: ["/bin/sh"]
+  #   args: ["-c", "echo hello"]
+  #   concurrencyPolicy: Forbid
+  #   failedJobsHistoryLimit: 1
+  #   restartPolicy: OnFailure
+  #   startingDeadlineSeconds: 300
+  #   successfulJobsHistoryLimit: 1
+  #   livenessProbe:
+  #     path: "/"
+  #     initialDelaySeconds: 15
+  #     timeoutSeconds: 15
+  #     scheme: "HTTP"
+  #     probeType: "httpGet"
+  #   readinessProbe:
+  #     path: "/"
+  #     initialDelaySeconds: 5
+  #     timeoutSeconds: 3
+  #     failureThreshold: 3
+  #     periodSeconds: 10
+  #     scheme: "HTTP"
+  #     probeType: "httpGet"

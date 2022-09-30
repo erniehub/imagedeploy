@@ -364,7 +364,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				"lifecycle.preStop.exec.command[2]": "sleep 10",
 			},
 			ExpectedLifecycle: &coreV1.Lifecycle{
-				PreStop: &coreV1.Handler{
+				PreStop: &coreV1.LifecycleHandler{
 					Exec: &coreV1.ExecAction{
 						Command: []string{"/bin/sh", "-c", "sleep 10"},
 					},
@@ -422,7 +422,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				"livenessProbe.httpHeaders[0].value": "awesome",
 			},
 			ExpectedLivenessProbe: &coreV1.Probe{
-				Handler: coreV1.Handler{
+				ProbeHandler: coreV1.ProbeHandler{
 					HTTPGet: &coreV1.HTTPGetAction{
 						Path:   "/",
 						Port:   intstr.FromInt(1234),
@@ -451,7 +451,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			},
 			ExpectedLivenessProbe: defaultLivenessProbe(),
 			ExpectedReadinessProbe: &coreV1.Probe{
-				Handler: coreV1.Handler{
+				ProbeHandler: coreV1.ProbeHandler{
 					HTTPGet: &coreV1.HTTPGetAction{
 						Path:   "/",
 						Port:   intstr.FromInt(2345),
@@ -481,7 +481,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			ExpectedLivenessProbe:  defaultLivenessProbe(),
 			ExpectedReadinessProbe: defaultReadinessProbe(),
 			ExpectedStartupProbe: &coreV1.Probe{
-				Handler: coreV1.Handler{
+				ProbeHandler: coreV1.ProbeHandler{
 					HTTPGet: &coreV1.HTTPGetAction{
 						Path:   "/",
 						Port:   intstr.FromInt(2345),

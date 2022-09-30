@@ -56,7 +56,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			// See https://github.com/helm/helm/issues/6006
 			CaseName: "long release name",
 			Release:  strings.Repeat("r", 80),
-			
+
 			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* length must not be longer than 53"),
 		},
 		{
@@ -547,7 +547,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName: "production-worker1",
 					ExpectedCmd:  []string{"echo", "worker1"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
-						PreStop: &coreV1.Handler{
+						PreStop: &coreV1.LifecycleHandler{
 							Exec: &coreV1.ExecAction{
 								Command: []string{"/bin/sh", "-c", "sleep 10"},
 							},
@@ -558,7 +558,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName: "production-worker2",
 					ExpectedCmd:  []string{"echo", "worker2"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
-						PreStop: &coreV1.Handler{
+						PreStop: &coreV1.LifecycleHandler{
 							Exec: &coreV1.ExecAction{
 								Command: []string{"/bin/sh", "-c", "sleep 15"},
 							},
@@ -587,7 +587,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName: "production-worker1",
 					ExpectedCmd:  []string{"echo", "worker1"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
-						PreStop: &coreV1.Handler{
+						PreStop: &coreV1.LifecycleHandler{
 							Exec: &coreV1.ExecAction{
 								Command: []string{"/bin/sh", "-c", "sleep 10"},
 							},
@@ -598,7 +598,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName: "production-worker2",
 					ExpectedCmd:  []string{"echo", "worker2"},
 					ExpectedLifecycle: &coreV1.Lifecycle{
-						PreStop: &coreV1.Handler{
+						PreStop: &coreV1.LifecycleHandler{
 							Exec: &coreV1.ExecAction{
 								Command: []string{"/bin/sh", "-c", "sleep 15"},
 							},
@@ -696,7 +696,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName: "production-worker1",
 					ExpectedCmd:  []string{"echo", "worker1"},
 					ExpectedLivenessProbe: &coreV1.Probe{
-						Handler: coreV1.Handler{
+						ProbeHandler: coreV1.ProbeHandler{
 							HTTPGet: &coreV1.HTTPGetAction{
 								Path:   "/worker",
 								Port:   intstr.FromInt(5000),
@@ -716,7 +716,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedName: "production-worker2",
 					ExpectedCmd:  []string{"echo", "worker2"},
 					ExpectedLivenessProbe: &coreV1.Probe{
-						Handler: coreV1.Handler{
+						ProbeHandler: coreV1.ProbeHandler{
 							HTTPGet: &coreV1.HTTPGetAction{
 								Path:   "/worker",
 								Port:   intstr.FromInt(5000),
@@ -759,7 +759,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedCmd:           []string{"echo", "worker1"},
 					ExpectedLivenessProbe: defaultLivenessProbe(),
 					ExpectedReadinessProbe: &coreV1.Probe{
-						Handler: coreV1.Handler{
+						ProbeHandler: coreV1.ProbeHandler{
 							HTTPGet: &coreV1.HTTPGetAction{
 								Path:   "/worker",
 								Port:   intstr.FromInt(5000),
@@ -779,7 +779,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					ExpectedCmd:           []string{"echo", "worker2"},
 					ExpectedLivenessProbe: defaultLivenessProbe(),
 					ExpectedReadinessProbe: &coreV1.Probe{
-						Handler: coreV1.Handler{
+						ProbeHandler: coreV1.ProbeHandler{
 							HTTPGet: &coreV1.HTTPGetAction{
 								Path:   "/worker",
 								Port:   intstr.FromInt(5000),

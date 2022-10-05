@@ -64,7 +64,7 @@ spec:
       initContainers:
 {{ toYaml .Values.initContainers | indent 8 }}
 {{- end }}
-{{- if and (semverCompare ">= 1.19.x" .Capabilities.KubeVersion.Version) (.Values.topologySpreadConstraints) }}
+{{- if .Values.topologySpreadConstraints }}
       topologySpreadConstraints:
 {{ toYaml .Values.topologySpreadConstraints | indent 8 }}
 {{- end }}

@@ -318,6 +318,12 @@ channel 1 database.'
     debug_flag=('--debug')
   fi
 
+  local service_common_name_args=()
+  local common_name=${AUTO_DEVOPS_COMMON_NAME:-"le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN"}
+  if [[ "${common_name}" != "false" ]]; then
+    service_common_name_args=(--set "service.commonName=${common_name}")
+  fi
+
   # TODO: Over time, migrate all --set values to this file, see https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/-/issues/31
   write_environment_values_file
 
@@ -340,7 +346,6 @@ channel 1 database.'
       --set application.database_url="$database_url" \
       --set application.secretName="$APPLICATION_SECRET_NAME" \
       --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
-      --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
       --set service.url="$CI_ENVIRONMENT_URL" \
       --set service.additionalHosts="$additional_hosts" \
       --set replicaCount="$replicas" \
@@ -348,6 +353,7 @@ channel 1 database.'
       --set postgresql.managed="$postgres_managed" \
       --set postgresql.managedClassSelector="$postgres_managed_selector" \
       --set application.initializeCommand="$DB_INITIALIZE" \
+      "${service_common_name_args[@]}" \
       "${modsecurity_set_args[@]}" \
       --values "$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE" \
       "${helm_values_args[@]}" \
@@ -375,7 +381,6 @@ channel 1 database.'
     --set application.database_url="$database_url" \
     --set application.secretName="$APPLICATION_SECRET_NAME" \
     --set application.secretChecksum="$APPLICATION_SECRET_CHECKSUM" \
-    --set service.commonName="le-$CI_PROJECT_ID.$KUBE_INGRESS_BASE_DOMAIN" \
     --set service.url="$CI_ENVIRONMENT_URL" \
     --set service.additionalHosts="$additional_hosts" \
     --set replicaCount="$replicas" \
@@ -384,6 +389,7 @@ channel 1 database.'
     --set postgresql.managedClassSelector="$postgres_managed_selector" \
     --set application.initializeCommand="" \
     --set application.migrateCommand="$DB_MIGRATE" \
+    "${service_common_name_args[@]}" \
     "${modsecurity_set_args[@]}" \
     --values "$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE" \
     "${helm_values_args[@]}" \

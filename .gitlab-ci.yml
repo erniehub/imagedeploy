@@ -8,7 +8,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
   # See https://gitlab.com/gitlab-org/cluster-integration/helm-install-image/container_registry/3232113
-  HELM_INSTALL_IMAGE_VERSION: v0.260-helm-3.10.0-kube-1.24.6-alpine-3.15
+  HELM_INSTALL_IMAGE_VERSION: v0.267-helm-3.10.1-kube-1.24.7-alpine-3.15
 
 
   GLIBC_VERSION: 2.31-r0

@@ -123,12 +123,17 @@
 | persistence.volumes[].claim.accessMode   | The access mode of the PVC. | `ReadWriteOnce` |
 | persistence.volumes[].claim.size         | The storage size of the PVC. | `8Gi` |
 | persistence.volumes[].claim.storageClass | (Optional) The storage class of the PVC. If not specified, it falls back to the default storage class from the provider. | `nil` |
+| extraVolumes | This field allows to add extra volumes to your Deployment. | `[]` |
+| extraVolumeMounts | This field allows to add extra volume mounts to your Deployment. | `[]` |
 | cronjobs                            | Define your jobs in this section, an example of the definition can be found in values.yaml | `nil` |
 | cronjob.job.failedJobsHistoryLimit          | This field specify how many failed jobs are kept | `1` |
 | cronjob.job.startingDeadlineSeconds         | If a CronJob controller cannot start a job run on its schedule, it will keep retrying until the value (In seconds) is reached. | `300` |
 | cronjob.job.successfulJobsHistoryLimit      | This field specify how many completed jobs are kept | `1` |
 | cronjob.job.concurrencyPolicy               | If `cronjob.concurrencyPolicy` is set to Forbid and a CronJob was attempted to be scheduled when there was a previous schedule still running, then it would count as missed. | `Forbid` |
 | cronjob.job.restartPolicy                   | Possible values: `Always`, `OnFailure` and `Never` | `OnFailure` |
+| cronjob.job.extraVolumes | This field allows to add extra volumes to CronJob Pods. | `[]` |
+| cronjob.job.extraVolumeMounts | This field allows to add extra volume mounts to CronJob Pods. | `[]` |
 | cronjob.job.livenessProbe           | If defined, enables livenessProbe in the cronjob. If not defined, it uses top-level `livenessProbe` setting to the job. (To see details about the default probes check values.yaml) | |
 | cronjob.job.readinessProbe           | If defined, enables readinessProbe in the cronjob. If not defined, it uses top-level `readinessProbe` setting to the job. (To see details about the default probes check values.yaml) | |
 | cronjob.activeDeadlineSeconds           | Alternative to terminate a Job: Once a Job reaches `activeDeadlineSeconds` value, all of its running Pods are terminated and the Job status will become `type: Failed` with `reason: DeadlineExceeded` | `nil` |
+

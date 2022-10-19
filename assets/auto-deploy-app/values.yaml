@@ -203,6 +203,22 @@ persistence:
         # See https://cloud.google.com/kubernetes-engine/docs/concepts/persistent-volumes for more information.
         # storageClass: "myStorage"
 
+## Configure extra Volumes
+## ref: https://kubernetes.io/docs/concepts/storage/volumes/
+#
+extraVolumes: []
+# - name: config-volume
+#   configMap:
+#     name: test-config
+
+## Configure extra Volumes mounts
+## ref: https://kubernetes.io/docs/concepts/storage/volumes/
+#
+extraVolumeMounts: []
+# - name: config-volume
+#   mountPath: /app/config.yaml
+#   subPath: config.yaml
+
 workers: {}
   # worker:
   #   replicaCount: 1
@@ -249,6 +265,8 @@ workers: {}
   #   - procfile
   #   - start
   #   - stop_worker
+  #   extraVolumes: []
+  #   extraVolumeMounts: []
 
 cronjobs: {}
   # job:
@@ -277,3 +295,5 @@ cronjobs: {}
   #     periodSeconds: 10
   #     scheme: "HTTP"
   #     probeType: "httpGet"
+  #   extraVolumes: []
+  #   extraVolumeMounts: []

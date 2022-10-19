@@ -65,6 +65,10 @@ items:
             {{ toYaml $affinityConfig | nindent 14 }}
             {{- end }}
             {{- end }}
+            {{- if $jobConfig.extraVolumes }}
+            volumes:
+            {{ toYaml $jobConfig.extraVolumes | nindent 14 }}
+            {{- end }}
             containers:
             - name: {{ $.Chart.Name }}
               image: "{{ template "cronjobimagename" (dict "job" . "glob" $.Values) }}"
@@ -161,5 +165,9 @@ items:
               {{- end }}
               resources:
                 {{ toYaml $.Values.resources | nindent 16 }}
+              {{- if $jobConfig.extraVolumeMounts }}
+              volumeMounts:
+              {{ toYaml $jobConfig.extraVolumeMounts | nindent 16 }}         
+              {{- end }}                
 {{- end -}}
 {{- end -}}

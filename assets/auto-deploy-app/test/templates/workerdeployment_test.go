@@ -961,6 +961,121 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 	}
 }
 
+func TestWorkerTemplateWithVolumeMounts(t *testing.T) {
+	releaseName := "worker-with-volume-mounts-test"
+	templates := []string{"templates/worker-deployment.yaml"}
+
+	hostPathDirectoryType := coreV1.HostPathDirectory
+	configMapOptional := false
+	configMapDefaultMode := coreV1.ConfigMapVolumeSourceDefaultMode
+
+	tcs := []struct {
+		name                 string
+		values               map[string]string
+		valueFiles           []string
+		expectedVolumes      []coreV1.Volume
+		expectedVolumeMounts []coreV1.VolumeMount
+		expectedErrorRegexp  *regexp.Regexp
+	}{
+		{
+			name:       "with extra volume mounts",
+			valueFiles: []string{"../testdata/extra-volume-mounts.yaml"},
+			expectedVolumes: []coreV1.Volume{
+				coreV1.Volume{
+					Name: "config-volume",
+					VolumeSource: coreV1.VolumeSource{
+						ConfigMap: &coreV1.ConfigMapVolumeSource{
+							coreV1.LocalObjectReference{
+								Name: "test-config",
+							},
+							[]coreV1.KeyToPath{},
+							&configMapDefaultMode,
+							&configMapOptional,
+						},
+					},
+				},
+				coreV1.Volume{
+					Name: "test-host-path",
+					VolumeSource: coreV1.VolumeSource{
+						HostPath: &coreV1.HostPathVolumeSource{
+							Path: "/etc/ssl/certs/",
+							Type: &hostPathDirectoryType,
+						},
+					},
+				},
+				coreV1.Volume{
+					Name: "secret-volume",
+					VolumeSource: coreV1.VolumeSource{
+						Secret: &coreV1.SecretVolumeSource{
+							SecretName: "mysecret",
+						},
+					},
+				},
+			},
+			expectedVolumeMounts: []coreV1.VolumeMount{
+				coreV1.VolumeMount{
+					Name:      "config-volume",
+					MountPath: "/app/config.yaml",
+					SubPath:   "config.yaml",
+				},
+				coreV1.VolumeMount{
+					Name:      "test-host-path",
+					MountPath: "/etc/ssl/certs/",
+					ReadOnly: true,
+				},
+				coreV1.VolumeMount{
+					Name:      "secret-volume",
+					MountPath: "/etc/specialSecret",
+					ReadOnly: true,
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				ValuesFiles: tc.valueFiles,
+				SetValues:   tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+
+			for _, deployment := range deployments.Items {
+				for i, expectedVolume := range tc.expectedVolumes {
+					require.Equal(t, expectedVolume.Name, deployment.Spec.Template.Spec.Volumes[i].Name)
+					if deployment.Spec.Template.Spec.Volumes[i].PersistentVolumeClaim != nil {
+						require.Equal(t, expectedVolume.PersistentVolumeClaim.ClaimName, deployment.Spec.Template.Spec.Volumes[i].PersistentVolumeClaim.ClaimName)
+					}
+					if deployment.Spec.Template.Spec.Volumes[i].ConfigMap != nil {
+						require.Equal(t, expectedVolume.ConfigMap.Name, deployment.Spec.Template.Spec.Volumes[i].ConfigMap.Name)
+					}
+					if deployment.Spec.Template.Spec.Volumes[i].HostPath != nil {
+						require.Equal(t, expectedVolume.HostPath.Path, deployment.Spec.Template.Spec.Volumes[i].HostPath.Path)
+						require.Equal(t, expectedVolume.HostPath.Type, deployment.Spec.Template.Spec.Volumes[i].HostPath.Type)
+					}
+					if deployment.Spec.Template.Spec.Volumes[i].Secret != nil {
+						require.Equal(t, expectedVolume.Secret.SecretName, deployment.Spec.Template.Spec.Volumes[i].Secret.SecretName)
+					}
+				}
+	
+				for i, expectedVolumeMount := range tc.expectedVolumeMounts {
+					require.Equal(t, expectedVolumeMount.Name, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[i].Name)
+					require.Equal(t, expectedVolumeMount.MountPath, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[i].MountPath)
+					require.Equal(t, expectedVolumeMount.SubPath, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[i].SubPath)
+				}
+			}
+		})
+	}
+}
+
 func TestWorkerDatabaseUrlEnvironmentVariable(t *testing.T) {
 	releaseName := "worker-application-database-url-test"
 

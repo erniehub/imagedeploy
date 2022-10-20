@@ -530,7 +530,7 @@ commitlint:
   script:
     - npx --quiet commitlint --from="$CI_MERGE_REQUEST_DIFF_BASE_SHA" --help-url 'https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image#git-commit-guidelines'
   rules:
-    - if: "$CI_MERGE_REQUEST_EVENT_TYPE != 'merge_train' && $CI_MERGE_REQUEST_DIFF_BASE_SHA"
+    - if: "$CI_MERGE_REQUEST_DIFF_BASE_SHA"
 
 # This complements the except-docs rule in rules.gitlab-ci.yml to ensure that do
 # not skip tests when code is *actually* changed.

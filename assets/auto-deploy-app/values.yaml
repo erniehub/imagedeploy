@@ -30,6 +30,7 @@ dnsConfig: {}
 #        value: "1"
 affinity: {}
 tolerations: []
+priorityClassName:
 initContainers: []
 # - name: init-myservice
 #   image: busybox

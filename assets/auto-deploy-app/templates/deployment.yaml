@@ -83,6 +83,9 @@ spec:
       hostAliases:
 {{ toYaml .Values.hostAliases | indent 8 }}
 {{- end }}
+{{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+{{- end }}
       containers:
       - name: {{ .Chart.Name }}
         image: {{ template "imagename" . }}

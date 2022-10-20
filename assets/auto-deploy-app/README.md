@@ -25,6 +25,7 @@
 | dnsConfig                     | [Pod DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)  | `{}` |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |
+| priorityClassName             | Assign node [priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/) from priorityClass | `""` 
 | terminationGracePeriodSeconds | The amount of time in seconds a pod is given to terminate | [See the Kubernetes API for reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#lifecycle)          |
 | hostAliases                   | If present, this will set static hosts to the pod configuration | [See the Kubernetes API for reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#hostname-and-name-resolution) |
 | initContainers                | Containers that are run before the app containers are started. | `[]`          |

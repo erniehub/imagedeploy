@@ -155,7 +155,9 @@ function persist_environment_url() {
 
 function auto_database_url() {
   local auto_database_url
-  auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
+  if [[ "$POSTGRES_ENABLED" == "true" ]]; then
+    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
+  fi
 
   echo "${DATABASE_URL-$auto_database_url}"
 }

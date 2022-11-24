@@ -114,9 +114,9 @@
 | prometheus.metrics            | Annotates the service for prometheus auto-discovery. Also denies access to the `/metrics` endpoint from external addresses with Ingress. | `false` |
 | networkPolicy.enabled(**DEPRECATED**)         | Enable container network policy | `false` |
 | networkPolicy.spec(**DEPRECATED**)            | [Network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) definition | `{ podSelector: { matchLabels: {} }, ingress: [{ from: [{ podSelector: { matchLabels: {} } }, { namespaceSelector: { matchLabels: { app.gitlab.com/managed_by: gitlab } } }] }] }` |
-| ciliumNetworkPolicy.enabled         | Enable container cilium network policy | `false` |
-| ciliumNetworkPolicy.alerts.enabled         | Enable alert generation for container cilium network policy | `false` |
-| ciliumNetworkPolicy.spec            | [Cilium network policy](https://docs.cilium.io/en/v1.8/concepts/kubernetes/policy/#ciliumnetworkpolicy/) definition | `{ endpointSelector: {}, ingress: [{ fromEndpoints: [{ matchLabels: { app.gitlab.com/managed_by: gitlab } }] }] }` |
+| ciliumNetworkPolicy.enabled(**DEPRECATED**)         | Enable container cilium network policy | `false` |
+| ciliumNetworkPolicy.alerts.enabled(**DEPRECATED**)         | Enable alert generation for container cilium network policy | `false` |
+| ciliumNetworkPolicy.spec(**DEPRECATED**)            | [Cilium network policy](https://docs.cilium.io/en/v1.8/concepts/kubernetes/policy/#ciliumnetworkpolicy/) definition | `{ endpointSelector: {}, ingress: [{ fromEndpoints: [{ matchLabels: { app.gitlab.com/managed_by: gitlab } }] }] }` |
 | persistence.enabled           | Allow a [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC) to be mounted as a volume. <br/> **Warning:** Auto-created PVCs are deleted any time `persistence.enabled` is set to `false`. | `false` |
 | persistence.volumes[].name         | The name of the volume. | `data` |
 | persistence.volumes[].mount.path         | The mount path in the deployment containers. | `/pvc-mount` |

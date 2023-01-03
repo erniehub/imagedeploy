@@ -8,8 +8,8 @@
   parallel:
     matrix:
       - K3S_VERSION:
-        - v1.22.11-k3s1
-        - v1.25.0-k3s1
+        - v1.24.9-k3s1
+        - v1.26.0-k3s1
 
   services:
     - name: registry.gitlab.com/gitlab-org/cluster-integration/test-utils/k3s-gitlab-ci/releases/${K3S_VERSION}

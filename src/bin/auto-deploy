@@ -153,10 +153,16 @@ function persist_environment_url() {
   echo $CI_ENVIRONMENT_URL >environment_url.txt
 }
 
+function check_release_created() {
+  [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$1$" --failed --pending --deployed)" ]]
+}
+
 function auto_database_url() {
   local auto_database_url
-  if [[ "$POSTGRES_ENABLED" == "true" ]]; then
-    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRESQL_RELEASE_NAME}:5432/${POSTGRES_DB}"
+  local name="$POSTGRESQL_RELEASE_NAME"
+
+  if [[ "$POSTGRES_ENABLED" == "true" ]] || ([[ "$POSTGRES_ENABLED" != "false" ]] && check_release_created "$name"); then
+    auto_database_url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${name}:5432/${POSTGRES_DB}"
   fi
 
   echo "${DATABASE_URL-$auto_database_url}"
@@ -428,7 +434,7 @@ function scale() {
 function delete_postgresql() {
   local name="$POSTGRESQL_RELEASE_NAME"
 
-  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$" --failed --pending --deployed)" ]]; then
+  if check_release_created "$name"; then
     helm delete "$name" --namespace "$KUBE_NAMESPACE"
     kubectl delete pvc -n "$KUBE_NAMESPACE" -l "release=$POSTGRESQL_RELEASE_NAME"
   fi
@@ -440,7 +446,7 @@ function delete() {
   local name
   name=$(deploy_name "$track")
 
-  if [[ -n "$(helm ls --namespace "$KUBE_NAMESPACE" -q -f "^$name$" --failed --pending --deployed)" ]]; then
+  if check_release_created "$name"; then
     helm delete "$name" --namespace "$KUBE_NAMESPACE"
   fi
 

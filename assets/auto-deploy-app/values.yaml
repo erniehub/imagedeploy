@@ -213,6 +213,10 @@ extraEnvFrom: []
 # - secretRef:
 #     name: {{ .Values.application.secretName }}
 
+extraEnv: []
+# - name:  ENV_VAR
+#   value: ENV_VAL
+
 workers: {}
   # worker:
   #   replicaCount: 1

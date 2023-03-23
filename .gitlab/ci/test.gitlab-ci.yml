@@ -87,7 +87,8 @@ test-download-chart-url:
     # package the chart for the chart server
     - (cd assets && helm package auto-deploy-app)
     # install a helm chart server and serve the local chart
-    - curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+    - curl -LO https://get.helm.sh/chartmuseum-v0.15.0-linux-amd64.tar.gz
+    - tar -xvf chartmuseum-v0.15.0-linux-amd64.tar.gz && mv linux-amd64/* .
     - chmod +x ./chartmuseum
     - ./chartmuseum --port=8080 --storage=local --storage-local-rootdir="./assets" &
     # instruct auto-deploy to use the chart server
@@ -103,7 +104,8 @@ test-download-protected-chart-url:
     # package the chart for the chart server
     - (cd assets && helm package auto-deploy-app)
     # install a helm chart server and serve the local chart
-    - curl -LO https://s3.amazonaws.com/chartmuseum/release/latest/bin/linux/amd64/chartmuseum
+    - curl -LO https://get.helm.sh/chartmuseum-v0.15.0-linux-amd64.tar.gz
+    - tar -xvf chartmuseum-v0.15.0-linux-amd64.tar.gz && mv linux-amd64/* .
     - chmod +x ./chartmuseum
     - ./chartmuseum --port=8080 --storage=local --storage-local-rootdir="./assets" --basic-auth-user="user" --basic-auth-pass="pass" &
     # instruct auto-deploy to use the chart server

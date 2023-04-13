@@ -282,6 +282,12 @@ test-deploy:
     - auto-deploy deploy
     - helm -n "$EXPECTED_NAMESPACE" get all production
 
+test-deploy-pdb:
+  extends: test-deploy
+  variables:
+    HELM_UPGRADE_EXTRA_ARGS: |-
+      --set podDisruptionBudget.enabled=true
+
 test-deploy-custom-context:
   extends: test-deploy
   variables:

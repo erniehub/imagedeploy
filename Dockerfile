@@ -9,9 +9,10 @@ ARG GLIBC_VERSION
 ARG TARGETARCH
 
 # Install shared dependencies
-RUN apk add --no-cache \
+RUN apk add -u --no-cache \
   bash \
   curl \
+  libcurl \
   gzip \
   jq \
   openssl \

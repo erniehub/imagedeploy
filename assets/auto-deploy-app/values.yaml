@@ -104,6 +104,7 @@ ingress:
 prometheus:
   metrics: false
 livenessProbe:
+  enabled: true
   path: "/"
   initialDelaySeconds: 15
   timeoutSeconds: 15
@@ -111,6 +112,7 @@ livenessProbe:
   probeType: "httpGet"
   httpHeaders: []
 readinessProbe:
+  enabled: true
   path: "/"
   initialDelaySeconds: 5
   timeoutSeconds: 3

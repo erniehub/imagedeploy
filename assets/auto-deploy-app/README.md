@@ -76,6 +76,7 @@
 | ingress.modSecurity.secRuleEngine | Configuration for [ModSecurity's rule engine](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#SecRuleEngine) | `DetectionOnly` |
 | ingress.modSecurity.secRules | Configuration for custom [ModSecurity's rules](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#secrule) | `nil` |
 | ingress.annotations           | Ingress annotations | See [`_ingress-annotations.yaml`](./templates/_ingress-annotations.yaml) |
+| livenessProbe.enabled         | If true, enables liveness probe. | `/`                                |
 | livenessProbe.path            | Path to access on the HTTP server on periodic probe of container liveness. | `/`                                |
 | livenessProbe.scheme          | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
 | livenessProbe.httpHeaders       | List of additional custom headers to send on the server | `[]`                                |
@@ -85,6 +86,7 @@
 | livenessProbe.timeoutSeconds  | # of seconds after which the liveness probe times out. | `15`                               |
 | livenessProbe.probeType       | Type of [liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes) to use. | `httpGet`
 | livenessProbe.command         | Commands for use with probe type 'exec'. | `{}`
+| readinessProbe.enabled         | If true, enables readiness probe. | `/`                                |
 | readinessProbe.path           | Path to access on the HTTP server on periodic probe of container readiness. | `/`                                |
 | readinessProbe.scheme         | Scheme to access the HTTP server (HTTP or HTTPS). | `HTTP`                                |
 | readinessProbe.httpHeaders      | List of additional custom headers to send on the server | `[]`                                |

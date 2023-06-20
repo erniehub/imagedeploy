@@ -23,7 +23,6 @@ build:
        docker buildx build
        --platform "$PLATFORMS"
        --build-arg "HELM_INSTALL_IMAGE_VERSION=$HELM_INSTALL_IMAGE_VERSION"
-       --build-arg "GLIBC_VERSION=$GLIBC_VERSION"
        --tag "$BUILD_IMAGE_NAME"
        --tag "$BUILD_IMAGE_LATEST"
        --push

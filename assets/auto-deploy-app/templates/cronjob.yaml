@@ -52,6 +52,9 @@ items:
             restartPolicy: {{ default "OnFailure" $jobConfig.restartPolicy }}
             {{- with $nodeSelectorConfig := default $.Values.nodeSelector $jobConfig.nodeSelector -}}
             {{- if $nodeSelectorConfig  }}
+            {{- if or (.Values.serviceAccount.name) (.Values.serviceAccountName) }}
+            serviceAccountName: {{ .Values.serviceAccount.name | default .Values.serviceAccountName | quote }}
+            {{- end }}
             nodeSelector:
             {{ toYaml $nodeSelectorConfig | nindent 14 }}
             {{- end }}

@@ -299,3 +299,27 @@ cronjobs: {}
   #   extraVolumes: []
   #   extraVolumeMounts: []
   #   extraEnvFrom: []
+
+# customResources:
+#   - apiVersion: "traefik.containo.us/v1alpha1"
+#     kind: "IngressRoute"
+#     metadata:
+#       name: "ingress-route"
+#       namespace: "default"
+#     spec:
+#       entryPoints:
+#         - "web"
+#       routes:
+#         - match: "Host(`{{ .Values.envName }}.{{ .Values.envURL }}`)"
+#           kind: "Rule"
+#           services:
+#             - name: "web"
+#               port: {{ .Values.service.internalPort }}
+#               weight: 100
+#       tls:
+#         secretName: "tls-secret"
+#         options:
+#           name: "tls-options"
+#           namespace: "default"
+#           kind: "TLSOptions"
+#           minVersion: "VersionTLS12"

@@ -63,7 +63,7 @@ func TestHPA_AutoscalingV1(t *testing.T) {
 	}
 }
 
-func TestHPA_AutoscalingV2beta2(t *testing.T) {
+func TestHPA_AutoscalingV2(t *testing.T) {
 	templates := []string{"templates/hpa.yaml"}
 	releaseName := "hpa-test"
 

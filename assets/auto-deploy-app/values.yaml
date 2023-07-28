@@ -52,7 +52,7 @@ hpa:
   maxReplicas: 5
   # Only one of targetCPUUtilizationPercentage and metrics can be chosen.
   # This is because targetCPUUtilizationPercentage is from autoscaling/v1,
-  # whereas metrics is from autoscaling/v2beta2. If both are provided, only
+  # whereas metrics is from autoscaling/v2. If both are provided, only
   # metrics will be used.
   # See https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/
   # for examples of each.

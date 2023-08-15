@@ -12,6 +12,10 @@ Scripts in this repository follow GitLab's
 [shell scripting guide](https://docs.gitlab.com/ee/development/shell_scripting_guide/)
 and enforces `shellcheck` and `shfmt`.
 
+## Testing
+
+When choosing what to test, for example in`.gitlab/ci/test.gitlab-ci.yml`, test GitLab's [currently supported Kubernetes versions](https://docs.gitlab.com/ee/user/clusters/agent/#supported-cluster-versions).
+
 ## Contributing and Code of Conduct
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md)

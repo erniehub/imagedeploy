@@ -126,7 +126,7 @@ function write_environment_values_file() {
   echo "deploymentApiVersion: apps/v1" >"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
 
   # Helm 3 does not like `--set image.secrets[0]=""`
-  if [[ "$CI_PROJECT_VISIBILITY" != "public" ]]; then
+  if [[ "$CI_PROJECT_VISIBILITY" != "public" || -n "$CI_DEPLOY_PASSWORD" ]]; then
     echo "image: { secrets: [ { name: gitlab-registry-${CI_PROJECT_PATH_SLUG} } ] }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
   else
     echo "image: { secrets: null }" >>"$AUTO_DEPLOY_ENVIRONMENT_VALUES_FILE"
@@ -135,7 +135,7 @@ function write_environment_values_file() {
 
 function create_secret() {
   echo "Create secret..."
-  if [[ "$CI_PROJECT_VISIBILITY" == "public" ]]; then
+  if [[ "$CI_PROJECT_VISIBILITY" == "public" && -z "$CI_DEPLOY_PASSWORD" ]]; then
     return
   fi
 

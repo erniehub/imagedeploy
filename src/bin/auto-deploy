@@ -581,5 +581,6 @@ case $option in
   deploy_name) deploy_name "${@:2}" ;;
   get_replicas) get_replicas "${@:2}" ;;
   check_old_postgres_exist) check_old_postgres_exist ;;
+  write_environment_values_file) write_environment_values_file ;;
   *) exit 1 ;;
 esac

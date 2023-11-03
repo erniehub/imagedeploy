@@ -44,7 +44,11 @@ function check_kube_domain() {
 }
 
 function download_chart() {
-  add_chart_repositories
+  if [ -z "$AUTO_DEVOPS_CHART_CUSTOM_ONLY" ]; then
+    add_chart_repositories
+  else
+    add_custom_chart_repository
+  fi
 
   if [[ -d chart ]]; then
     echo "Download skipped. Using the chart at local path 'chart/'..."
@@ -55,7 +59,14 @@ function download_chart() {
       mv "$AUTO_DEVOPS_CHART" chart/
     else
       echo "Downloading remote chart '$AUTO_DEVOPS_CHART'..."
-      helm pull "$AUTO_DEVOPS_CHART" --untar
+
+      local helm_repo_insecure=()
+      if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_INSECURE" ]]; then
+        helm_repo_insecure=('--insecure-skip-tls-verify')
+      fi
+
+      helm pull "$AUTO_DEVOPS_CHART" --untar \
+        "${helm_repo_insecure[@]}"
 
       local auto_chart_name
       auto_chart_name=$(basename "$AUTO_DEVOPS_CHART")
@@ -108,10 +119,16 @@ function add_custom_chart_repository() {
     helm_repo_auth+=('--pass-credentials')
   fi
 
+  local helm_repo_insecure=()
+  if [[ -n "$AUTO_DEVOPS_CHART_REPOSITORY_INSECURE" ]]; then
+    helm_repo_insecure=('--insecure-skip-tls-verify')
+  fi
+
   helm repo add \
     "${AUTO_DEVOPS_CHART_REPOSITORY_NAME}" \
     "${AUTO_DEVOPS_CHART_REPOSITORY}" \
-    "${helm_repo_auth[@]}"
+    "${helm_repo_auth[@]}" \
+    "${helm_repo_insecure[@]}"
 }
 
 function ensure_namespace() {

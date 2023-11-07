@@ -65,7 +65,13 @@ function download_chart() {
         helm_repo_insecure=('--insecure-skip-tls-verify')
       fi
 
+      local helm_repo_version=()
+      if [[ -n "$AUTO_DEVOPS_CHART_VERSION" ]]; then
+        helm_repo_version=('--version' "$AUTO_DEVOPS_CHART_VERSION")
+      fi
+
       helm pull "$AUTO_DEVOPS_CHART" --untar \
+        "${helm_repo_version[@]}" \
         "${helm_repo_insecure[@]}"
 
       local auto_chart_name

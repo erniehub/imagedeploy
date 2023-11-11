@@ -18,6 +18,7 @@ lifecycle: {}
 #     command: ["/bin/sh", "-c", "sleep 10"]
 podAnnotations: {}
 nodeSelector: {}
+hostNetwork: false
 dnsPolicy: {}
 dnsConfig: {}
 #    nameservers:

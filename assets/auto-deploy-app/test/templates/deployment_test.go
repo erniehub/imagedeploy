@@ -225,6 +225,45 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	for _, tc := range []struct {
+		CaseName            string
+		Release             string
+		Values              map[string]string
+		ExpectedHostNetwork bool
+	}{
+		{
+			CaseName: "root hostNetwork is defined",
+			Release:  "production",
+			Values: map[string]string{
+				"hostNetwork": "true",
+			},
+			ExpectedHostNetwork: bool(true),
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedHostNetwork, deployment.Spec.Template.Spec.HostNetwork)
+		})
+	}
+
 	// serviceAccountName
 	for _, tc := range []struct {
 		CaseName                   string

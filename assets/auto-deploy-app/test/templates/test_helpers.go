@@ -92,6 +92,10 @@ type workerDeploymentServiceAccountTestCase struct {
 	ExpectedServiceAccountName string
 }
 
+type workerDeploymentHostNetworkTestCase struct {
+	ExpectedHostNetwork bool
+}
+
 type deploymentList struct {
 	metav1.TypeMeta `json:",inline"`
 

@@ -45,6 +45,9 @@ spec:
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
 {{- end }}
+{{- if .Values.hostNetwork }}
+      hostNetwork: {{ .Values.hostNetwork }}
+{{- end }}
 {{- if .Values.dnsPolicy }}
       dnsPolicy: {{ .Values.dnsPolicy }}
 {{- end }}
@@ -195,7 +198,7 @@ spec:
             port: {{ .Values.readinessProbe.port | default .Values.service.internalPort }}
 {{- if .Values.readinessProbe.httpHeaders }}
             httpHeaders:
-{{- range $httpHeader := .Values.readinessProbe.httpHeaders }}            
+{{- range $httpHeader := .Values.readinessProbe.httpHeaders }}
             - name: {{ $httpHeader.name }}
               value: {{ $httpHeader.value }}
 {{- end }}
@@ -242,7 +245,7 @@ spec:
 {{ toYaml .Values.resources | indent 12 }}
 {{- if or (.Values.persistence.enabled) (.Values.extraVolumeMounts) }}
         volumeMounts:
-{{- if .Values.persistence.enabled }}        
+{{- if .Values.persistence.enabled }}
 {{- range $volume := .Values.persistence.volumes }}
           - name: {{ $volume.name | quote }}
             mountPath: {{ $volume.mount.path | quote }}
@@ -252,7 +255,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- if .Values.extraVolumeMounts }}
-{{ toYaml .Values.extraVolumeMounts | indent 10 }}           
+{{ toYaml .Values.extraVolumeMounts | indent 10 }}
 {{- end }}
 {{- end }}
 {{- end -}}

@@ -260,6 +260,79 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedDeployments []workerDeploymentHostNetworkTestCase
+	}{
+		{
+			CaseName: "worker hostNetwork is defined",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.hostNetwork": "true",
+			},
+			ExpectedDeployments: []workerDeploymentHostNetworkTestCase{
+				{
+					ExpectedHostNetwork: bool(true),
+				},
+			},
+		},
+		{
+			CaseName: "root hostNetwork is defined",
+			Release:  "production",
+			Values: map[string]string{
+				"hostNetwork": "true",
+			},
+			ExpectedDeployments: []workerDeploymentHostNetworkTestCase{
+				{
+					ExpectedHostNetwork: bool(true),
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app":                 "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env":                 "prod",
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+
+			require.Len(t, deployments.Items, len(tc.ExpectedDeployments))
+
+			for i, expectedDeployment := range tc.ExpectedDeployments {
+				deployment := deployments.Items[i]
+				require.Equal(
+					t,
+					expectedDeployment.ExpectedHostNetwork,
+					deployment.Spec.Template.Spec.HostNetwork,
+				)
+			}
+		})
+	}
+
 	// Tests worker selector
 	for _, tc := range []struct {
 		CaseName string

@@ -21,6 +21,7 @@
 | extraLabels                   | Allow labelling resources with custom key/value pairs | `{}` |
 | lifecycle                     | [Container lifecycle hooks](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) | `{}` |
 | podAnnotations                | Pod annotations | `{}`                           |
+| hostNetwork                   | Use the host's network namespace. | `false`      |
 | dnsPolicy                     | Pod DNS policy  | `{}`                           |
 | dnsConfig                     | [Pod DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)  | `{}` |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |

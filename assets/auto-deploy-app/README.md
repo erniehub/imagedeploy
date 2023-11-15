@@ -138,4 +138,8 @@
 | cronjob.job.readinessProbe           | If defined, enables readinessProbe in the cronjob. If not defined, it uses top-level `readinessProbe` setting to the job. (To see details about the default probes check values.yaml) | |
 | cronjob.activeDeadlineSeconds           | Alternative to terminate a Job: Once a Job reaches `activeDeadlineSeconds` value, all of its running Pods are terminated and the Job status will become `type: Failed` with `reason: DeadlineExceeded` | `nil` |
 | customResources | This field allows to add custom resources to your Deployment. | `[]` |
-
+| workers                       | Define your workers in this section, an example of the definition can be found in values.yaml | `nil` |
+| worker.image.repository       |             | `gitlab.example.com/group/project` |
+| worker.image.tag              |             | `stable`                           |
+| worker.image.pullPolicy       |             | `Always`                           |
+| worker.image.secrets          |             | `[name: gitlab-registry]`          |

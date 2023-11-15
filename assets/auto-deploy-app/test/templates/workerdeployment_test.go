@@ -265,6 +265,140 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		Release  string
 		Values   map[string]string
 
+		ExpectedImagePullPolicy coreV1.PullPolicy
+		ExpectedImageRepository string
+	}{
+		{
+			CaseName: "worker image is defined",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.image.repository": "worker1/image/repo",
+				"workers.worker1.image.tag":        "worker1-tag",
+			},
+			ExpectedImageRepository: string("worker1/image/repo:worker1-tag"),
+		},
+		{
+			CaseName: "worker image pullPolicy is defined",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.image.repository": "worker1/image/repo",
+				"workers.worker1.image.tag":        "worker1-tag",
+				"workers.worker1.image.pullPolicy": "Always",
+			},
+			ExpectedImagePullPolicy: coreV1.PullAlways,
+			ExpectedImageRepository: string("worker1/image/repo:worker1-tag"),
+		},
+		{
+			CaseName: "root image is defined",
+			Release:  "production",
+			Values: map[string]string{
+				"image.repository": "root/image/repo",
+				"image.tag":        "root-tag",
+			},
+			ExpectedImagePullPolicy: coreV1.PullIfNotPresent,
+			ExpectedImageRepository: string("root/image/repo:root-tag"),
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app":                 "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env":                 "prod",
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.command[1]": "worker1",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(
+					t,
+					tc.ExpectedImageRepository,
+					deployment.Spec.Template.Spec.Containers[0].Image,
+				)
+				require.Equal(
+					t,
+					tc.ExpectedImagePullPolicy,
+					deployment.Spec.Template.Spec.Containers[0].ImagePullPolicy,
+				)
+			}
+		})
+	}
+
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedImagePullSecrets []coreV1.LocalObjectReference
+	}{
+		{
+			CaseName: "worker image secrets are defined",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.image.secrets[0].name": "expected-secret",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+			t.Log("jopa")
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(
+					t,
+					tc.ExpectedImagePullSecrets,
+					deployment.Spec.Template.Spec.ImagePullSecrets,
+				)
+			}
+		})
+	}
+
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
 		ExpectedDeployments []workerDeploymentHostNetworkTestCase
 	}{
 		{

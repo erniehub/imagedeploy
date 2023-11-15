@@ -223,6 +223,12 @@ extraEnv: []
 workers: {}
   # worker:
   #   replicaCount: 1
+  #   image:
+  #     repository: gitlab.example.com/group/project
+  #     tag: stable
+  #     pullPolicy: IfNotPresent
+  #     secrets:
+  #       - name: gitlab-registry
   #   terminationGracePeriodSeconds: 60
   #   hostAliases:
   #   - ip: X.X.X.X

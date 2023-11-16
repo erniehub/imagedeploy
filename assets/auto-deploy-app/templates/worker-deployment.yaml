@@ -48,7 +48,11 @@ items:
         serviceAccountName: {{ $.Values.serviceAccount.name | default $.Values.serviceAccountName | quote }}
 {{- end }}
         imagePullSecrets:
-  {{ toYaml $.Values.image.secrets | indent 12 }}
+{{- if and $workerConfig.image $workerConfig.image.secrets }}
+{{ toYaml $workerConfig.image.secrets | indent 10 }}
+{{- else }}
+{{ toYaml $.Values.image.secrets | indent 10 }}
+{{- end }}
 {{- with $nodeSelectorConfig := default $.Values.nodeSelector $workerConfig.nodeSelector -}}
 {{- if $nodeSelectorConfig  }}
         nodeSelector:
@@ -100,10 +104,12 @@ items:
 {{- end }}
         containers:
         - name: {{ $.Chart.Name }}-{{ $workerName }}
-          image: {{ template "imagename" $ }}
+          image: "{{ template "workerimagename" (dict "worker" $workerConfig "glob" $.Values) }}"
+{{- if $workerConfig.command }}
           command:
 {{ toYaml $workerConfig.command | indent 10 }}
-          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+{{- end }}
+          imagePullPolicy: "{{ template "workerimagepullpolicy" (dict "worker" $workerConfig "glob" $.Values) }}"
           {{- if $.Values.application.secretName }}
           envFrom:
           - secretRef:

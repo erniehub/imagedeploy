@@ -56,6 +56,12 @@ items:
             {{ toYaml $nodeSelectorConfig | nindent 14 }}
             {{- end }}
             {{- end }}
+            {{- with $securityContextConfig := default $.Values.securityContext $jobConfig.securityContext -}}
+            {{- if $securityContextConfig }}
+            securityContext:
+            {{ toYaml $securityContextConfig | nindent 14 }}
+            {{- end }}
+            {{- end }}
             {{- with $tolerationsConfig := default $.Values.tolerations $jobConfig.tolerations -}}
             {{- if $tolerationsConfig }}
             tolerations:

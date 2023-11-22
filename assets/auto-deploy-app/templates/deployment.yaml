@@ -45,6 +45,10 @@ spec:
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
 {{- end }}
+{{- if .Values.securityContext }}
+      securityContext:
+{{ toYaml .Values.securityContext | indent 8 }}
+{{- end }}
 {{- if .Values.hostNetwork }}
       hostNetwork: {{ .Values.hostNetwork }}
 {{- end }}

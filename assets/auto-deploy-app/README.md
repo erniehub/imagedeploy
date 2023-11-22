@@ -25,6 +25,7 @@
 | dnsPolicy                     | Pod DNS policy  | `{}`                           |
 | dnsConfig                     | [Pod DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config)  | `{}` |
 | nodeSelector                  | Node labels for pod assignment | `{}`           |
+| securityContext               | SecurityContext definition for deployment | `{}`           |
 | tolerations                   | List of node taints to tolerate | `[]`          |
 | priorityClassName             | Assign node [priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/) from priorityClass | `""`
 | terminationGracePeriodSeconds | The amount of time in seconds a pod is given to terminate | [See the Kubernetes API for reference](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#lifecycle)          |

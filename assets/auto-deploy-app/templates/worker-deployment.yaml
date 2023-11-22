@@ -59,6 +59,12 @@ items:
 {{ toYaml $nodeSelectorConfig | indent 10 }}
 {{- end }}
 {{- end }}
+{{- with $securityContextConfig := default $.Values.securityContext $workerConfig.securityContext -}}
+{{- if $securityContextConfig }}
+        securityContext:
+{{ toYaml $securityContextConfig | indent 10 }}
+{{- end }}
+{{- end }}
 {{- with $hostNetworkConfig := default $.Values.hostNetwork $workerConfig.hostNetwork -}}
 {{- if $hostNetworkConfig  }}
         hostNetwork: {{ $hostNetworkConfig }}

@@ -1270,3 +1270,41 @@ func TestDeploymentTemplateWithExtraEnv(t *testing.T) {
 		})
 	}
 }
+
+func TestDeploymentTemplateWithSecurityContext(t *testing.T) {
+	releaseName := "deployment-with-security-context"
+	templates := []string{"templates/deployment.yaml"}
+
+	tcs := []struct {
+		name                        string
+		values                      map[string]string
+		expectedSecurityContextName string
+	}{
+		{
+			name: "with gMSA security context",
+			values: map[string]string{
+				"securityContext.windowsOptions.gmsaCredentialSpecName": "gmsa-test",
+			},
+			expectedSecurityContextName: "gmsa-test",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				SetValues: tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			deployment := new(appsV1.Deployment)
+
+			helm.UnmarshalK8SYaml(t, output, deployment)
+			require.Equal(t, *deployment.Spec.Template.Spec.SecurityContext.WindowsOptions.GMSACredentialSpecName, tc.expectedSecurityContextName)
+		})
+	}
+}

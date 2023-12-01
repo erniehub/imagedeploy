@@ -204,6 +204,12 @@ items:
 {{ toYaml $workerConfig.preStopCommand | indent 16 }}
             {{- end}}
           {{- end }}
+{{- with $containerSecurityContextConfig := default $.Values.containerSecurityContext $workerConfig.containerSecurityContext -}}
+{{- if $containerSecurityContextConfig }}
+          securityContext:
+{{ toYaml $containerSecurityContextConfig | indent 12 }}
+{{- end }}
+{{- end }}
           resources:
 {{ $workerConfig.resources | default $.Values.resources | toYaml | indent 12 }}
 {{- if $workerConfig.extraVolumeMounts }}

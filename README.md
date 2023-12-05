@@ -12,6 +12,10 @@ Scripts in this repository follow GitLab's
 [shell scripting guide](https://docs.gitlab.com/ee/development/shell_scripting_guide/)
 and enforces `shellcheck` and `shfmt`.
 
+### Chart version
+
+We bump the chart version whenever there's a chart change. We set the chart version to match the next expected release tag.
+
 ## Testing
 
 When choosing what to test, for example in`.gitlab/ci/test.gitlab-ci.yml`, test GitLab's [currently supported Kubernetes versions](https://docs.gitlab.com/ee/user/clusters/agent/#supported-cluster-versions).

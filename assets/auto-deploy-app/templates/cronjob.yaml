@@ -180,6 +180,12 @@ items:
                 periodSeconds: {{ $readinessProbe.periodSeconds }}
               {{- end }}
               {{- end }}
+              {{- with $containerSecurityContextConfig := default $.Values.containerSecurityContext $jobConfig.containerSecurityContext -}}
+              {{- if $containerSecurityContextConfig }}
+              securityContext:
+              {{ toYaml $containerSecurityContextConfig | nindent 16 }}
+              {{- end }}
+              {{- end }}
               resources:
                 {{ toYaml $.Values.resources | nindent 16 }}
               {{- if $jobConfig.extraVolumeMounts }}

@@ -840,3 +840,44 @@ func TestCronJobTemplateWithSecurityContext(t *testing.T) {
 		})
 	}
 }
+
+func TestCronJobTemplateWithContainerSecurityContext(t *testing.T) {
+	releaseName := "cronjob-with-container-security-context"
+	templates := []string{"templates/cronjob.yaml"}
+
+	tcs := []struct {
+		name                        				string
+		values                      				map[string]string
+		expectedSecurityContextCapabilities []coreV1.Capability
+	}{
+		{
+			name: "with container security context capabilities",
+			values: map[string]string{
+				"cronjobs.job1.containerSecurityContext.capabilities.drop[0]": "ALL",
+			},
+			expectedSecurityContextCapabilities: []coreV1.Capability{
+				"ALL",
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				SetValues: tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var cronjobs batchV1beta1.CronJobList
+			helm.UnmarshalK8SYaml(t, output, &cronjobs)
+			for _, cronjob := range cronjobs.Items {
+				require.Equal(t, cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].SecurityContext.Capabilities.Drop, tc.expectedSecurityContextCapabilities)
+			}
+		})
+	}
+}

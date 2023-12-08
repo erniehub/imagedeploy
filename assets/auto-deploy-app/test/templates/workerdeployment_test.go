@@ -1466,3 +1466,44 @@ func TestWorkerDeploymentTemplateWithSecurityContext(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkerDeploymentTemplateWithContainerSecurityContext(t *testing.T) {
+	releaseName := "worker-deployment-with-container-security-context"
+	templates := []string{"templates/worker-deployment.yaml"}
+
+	tcs := []struct {
+		name                                string
+		values                              map[string]string
+		expectedSecurityContextCapabilities []coreV1.Capability
+	}{
+		{
+			name: "with container security context capabilities",
+			values: map[string]string{
+				"workers.worker1.containerSecurityContext.capabilities.drop[0]": "ALL",
+			},
+			expectedSecurityContextCapabilities: []coreV1.Capability{
+				"ALL",
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				SetValues: tc.values,
+			}
+			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for _, deployment := range deployments.Items {
+				require.Equal(t, deployment.Spec.Template.Spec.Containers[0].SecurityContext.Capabilities.Drop, tc.expectedSecurityContextCapabilities)
+			}
+		})
+	}
+}

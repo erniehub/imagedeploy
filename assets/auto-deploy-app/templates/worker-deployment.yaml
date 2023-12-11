@@ -49,7 +49,7 @@ items:
 {{- end }}
         imagePullSecrets:
 {{- if and $workerConfig.image $workerConfig.image.secrets }}
-{{- toYaml $workerConfig.image.secrets | indent 10 }}
+{{- toYaml $workerConfig.image.secrets | nindent 10 }}
 {{- else }}
 {{- toYaml $.Values.image.secrets | nindent 10 }}
 {{- end }}

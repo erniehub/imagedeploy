@@ -39,7 +39,7 @@ items:
               {{ if $.Values.gitlab.app }}app.gitlab.com/app: {{ $.Values.gitlab.app | quote }}{{ end }}
               {{ if $.Values.gitlab.env }}app.gitlab.com/env: {{ $.Values.gitlab.env | quote }}{{ end }}
               {{- if $.Values.podAnnotations }}
-              {{ toYaml $.Values.podAnnotations | nindent 12 }}
+              {{- toYaml $.Values.podAnnotations | nindent 12 }}
               {{- end }}
             labels:
               app: {{ template "appname" $ }}
@@ -48,35 +48,35 @@ items:
               tier: cronjob
           spec:
             imagePullSecrets:
-              {{ toYaml $.Values.image.secrets | nindent 14 }}
+              {{- toYaml $.Values.image.secrets | nindent 14 }}
             restartPolicy: {{ default "OnFailure" $jobConfig.restartPolicy }}
             {{- with $nodeSelectorConfig := default $.Values.nodeSelector $jobConfig.nodeSelector -}}
             {{- if $nodeSelectorConfig  }}
             nodeSelector:
-            {{ toYaml $nodeSelectorConfig | nindent 14 }}
+            {{- toYaml $nodeSelectorConfig | nindent 14 }}
             {{- end }}
             {{- end }}
             {{- with $securityContextConfig := default $.Values.securityContext $jobConfig.securityContext -}}
             {{- if $securityContextConfig }}
             securityContext:
-            {{ toYaml $securityContextConfig | nindent 14 }}
+            {{- toYaml $securityContextConfig | nindent 14 }}
             {{- end }}
             {{- end }}
             {{- with $tolerationsConfig := default $.Values.tolerations $jobConfig.tolerations -}}
             {{- if $tolerationsConfig }}
             tolerations:
-            {{ toYaml $tolerationsConfig | nindent 14 }}
+            {{- toYaml $tolerationsConfig | nindent 14 }}
             {{- end }}
             {{- end }}
             {{- with $affinityConfig := default $.Values.affinity $jobConfig.affinity -}}
             {{- if $affinityConfig  }}
             affinity:
-            {{ toYaml $affinityConfig | nindent 14 }}
+            {{- toYaml $affinityConfig | nindent 14 }}
             {{- end }}
             {{- end }}
             {{- if $jobConfig.extraVolumes }}
             volumes:
-            {{ toYaml $jobConfig.extraVolumes | nindent 14 }}
+            {{- toYaml $jobConfig.extraVolumes | nindent 14 }}
             {{- end }}
             containers:
             - name: {{ $.Chart.Name }}
@@ -99,12 +99,12 @@ items:
               - secretRef:
                   name: {{ $.Values.application.secretName }}
 {{- if $jobConfig.extraEnvFrom }}
-{{ toYaml $jobConfig.extraEnvFrom | nindent 14 }}
+{{- toYaml $jobConfig.extraEnvFrom | nindent 14 }}
 {{- end }}
               {{- else }}
               envFrom:
 {{- if $jobConfig.extraEnvFrom }}
-{{ toYaml $jobConfig.extraEnvFrom | nindent 14 }}
+{{- toYaml $jobConfig.extraEnvFrom | nindent 14 }}
 {{- end }}
               {{- end }}
               env:
@@ -150,7 +150,7 @@ items:
               {{- else if eq $livenessProbeConfig.probeType "exec" }}
                 exec:
                   command:
-                    {{ toYaml $livenessProbeConfig.command | nindent 18 }}
+                    {{- toYaml $livenessProbeConfig.command | nindent 18 }}
               {{- end }}
                 initialDelaySeconds: {{ $livenessProbeConfig.initialDelaySeconds }}
                 timeoutSeconds: {{  $livenessProbeConfig.timeoutSeconds }}
@@ -172,7 +172,7 @@ items:
                 {{- else if eq $readinessProbe.probeType "exec" }}
                 exec:
                   command:
-                    {{ toYaml $readinessProbe.command | nindent 18 }}
+                    {{- toYaml $readinessProbe.command | nindent 18 }}
                 {{- end }}
                 initialDelaySeconds: {{ $readinessProbe.initialDelaySeconds }}
                 timeoutSeconds: {{ $readinessProbe.timeoutSeconds }}
@@ -183,14 +183,14 @@ items:
               {{- with $containerSecurityContextConfig := default $.Values.containerSecurityContext $jobConfig.containerSecurityContext -}}
               {{- if $containerSecurityContextConfig }}
               securityContext:
-              {{ toYaml $containerSecurityContextConfig | nindent 16 }}
+              {{- toYaml $containerSecurityContextConfig | nindent 16 }}
               {{- end }}
               {{- end }}
               resources:
-                {{ toYaml $.Values.resources | nindent 16 }}
+                {{- toYaml $.Values.resources | nindent 16 }}
               {{- if $jobConfig.extraVolumeMounts }}
               volumeMounts:
-              {{ toYaml $jobConfig.extraVolumeMounts | nindent 16 }}         
+              {{- toYaml $jobConfig.extraVolumeMounts | nindent 16 }}
               {{- end }}                
 {{- end -}}
 {{- end -}}

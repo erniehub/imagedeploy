@@ -29,7 +29,7 @@ spec:
         {{ if .Values.gitlab.app }}app.gitlab.com/app: {{ .Values.gitlab.app | quote }}{{ end }}
         {{ if .Values.gitlab.env }}app.gitlab.com/env: {{ .Values.gitlab.env | quote }}{{ end }}
 {{- if .Values.podAnnotations }}
-{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- toYaml .Values.podAnnotations | nindent 8 }}
 {{- end }}
       labels:
         track: "{{ .Values.application.track }}"
@@ -40,14 +40,14 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name | default .Values.serviceAccountName | quote }}
 {{- end }}
       imagePullSecrets:
-{{ toYaml .Values.image.secrets | indent 10 }}
+{{- toYaml .Values.image.secrets | nindent 10 }}
 {{- if .Values.nodeSelector }}
       nodeSelector:
-{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- toYaml .Values.nodeSelector | nindent 8 }}
 {{- end }}
 {{- if .Values.securityContext }}
       securityContext:
-{{ toYaml .Values.securityContext | indent 8 }}
+{{- toYaml .Values.securityContext | nindent 8 }}
 {{- end }}
 {{- if .Values.hostNetwork }}
       hostNetwork: {{ .Values.hostNetwork }}
@@ -57,23 +57,23 @@ spec:
 {{- end }}
 {{- if .Values.dnsConfig }}
       dnsConfig:
-{{ toYaml .Values.dnsConfig | indent 8 }}
+{{- toYaml .Values.dnsConfig | nindent 8 }}
 {{- end }}
 {{- if .Values.tolerations }}
       tolerations:
-{{ toYaml .Values.tolerations | indent 8 }}
+{{- toYaml .Values.tolerations | nindent 8 }}
 {{- end }}
 {{- if .Values.affinity }}
       affinity:
-{{ toYaml .Values.affinity | indent 8 }}
+{{- toYaml .Values.affinity | nindent 8 }}
 {{- end }}
 {{- if .Values.initContainers }}
       initContainers:
-{{ toYaml .Values.initContainers | indent 8 }}
+{{- toYaml .Values.initContainers | nindent 8 }}
 {{- end }}
 {{- if .Values.topologySpreadConstraints }}
       topologySpreadConstraints:
-{{ toYaml .Values.topologySpreadConstraints | indent 8 }}
+{{- toYaml .Values.topologySpreadConstraints | nindent 8 }}
 {{- end }}
 {{- if or (.Values.persistence.enabled) (.Values.extraVolumes) }}
       volumes:
@@ -87,13 +87,13 @@ spec:
 {{- end }}
 {{- end }}
 {{- if .Values.extraVolumes }}
-{{ toYaml .Values.extraVolumes | indent 8 }}
+{{- toYaml .Values.extraVolumes | nindent 8 }}
 {{- end }}
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
 {{- if .Values.hostAliases }}
       hostAliases:
-{{ toYaml .Values.hostAliases | indent 8 }}
+{{- toYaml .Values.hostAliases | nindent 8 }}
 {{- end }}
 {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
@@ -104,28 +104,28 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
 {{- if .Values.application.command }}
         command:
-{{ toYaml .Values.application.command | indent 8 }}
+{{- toYaml .Values.application.command | nindent 8 }}
 {{- end }}
 {{- if .Values.application.args }}
         args:
-{{ toYaml .Values.application.args | indent 8 }}
+{{- toYaml .Values.application.args | nindent 8 }}
 {{- end }}
         {{- if .Values.application.secretName }}
         envFrom:
         - secretRef:
             name: {{ .Values.application.secretName }}
 {{- if .Values.extraEnvFrom }}
-{{ toYaml .Values.extraEnvFrom | indent 8 }}
+{{- toYaml .Values.extraEnvFrom | nindent 8 }}
 {{- end }}
         {{- else}}
         envFrom:
 {{- if .Values.extraEnvFrom }}
-{{ toYaml .Values.extraEnvFrom | indent 8 }}
+{{- toYaml .Values.extraEnvFrom | nindent 8 }}
 {{- end }}
         {{- end }}
         env:
 {{- if .Values.extraEnv }}
-{{ toYaml .Values.extraEnv | indent 8 }}
+{{- toYaml .Values.extraEnv | nindent 8 }}
 {{- end }}
 {{- if .Values.postgresql.managed }}
         - name: POSTGRES_USER
@@ -154,7 +154,7 @@ spec:
           value: {{ .Values.gitlab.envURL | quote }}
 {{- if .Values.lifecycle }}
         lifecycle:
-{{ toYaml .Values.lifecycle | indent 10 }}
+{{- toYaml .Values.lifecycle | nindent 10 }}
 {{- end }}
         ports:
         - name: "{{ .Values.service.name }}"
@@ -188,7 +188,7 @@ spec:
 {{- else if eq .Values.livenessProbe.probeType "exec" }}
           exec:
             command:
-{{ toYaml .Values.livenessProbe.command | indent 14 }}
+{{- toYaml .Values.livenessProbe.command | nindent 14 }}
 {{- end }}
           initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
           timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
@@ -213,7 +213,7 @@ spec:
 {{- else if eq .Values.readinessProbe.probeType "exec" }}
           exec:
             command:
-{{ toYaml .Values.readinessProbe.command | indent 14 }}
+{{- toYaml .Values.readinessProbe.command | nindent 14 }}
 {{- end }}
           initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
           timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
@@ -238,7 +238,7 @@ spec:
 {{- else if eq .Values.startupProbe.probeType "exec" }}
           exec:
             command:
-{{ toYaml .Values.startupProbe.command | indent 14 }}
+{{- toYaml .Values.startupProbe.command | nindent 14 }}
 {{- end }}
           initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
           timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
@@ -247,10 +247,10 @@ spec:
 {{- end }}
 {{- if .Values.containerSecurityContext }}
         securityContext:
-{{ toYaml .Values.containerSecurityContext | indent 10 }}
+{{- toYaml .Values.containerSecurityContext | nindent 10 }}
 {{- end }}
         resources:
-{{ toYaml .Values.resources | indent 12 }}
+{{- toYaml .Values.resources | nindent 12 }}
 {{- if or (.Values.persistence.enabled) (.Values.extraVolumeMounts) }}
         volumeMounts:
 {{- if .Values.persistence.enabled }}
@@ -263,7 +263,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- if .Values.extraVolumeMounts }}
-{{ toYaml .Values.extraVolumeMounts | indent 10 }}
+{{- toYaml .Values.extraVolumeMounts | nindent 10 }}
 {{- end }}
 {{- end }}
 {{- end -}}

@@ -153,6 +153,8 @@ resources:
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			hpa := new(autoscalingV2.HorizontalPodAutoscaler)
 			helm.UnmarshalK8SYaml(t, output, hpa)
 			require.Equal(t, tc.expectedName, hpa.ObjectMeta.Name)

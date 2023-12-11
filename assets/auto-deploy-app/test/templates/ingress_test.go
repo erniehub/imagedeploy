@@ -238,6 +238,8 @@ func TestIngressTemplate_Disable(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)

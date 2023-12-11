@@ -229,6 +229,8 @@ func TestServiceExtraPortsServiceDefinition(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)
 			require.Equal(t, tc.expectedPorts, service.Spec.Ports)

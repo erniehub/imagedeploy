@@ -59,6 +59,8 @@ func renderTemplate(t *testing.T, values map[string]string, releaseName string, 
 		return "", false
 	}
 
+	require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 	return output, true
 }
 

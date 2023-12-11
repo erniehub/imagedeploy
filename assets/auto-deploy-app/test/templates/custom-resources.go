@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -56,6 +57,8 @@ func TestCustomResource(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var renderedObjects []*unstructured.Unstructured
 			helm.UnmarshalK8SYaml(t, output, &renderedObjects)

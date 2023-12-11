@@ -91,6 +91,8 @@ func TestCronjobMeta(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
 
@@ -173,6 +175,8 @@ func TestCronjobSchedule(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
 
@@ -235,6 +239,8 @@ func TestCronjobImage(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -376,6 +382,8 @@ func TestCronjobLivenessAndReadiness(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
 
@@ -441,6 +449,8 @@ func TestCronjobNodeSelector(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -530,6 +540,8 @@ func TestCronjobTolerations(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -703,6 +715,8 @@ func TestCronjobTemplateWithVolumeMounts(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
 
@@ -817,6 +831,8 @@ func TestCronjobAffinity(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
 
@@ -893,6 +909,8 @@ func TestCronJobTemplateWithExtraEnvFrom(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
 			for _, cronjob := range cronjobs.Items {
@@ -931,6 +949,8 @@ func TestCronJobTemplateWithSecurityContext(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -972,6 +992,8 @@ func TestCronJobTemplateWithContainerSecurityContext(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)

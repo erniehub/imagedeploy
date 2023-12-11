@@ -112,6 +112,8 @@ func TestServiceAccountTemplate(t *testing.T) {
 
 			require.NoError(t, err)
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var serviceAccount coreV1.ServiceAccount
 			helm.UnmarshalK8SYaml(t, output, &serviceAccount)
 

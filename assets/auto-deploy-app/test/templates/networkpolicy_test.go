@@ -115,6 +115,8 @@ func TestNetworkPolicy(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			policy := new(netV1.NetworkPolicy)
 			helm.UnmarshalK8SYaml(t, output, policy)
 

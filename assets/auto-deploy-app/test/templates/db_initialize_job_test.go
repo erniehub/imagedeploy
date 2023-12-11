@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -62,6 +63,8 @@ func TestInitializeDatabaseUrlEnvironmentVariable(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)

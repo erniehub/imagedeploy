@@ -216,6 +216,8 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var deployments deploymentList
 			helm.UnmarshalK8SYaml(t, output, &deployments)
 
@@ -1592,6 +1594,8 @@ func TestWorkerTemplateWithVolumeMounts(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var deployments deploymentAppsV1List
 			helm.UnmarshalK8SYaml(t, output, &deployments)
 
@@ -1676,6 +1680,8 @@ func TestWorkerDatabaseUrlEnvironmentVariable(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var deployments deploymentAppsV1List
 			helm.UnmarshalK8SYaml(t, output, &deployments)
 
@@ -1759,6 +1765,8 @@ func TestWorkerDeploymentTemplateWithExtraEnvFrom(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var deployments deploymentAppsV1List
 			helm.UnmarshalK8SYaml(t, output, &deployments)
 			for _, deployment := range deployments.Items {
@@ -1797,6 +1805,8 @@ func TestWorkerDeploymentTemplateWithSecurityContext(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var deployments deploymentAppsV1List
 			helm.UnmarshalK8SYaml(t, output, &deployments)
@@ -1838,6 +1848,8 @@ func TestWorkerDeploymentTemplateWithContainerSecurityContext(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			var deployments deploymentAppsV1List
 			helm.UnmarshalK8SYaml(t, output, &deployments)

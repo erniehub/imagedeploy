@@ -73,6 +73,8 @@ func TestPdbTemplate(t *testing.T) {
 
 			require.NoError(t, err)
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var podDisruptionBudget v1beta1.PodDisruptionBudget
 			helm.UnmarshalK8SYaml(t, output, &podDisruptionBudget)
 

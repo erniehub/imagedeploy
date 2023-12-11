@@ -100,6 +100,8 @@ func TestDeploymentTemplate(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
@@ -1251,6 +1253,8 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
 			require.Equal(t, tc.expectedPorts, deployment.Spec.Template.Spec.Containers[0].Ports)
@@ -1413,6 +1417,8 @@ func TestDeploymentTemplateWithVolumeMounts(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
 
@@ -1488,6 +1494,8 @@ func TestDeploymentDatabaseUrlEnvironmentVariable(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1566,6 +1574,8 @@ func TestDeploymentTemplateWithExtraEnvFrom(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
 			require.Contains(t, deployment.Spec.Template.Spec.Containers[0].EnvFrom, tc.expectedEnvFrom)
@@ -1607,6 +1617,8 @@ func TestDeploymentTemplateWithExtraEnv(t *testing.T) {
 				return
 			}
 
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
 			require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Env, tc.expectedEnv)
@@ -1643,6 +1655,8 @@ func TestDeploymentTemplateWithSecurityContext(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			deployment := new(appsV1.Deployment)
 
@@ -1683,6 +1697,8 @@ func TestDeploymentTemplateWithContainerSecurityContext(t *testing.T) {
 				t.Error(err)
 				return
 			}
+
+			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 			deployment := new(appsV1.Deployment)
 

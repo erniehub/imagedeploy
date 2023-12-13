@@ -553,6 +553,62 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// dnsConfig
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedDnsConfig *coreV1.PodDNSConfig
+	}{
+		{
+			CaseName: "dnsConfig with different DNS",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.dnsConfig.nameservers[0]":  "1.2.3.4",
+				"workers.worker1.dnsConfig.options[0].name": "edns0",
+			},
+
+			ExpectedDnsConfig: &coreV1.PodDNSConfig{
+				Nameservers: []string{"1.2.3.4"},
+				Options:     []coreV1.PodDNSConfigOption{
+					{
+						Name: "edns0",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(t, tc.ExpectedDnsConfig, deployment.Spec.Template.Spec.DNSConfig)
+			}
+		})
+	}
+
 	for _, tc := range []struct {
 		CaseName string
 		Release  string

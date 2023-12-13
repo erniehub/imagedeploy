@@ -104,7 +104,7 @@ helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version| replace "+" "_" }}"
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if .Values.extraLabels }}
-{{- toYaml $.Values.extraLabels }}
+{{ toYaml $.Values.extraLabels }}
 {{- end }}
 {{- end -}}
 

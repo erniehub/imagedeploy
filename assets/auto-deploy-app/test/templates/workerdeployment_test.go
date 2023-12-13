@@ -419,12 +419,13 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
-	// podAnnotations
+	// podAnnotations & labels
 	for _, tc := range []struct {
 		CaseName                   string
 		Values                     map[string]string
 		Release 				   string
 		ExpectedPodAnnotations     map[string]string
+		ExpectedPodLabels          map[string]string
 	}{
 		{
 			CaseName: "one podAnnotations",
@@ -436,6 +437,11 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			ExpectedPodAnnotations: map[string]string{
 				"checksum/application-secrets": "",
 				"firstAnnotation":              "expected-annotation",
+			},
+			ExpectedPodLabels: map[string]string{
+				"release":    "production",
+				"tier":       "worker",
+				"track":      "stable",
 			},
 		},
 		{
@@ -451,9 +457,40 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				"firstAnnotation":              "expected-annotation",
 				"secondAnnotation":             "expected-annotation",
 			},
+			ExpectedPodLabels: nil,
 		},
 		{
-			CaseName: "no podAnnotations",
+			CaseName: "one label",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.labels.firstLabel":    "expected-label",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+			},
+			ExpectedPodLabels: map[string]string{
+				"firstLabel": "expected-label",
+			},
+		},
+		{
+			CaseName: "multiple labels",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.labels.firstLabel":    "expected-label",
+				"workers.worker1.labels.secondLabel":    "expected-label",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+			},
+			ExpectedPodLabels: map[string]string{
+				"firstLabel": "expected-label",
+				"secondLabel": "expected-label",
+			},
+		},
+		{
+			CaseName: "no podAnnotations & labels",
 			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.command[0]": "echo",
@@ -461,6 +498,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			ExpectedPodAnnotations: map[string]string{
 				"checksum/application-secrets": "",
 			},
+			ExpectedPodLabels: nil,
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -488,6 +526,9 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			for i := range deployments.Items {
 				deployment := deployments.Items[i]
 				require.Equal(t, tc.ExpectedPodAnnotations, deployment.Spec.Template.ObjectMeta.Annotations)
+				for key, value := range tc.ExpectedPodLabels {
+					require.Equal(t, deployment.Spec.Template.ObjectMeta.Labels[key], value)
+				}
 			}
 		})
 	}

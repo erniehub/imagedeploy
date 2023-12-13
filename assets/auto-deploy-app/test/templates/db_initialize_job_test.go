@@ -170,3 +170,79 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestInitializeDatabaseLabels(t *testing.T) {
+	releaseName := "initialize-application-database-labels"
+
+	for _, tc := range []struct {
+		CaseName        string
+		Values          map[string]string
+		Release 		string
+		ExpectedLabels  map[string]string
+		Template        string
+	}{
+		{
+			CaseName: "no label",
+			Release:  "production",
+			Values: map[string]string{
+				"application.initializeCommand": "echo initialize",
+			},
+			ExpectedLabels: nil,
+			Template: "templates/db-initialize-job.yaml",
+		},
+		{
+			CaseName: "one label",
+			Release:  "production",
+			Values: map[string]string{
+				"application.initializeCommand": "echo initialize",
+				"extraLabels.firstLabel":    "expected-label",
+			},
+			ExpectedLabels: map[string]string{
+				"firstLabel": "expected-label",
+			},
+			Template: "templates/db-initialize-job.yaml",
+		},
+		{
+			CaseName: "multiple labels",
+			Release:  "production",
+			Values: map[string]string{
+				"application.initializeCommand": "echo initialize",
+				"extraLabels.firstLabel":    "expected-label",
+				"extraLabels.secondLabel":    "expected-label",
+			},
+			ExpectedLabels: map[string]string{
+				"firstLabel": "expected-label",
+				"secondLabel": "expected-label",
+			},
+			Template: "templates/db-initialize-job.yaml",
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, releaseName, []string{tc.Template})
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			deployment := new(appsV1.Deployment)
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			for key, value := range tc.ExpectedLabels {
+				require.Equal(t, deployment.ObjectMeta.Labels[key], value)
+				require.Equal(t, deployment.Spec.Template.ObjectMeta.Labels[key], value)
+			}
+		})
+	}
+}

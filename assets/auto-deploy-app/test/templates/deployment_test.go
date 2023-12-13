@@ -21,6 +21,7 @@ func TestDeploymentTemplate(t *testing.T) {
 		CaseName string
 		Release  string
 		Values   map[string]string
+		ExpectedLabels  map[string]string
 
 		ExpectedErrorRegexp *regexp.Regexp
 
@@ -37,12 +38,29 @@ func TestDeploymentTemplate(t *testing.T) {
 			ExpectedName:         "productionOverridden",
 			ExpectedRelease:      "production",
 			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
-		}, {
+			ExpectedLabels:	 nil,
+		},
+		{
+			CaseName: "extraLabel",
+			Release:  "production",
+			Values: map[string]string{
+				"releaseOverride": "productionOverridden",
+				"extraLabels.firstLabel":    "expected-label",
+			},
+			ExpectedName:         "productionOverridden",
+			ExpectedRelease:      "production",
+			ExpectedStrategyType: appsV1.DeploymentStrategyType(""),
+			ExpectedLabels:	 map[string]string{
+				"firstLabel": "expected-label",
+			},
+		},
+		{
 			// See https://github.com/helm/helm/issues/6006
 			CaseName: "long release name",
 			Release:  strings.Repeat("r", 80),
 
 			ExpectedErrorRegexp: regexp.MustCompile("Error: release name .* length must not be longer than 53"),
+			ExpectedLabels:	 nil,
 		},
 		{
 			CaseName: "strategyType",
@@ -53,6 +71,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			ExpectedName:         "production",
 			ExpectedRelease:      "production",
 			ExpectedStrategyType: appsV1.RecreateDeploymentStrategyType,
+			ExpectedLabels:	 nil,
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -91,7 +110,8 @@ func TestDeploymentTemplate(t *testing.T) {
 				"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
 				"app.gitlab.com/env": "prod",
 			}, deployment.Annotations)
-			require.Equal(t, map[string]string{
+
+			ExpectedLabels := map[string]string{
 				"app":                          tc.ExpectedName,
 				"chart":                        chartName,
 				"heritage":                     "Helm",
@@ -102,25 +122,17 @@ func TestDeploymentTemplate(t *testing.T) {
 				"helm.sh/chart":                chartName,
 				"app.kubernetes.io/managed-by": "Helm",
 				"app.kubernetes.io/instance":   tc.ExpectedRelease,
-			}, deployment.Labels)
+			}
+			mergeStringMap(ExpectedLabels, tc.ExpectedLabels)
+
+			require.Equal(t, ExpectedLabels, deployment.Labels)
 
 			require.Equal(t, map[string]string{
 				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
 				"app.gitlab.com/env":           "prod",
 				"checksum/application-secrets": "",
 			}, deployment.Spec.Template.Annotations)
-			require.Equal(t, map[string]string{
-				"app":                          tc.ExpectedName,
-				"chart":                        chartName,
-				"heritage":                     "Helm",
-				"release":                      tc.ExpectedRelease,
-				"tier":                         "web",
-				"track":                        "stable",
-				"app.kubernetes.io/name":       tc.ExpectedName,
-				"helm.sh/chart":                chartName,
-				"app.kubernetes.io/managed-by": "Helm",
-				"app.kubernetes.io/instance":   tc.ExpectedRelease,
-			}, deployment.Spec.Template.Labels)
+			require.Equal(t, ExpectedLabels, deployment.Spec.Template.Labels)
 		})
 	}
 

@@ -22,6 +22,7 @@ func TestCronjobMeta(t *testing.T) {
 
 		ExpectedName    string
 		ExpectedRelease string
+		ExpectedLabels  map[string]string
 	}{
 		{
 			CaseName: "default",
@@ -34,6 +35,23 @@ func TestCronjobMeta(t *testing.T) {
 			},
 			ExpectedName:    "production",
 			ExpectedRelease: "production",
+			ExpectedLabels:	 nil,
+		},
+		{
+			CaseName: "extraLabels",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"cronjobs.job2.command[0]": "echo",
+				"cronjobs.job2.args[0]":    "hello",
+				"extraLabels.firstLabel":    "expected-label",
+			},
+			ExpectedName:    "production",
+			ExpectedRelease: "production",
+			ExpectedLabels:	 map[string]string{
+				"firstLabel": "expected-label",
+			},
 		},
 		{
 			CaseName: "overriden release",
@@ -47,6 +65,7 @@ func TestCronjobMeta(t *testing.T) {
 			},
 			ExpectedName:    "productionOverridden",
 			ExpectedRelease: "production",
+			ExpectedLabels:	 nil,
 		},
 	} {
 		t.Run(tc.CaseName, func(t *testing.T) {
@@ -81,7 +100,7 @@ func TestCronjobMeta(t *testing.T) {
 					"app.gitlab.com/env": "prod",
 				}, cronjob.Annotations)
 
-				require.Equal(t, map[string]string{
+				ExpectedLabels := map[string]string{
 					"app":                          tc.ExpectedName,
 					"chart":                        chartName,
 					"heritage":                     "Helm",
@@ -92,7 +111,9 @@ func TestCronjobMeta(t *testing.T) {
 					"helm.sh/chart":                chartName,
 					"app.kubernetes.io/managed-by": "Helm",
 					"app.kubernetes.io/instance":   tc.ExpectedRelease,
-				}, cronjob.Labels)
+				}
+				mergeStringMap(ExpectedLabels, tc.ExpectedLabels)
+				require.Equal(t, ExpectedLabels, cronjob.Labels)
 
 				require.Equal(t, map[string]string{
 					"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",

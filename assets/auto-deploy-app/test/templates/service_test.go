@@ -104,6 +104,22 @@ func TestServiceTemplate_DifferentTracks(t *testing.T) {
 			expectedLabels:   map[string]string{"app": "production-canary", "release": "production-canary", "track": "canary"},
 			expectedSelector: map[string]string{"app": "production-canary", "tier": "web", "track": "canary"},
 		},
+		{
+			name:             "with canary track and labels",
+			releaseName:      "production-canary",
+			values:           map[string]string{
+				"application.track": "canary",
+				"extraLabels.firstLabel": "expected-label",
+			},
+			expectedName:     "production-canary-auto-deploy",
+			expectedLabels:   map[string]string{
+				"app": "production-canary",
+				"release": "production-canary",
+				"track": "canary",
+				"firstLabel": "expected-label",
+			},
+			expectedSelector: map[string]string{"app": "production-canary", "tier": "web", "track": "canary"},
+		},
 	}
 
 	for _, tc := range tcs {

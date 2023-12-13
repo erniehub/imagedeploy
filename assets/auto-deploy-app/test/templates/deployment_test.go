@@ -629,6 +629,26 @@ func TestDeploymentTemplate(t *testing.T) {
 			ExpectedStartupProbe:   nil,
 		},
 		{
+			CaseName: "exec liveness probe",
+			Release:  "production",
+			Values: map[string]string{
+				"livenessProbe.command[0]": "echo",
+				"livenessProbe.command[1]": "hello",
+				"livenessProbe.probeType":  "exec",
+			},
+			ExpectedLivenessProbe: &coreV1.Probe{
+				ProbeHandler: coreV1.ProbeHandler{
+					Exec: &coreV1.ExecAction{
+						Command: []string{"echo", "hello"},
+					},
+				},
+				InitialDelaySeconds: 15,
+				TimeoutSeconds:      15,
+			},
+			ExpectedReadinessProbe: defaultReadinessProbe(),
+			ExpectedStartupProbe:   nil,
+		},
+		{
 			CaseName: "custom readiness probe",
 			Release:  "production",
 			Values: map[string]string{
@@ -649,6 +669,26 @@ func TestDeploymentTemplate(t *testing.T) {
 								Value: "awesome",
 							},
 						},
+					},
+				},
+				InitialDelaySeconds: 5,
+				TimeoutSeconds:      3,
+			},
+			ExpectedStartupProbe: nil,
+		},
+		{
+			CaseName: "exec readiness probe",
+			Release:  "production",
+			Values: map[string]string{
+				"readinessProbe.command[0]": "echo",
+				"readinessProbe.command[1]": "hello",
+				"readinessProbe.probeType":  "exec",
+			},
+			ExpectedLivenessProbe: defaultLivenessProbe(),
+			ExpectedReadinessProbe: &coreV1.Probe{
+				ProbeHandler: coreV1.ProbeHandler{
+					Exec: &coreV1.ExecAction{
+						Command: []string{"echo", "hello"},
 					},
 				},
 				InitialDelaySeconds: 5,
@@ -679,6 +719,29 @@ func TestDeploymentTemplate(t *testing.T) {
 								Value: "awesome",
 							},
 						},
+					},
+				},
+				InitialDelaySeconds: 5,
+				TimeoutSeconds:      3,
+				FailureThreshold:    30,
+				PeriodSeconds:       10,
+			},
+		},
+		{
+			CaseName: "exec startup probe",
+			Release:  "production",
+			Values: map[string]string{
+				"startupProbe.enabled":    "true",
+				"startupProbe.command[0]": "echo",
+				"startupProbe.command[1]": "hello",
+				"startupProbe.probeType":  "exec",
+			},
+			ExpectedLivenessProbe:  defaultLivenessProbe(),
+			ExpectedReadinessProbe: defaultReadinessProbe(),
+			ExpectedStartupProbe: &coreV1.Probe{
+				ProbeHandler: coreV1.ProbeHandler{
+					Exec: &coreV1.ExecAction{
+						Command: []string{"echo", "hello"},
 					},
 				},
 				InitialDelaySeconds: 5,

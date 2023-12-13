@@ -264,6 +264,84 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// ImagePullSecrets
+	for _, tc := range []struct {
+		CaseName                   string
+		Release                    string
+		Values                     map[string]string
+		ExpectedImagePullSecrets   []coreV1.LocalObjectReference
+	}{
+		{
+			CaseName: "default secret",
+			Release:  "production",
+			Values: map[string]string{},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "gitlab-registry",
+				},
+			},
+		},
+		{
+			CaseName: "present secret",
+			Release:  "production",
+			Values: map[string]string{
+				"image.secrets[0].name": "expected-secret",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+			},
+		},
+		{
+			CaseName: "multiple secrets",
+			Release:  "production",
+			Values: map[string]string{
+				"image.secrets[0].name": "expected-secret",
+				"image.secrets[1].name": "additional-secret",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+				{
+					Name: "additional-secret",
+				},
+			},
+		},
+		{
+			CaseName: "missing secret",
+			Release:  "production",
+			Values: map[string]string{
+				"image.secrets": "null",
+			},
+			ExpectedImagePullSecrets: nil,
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedImagePullSecrets, deployment.Spec.Template.Spec.ImagePullSecrets)
+		})
+	}
+
 	// serviceAccountName
 	for _, tc := range []struct {
 		CaseName                   string

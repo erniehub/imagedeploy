@@ -349,10 +349,35 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		ExpectedImagePullSecrets []coreV1.LocalObjectReference
 	}{
 		{
+			CaseName: "global image secrets default",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "gitlab-registry",
+				},
+			},
+		},
+		{
 			CaseName: "worker image secrets are defined",
 			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.image.secrets[0].name": "expected-secret",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+			},
+		},
+		{
+			CaseName: "global image secrets are defined",
+			Release:  "production",
+			Values: map[string]string{
+				"image.secrets[0].name": "expected-secret",
+				"workers.worker1.command[0]": "echo",
 			},
 			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
 				{

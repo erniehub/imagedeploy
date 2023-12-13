@@ -881,3 +881,111 @@ func TestCronJobTemplateWithContainerSecurityContext(t *testing.T) {
 		})
 	}
 }
+
+func TestCronjobImagePullSecrets(t *testing.T) {
+	for _, tc := range []struct {
+		CaseName                   string
+		Values                     map[string]string
+		Release 				   string
+		ExpectedImagePullSecrets   []coreV1.LocalObjectReference
+	}{
+		{
+			CaseName: "default secret",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"cronjobs.job2.command[0]": "echo",
+				"cronjobs.job2.args[0]":    "hello",
+			},
+
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "gitlab-registry",
+				},
+			},
+		},
+		{
+			CaseName: "present secret",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"cronjobs.job2.command[0]": "echo",
+				"cronjobs.job2.args[0]":    "hello",
+				"image.secrets[0].name":    "expected-secret",
+			},
+
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+			},
+		},
+		{
+			CaseName: "multiple secrets",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"cronjobs.job2.command[0]": "echo",
+				"cronjobs.job2.args[0]":    "hello",
+				"image.secrets[0].name":    "expected-secret",
+				"image.secrets[1].name":    "additional-secret",
+			},
+
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+				{
+					Name: "additional-secret",
+				},
+			},
+		},
+		{
+			CaseName: "missing secret",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"cronjobs.job2.command[0]": "echo",
+				"cronjobs.job2.args[0]":    "hello",
+				"image.secrets":            "null",
+			},
+
+			ExpectedImagePullSecrets: nil,
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				ValuesFiles:    []string{},
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var cronjobs batchV1beta1.CronJobList
+			helm.UnmarshalK8SYaml(t, output, &cronjobs)
+
+			for _, cronjob := range cronjobs.Items {
+				require.Equal(t, tc.ExpectedImagePullSecrets, cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets)
+			}
+		})
+	}
+}

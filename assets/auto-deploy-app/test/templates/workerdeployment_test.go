@@ -1040,6 +1040,48 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
+			CaseName: "enableWorkerLivenessProbe exec",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":               "echo",
+				"workers.worker1.command[1]":               "worker1",
+				"workers.worker1.livenessProbe.probeType":  "exec",
+				"workers.worker1.livenessProbe.command[0]": "echo",
+				"workers.worker1.livenessProbe.command[1]": "hello",
+				"workers.worker2.command[0]":               "echo",
+				"workers.worker2.command[1]":               "worker2",
+				"workers.worker2.livenessProbe.probeType":  "exec",
+				"workers.worker2.livenessProbe.command[0]": "echo",
+				"workers.worker2.livenessProbe.command[1]": "hello",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
+					ExpectedLivenessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
+							},
+						},
+					},
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+				{
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
+					ExpectedLivenessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
+							},
+						},
+					},
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+			},
+		},
+		{
 			CaseName: "enableWorkerReadinessProbe",
 			Release:  "production",
 			Values: map[string]string{
@@ -1095,6 +1137,48 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 										Value: "awesome",
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			CaseName: "enableWorkerReadinessProbe exec",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":                "echo",
+				"workers.worker1.command[1]":                "worker1",
+				"workers.worker1.readinessProbe.probeType":  "exec",
+				"workers.worker1.readinessProbe.command[0]": "echo",
+				"workers.worker1.readinessProbe.command[1]": "hello",
+				"workers.worker2.command[0]":                "echo",
+				"workers.worker2.command[1]":                "worker2",
+				"workers.worker2.readinessProbe.probeType":  "exec",
+				"workers.worker2.readinessProbe.command[0]": "echo",
+				"workers.worker2.readinessProbe.command[1]": "hello",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:          "production-worker1",
+					ExpectedCmd:           []string{"echo", "worker1"},
+					ExpectedLivenessProbe: defaultLivenessProbe(),
+					ExpectedReadinessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
+							},
+						},
+					},
+				},
+				{
+					ExpectedName:          "production-worker2",
+					ExpectedCmd:           []string{"echo", "worker2"},
+					ExpectedLivenessProbe: defaultLivenessProbe(),
+					ExpectedReadinessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
 							},
 						},
 					},

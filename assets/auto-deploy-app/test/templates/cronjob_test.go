@@ -989,3 +989,98 @@ func TestCronjobImagePullSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestCronjobPodAnnotations(t *testing.T) {
+	for _, tc := range []struct {
+		CaseName                   string
+		Values                     map[string]string
+		Release 				   string
+		ExpectedPodAnnotations     map[string]string
+	}{
+		{
+			CaseName: "one podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]":           "echo",
+				"cronjobs.job1.args[0]":              "hello",
+				"cronjobs.job2.command[0]":           "echo",
+				"cronjobs.job2.args[0]":              "hello",
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+			},
+
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+				"app.gitlab.com/env":           "prod",
+				"firstAnnotation":              "expected-annotation",
+			},
+		},
+		{
+			CaseName: "multiple podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]":           "echo",
+				"cronjobs.job1.args[0]":              "hello",
+				"cronjobs.job2.command[0]":           "echo",
+				"cronjobs.job2.args[0]":              "hello",
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+				"podAnnotations.secondAnnotation":   "expected-annotation",
+			},
+
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+				"app.gitlab.com/env":           "prod",
+				"firstAnnotation":              "expected-annotation",
+				"secondAnnotation":             "expected-annotation",
+			},
+		},
+		{
+			CaseName: "no podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"cronjobs.job2.command[0]": "echo",
+				"cronjobs.job2.args[0]":    "hello",
+			},
+
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+				"app.gitlab.com/env":           "prod",
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				ValuesFiles:    []string{},
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var cronjobs batchV1beta1.CronJobList
+			helm.UnmarshalK8SYaml(t, output, &cronjobs)
+
+			for _, cronjob := range cronjobs.Items {
+				require.Equal(t, tc.ExpectedPodAnnotations, cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations)
+			}
+		})
+	}
+}

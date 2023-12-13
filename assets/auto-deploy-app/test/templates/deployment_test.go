@@ -342,6 +342,76 @@ func TestDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// podAnnotations
+	for _, tc := range []struct {
+		CaseName                   string
+		Values                     map[string]string
+		Release 				   string
+		ExpectedPodAnnotations     map[string]string
+	}{
+		{
+			CaseName: "one podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+				"app.gitlab.com/env":           "prod",
+				"firstAnnotation":              "expected-annotation",
+			},
+		},
+		{
+			CaseName: "multiple podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+				"podAnnotations.secondAnnotation":   "expected-annotation",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+				"app.gitlab.com/env":           "prod",
+				"firstAnnotation":              "expected-annotation",
+				"secondAnnotation":             "expected-annotation",
+			},
+		},
+		{
+			CaseName: "no podAnnotations",
+			Release:  "production",
+			Values: map[string]string{},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+				"app.gitlab.com/env":           "prod",
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedPodAnnotations, deployment.Spec.Template.ObjectMeta.Annotations)
+		})
+	}
+
 	// serviceAccountName
 	for _, tc := range []struct {
 		CaseName                   string

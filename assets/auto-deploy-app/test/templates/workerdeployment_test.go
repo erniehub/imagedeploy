@@ -419,6 +419,79 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// podAnnotations
+	for _, tc := range []struct {
+		CaseName                   string
+		Values                     map[string]string
+		Release 				   string
+		ExpectedPodAnnotations     map[string]string
+	}{
+		{
+			CaseName: "one podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"firstAnnotation":              "expected-annotation",
+			},
+		},
+		{
+			CaseName: "multiple podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+				"podAnnotations.secondAnnotation":   "expected-annotation",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"firstAnnotation":              "expected-annotation",
+				"secondAnnotation":             "expected-annotation",
+			},
+		},
+		{
+			CaseName: "no podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+			t.Log("jopa")
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(t, tc.ExpectedPodAnnotations, deployment.Spec.Template.ObjectMeta.Annotations)
+			}
+		})
+	}
+
 	for _, tc := range []struct {
 		CaseName string
 		Release  string

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	batchV1beta1 "k8s.io/api/batch/v1beta1"
 	coreV1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestCronjobMeta(t *testing.T) {
@@ -514,6 +515,84 @@ func TestCronjobTolerations(t *testing.T) {
 
 			for _, cronjob := range cronjobs.Items {
 				require.Equal(t, tc.ExpectedTolerations, cronjob.Spec.JobTemplate.Spec.Template.Spec.Tolerations)
+			}
+		})
+	}
+}
+
+func TestCronjobResources(t *testing.T) {
+	for _, tc := range []struct {
+		CaseName string
+		Values   map[string]string
+		Release  string
+
+		EoxpectedNodeSelector map[string]string
+		ExpectedResources     coreV1.ResourceRequirements
+	}{
+		{
+			CaseName: "default",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+			},
+
+			ExpectedResources: coreV1.ResourceRequirements{
+				Limits:   coreV1.ResourceList(nil),
+				Requests: coreV1.ResourceList{},
+			},
+		},
+		{
+			CaseName: "added resources",
+			Release:  "production",
+			Values: map[string]string{
+				"cronjobs.job1.command[0]": "echo",
+				"cronjobs.job1.args[0]":    "hello",
+				"resources.limits.cpu":      "500m",
+				"resources.limits.memory":   "4Gi",
+				"resources.requests.cpu":    "200m",
+				"resources.requests.memory": "2Gi",
+			},
+
+			ExpectedResources: coreV1.ResourceRequirements{
+				Limits:   coreV1.ResourceList{
+					"cpu": resource.MustParse("500m"),
+					"memory": resource.MustParse("4Gi"),},
+				Requests: coreV1.ResourceList{
+					"cpu": resource.MustParse("200m"),
+					"memory": resource.MustParse("2Gi"),
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				ValuesFiles:    []string{},
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			var cronjobs batchV1beta1.CronJobList
+			helm.UnmarshalK8SYaml(t, output, &cronjobs)
+
+			for _, cronjob := range cronjobs.Items {
+				require.Equal(t, tc.ExpectedResources, cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Resources )
 			}
 		})
 	}

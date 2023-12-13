@@ -13,6 +13,7 @@ import (
 	coreV1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestDeploymentTemplate(t *testing.T) {
@@ -889,6 +890,70 @@ func TestDeploymentTemplate(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
 			require.Equal(t, tc.ExpectedDnsConfig, deployment.Spec.Template.Spec.DNSConfig)
+		})
+	}
+
+	// resources
+	for _, tc := range []struct {
+		CaseName string
+		Values   map[string]string
+		Release  string
+
+		EoxpectedNodeSelector map[string]string
+		ExpectedResources     coreV1.ResourceRequirements
+	}{
+		{
+			CaseName: "default",
+			Release:  "production",
+			Values: map[string]string{},
+
+			ExpectedResources: coreV1.ResourceRequirements{
+				Limits:   coreV1.ResourceList(nil),
+				Requests: coreV1.ResourceList{},
+			},
+		},
+		{
+			CaseName: "added resources",
+			Release:  "production",
+			Values: map[string]string{
+				"resources.limits.cpu":      "500m",
+				"resources.limits.memory":   "4Gi",
+				"resources.requests.cpu":    "200m",
+				"resources.requests.memory": "2Gi",
+			},
+
+			ExpectedResources: coreV1.ResourceRequirements{
+				Limits:   coreV1.ResourceList{
+					"cpu": resource.MustParse("500m"),
+					"memory": resource.MustParse("4Gi"),},
+				Requests: coreV1.ResourceList{
+					"cpu": resource.MustParse("200m"),
+					"memory": resource.MustParse("2Gi"),
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedResources, deployment.Spec.Template.Spec.Containers[0].Resources )
 		})
 	}
 

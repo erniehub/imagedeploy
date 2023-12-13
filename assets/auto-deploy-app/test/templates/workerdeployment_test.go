@@ -492,6 +492,67 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		})
 	}
 
+	// hostAliases
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedHostAliases []coreV1.HostAlias
+	}{
+		{
+			CaseName: "hostAliases for two IP addresses",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.hostAliases[0].ip":           "1.2.3.4",
+				"workers.worker1.hostAliases[0].hostnames[0]": "host1.example1.com",
+				"workers.worker1.hostAliases[1].ip":           "5.6.7.8",
+				"workers.worker1.hostAliases[1].hostnames[0]": "host1.example2.com",
+				"workers.worker1.hostAliases[1].hostnames[1]": "host2.example2.com",
+			},
+
+			ExpectedHostAliases: []coreV1.HostAlias{
+				{
+					IP:        "1.2.3.4",
+					Hostnames: []string{"host1.example1.com"},
+				},
+				{
+					IP:        "5.6.7.8",
+					Hostnames: []string{"host1.example2.com", "host2.example2.com"},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(t, tc.ExpectedHostAliases, deployment.Spec.Template.Spec.HostAliases)
+			}
+		})
+	}
+
 	for _, tc := range []struct {
 		CaseName string
 		Release  string

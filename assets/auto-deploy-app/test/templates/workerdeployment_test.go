@@ -349,10 +349,35 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		ExpectedImagePullSecrets []coreV1.LocalObjectReference
 	}{
 		{
+			CaseName: "global image secrets default",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "gitlab-registry",
+				},
+			},
+		},
+		{
 			CaseName: "worker image secrets are defined",
 			Release:  "production",
 			Values: map[string]string{
 				"workers.worker1.image.secrets[0].name": "expected-secret",
+			},
+			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
+				{
+					Name: "expected-secret",
+				},
+			},
+		},
+		{
+			CaseName: "global image secrets are defined",
+			Release:  "production",
+			Values: map[string]string{
+				"image.secrets[0].name": "expected-secret",
+				"workers.worker1.command[0]": "echo",
 			},
 			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
 				{
@@ -390,6 +415,237 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 					tc.ExpectedImagePullSecrets,
 					deployment.Spec.Template.Spec.ImagePullSecrets,
 				)
+			}
+		})
+	}
+
+	// podAnnotations & labels
+	for _, tc := range []struct {
+		CaseName                   string
+		Values                     map[string]string
+		Release 				   string
+		ExpectedPodAnnotations     map[string]string
+		ExpectedPodLabels          map[string]string
+	}{
+		{
+			CaseName: "one podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"firstAnnotation":              "expected-annotation",
+			},
+			ExpectedPodLabels: map[string]string{
+				"release":    "production",
+				"tier":       "worker",
+				"track":      "stable",
+			},
+		},
+		{
+			CaseName: "multiple podAnnotations",
+			Release:  "production",
+			Values: map[string]string{
+				"podAnnotations.firstAnnotation":    "expected-annotation",
+				"podAnnotations.secondAnnotation":   "expected-annotation",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+				"firstAnnotation":              "expected-annotation",
+				"secondAnnotation":             "expected-annotation",
+			},
+			ExpectedPodLabels: nil,
+		},
+		{
+			CaseName: "one label",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.labels.firstLabel":    "expected-label",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+			},
+			ExpectedPodLabels: map[string]string{
+				"firstLabel": "expected-label",
+			},
+		},
+		{
+			CaseName: "multiple labels",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.labels.firstLabel":    "expected-label",
+				"workers.worker1.labels.secondLabel":    "expected-label",
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+			},
+			ExpectedPodLabels: map[string]string{
+				"firstLabel": "expected-label",
+				"secondLabel": "expected-label",
+			},
+		},
+		{
+			CaseName: "no podAnnotations & labels",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+			},
+			ExpectedPodAnnotations: map[string]string{
+				"checksum/application-secrets": "",
+			},
+			ExpectedPodLabels: nil,
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+			t.Log("jopa")
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(t, tc.ExpectedPodAnnotations, deployment.Spec.Template.ObjectMeta.Annotations)
+				for key, value := range tc.ExpectedPodLabels {
+					require.Equal(t, deployment.Spec.Template.ObjectMeta.Labels[key], value)
+				}
+			}
+		})
+	}
+
+	// hostAliases
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedHostAliases []coreV1.HostAlias
+	}{
+		{
+			CaseName: "hostAliases for two IP addresses",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.hostAliases[0].ip":           "1.2.3.4",
+				"workers.worker1.hostAliases[0].hostnames[0]": "host1.example1.com",
+				"workers.worker1.hostAliases[1].ip":           "5.6.7.8",
+				"workers.worker1.hostAliases[1].hostnames[0]": "host1.example2.com",
+				"workers.worker1.hostAliases[1].hostnames[1]": "host2.example2.com",
+			},
+
+			ExpectedHostAliases: []coreV1.HostAlias{
+				{
+					IP:        "1.2.3.4",
+					Hostnames: []string{"host1.example1.com"},
+				},
+				{
+					IP:        "5.6.7.8",
+					Hostnames: []string{"host1.example2.com", "host2.example2.com"},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(t, tc.ExpectedHostAliases, deployment.Spec.Template.Spec.HostAliases)
+			}
+		})
+	}
+
+	// dnsConfig
+	for _, tc := range []struct {
+		CaseName string
+		Release  string
+		Values   map[string]string
+
+		ExpectedDnsConfig *coreV1.PodDNSConfig
+	}{
+		{
+			CaseName: "dnsConfig with different DNS",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]": "echo",
+				"workers.worker1.dnsConfig.nameservers[0]":  "1.2.3.4",
+				"workers.worker1.dnsConfig.options[0].name": "edns0",
+			},
+
+			ExpectedDnsConfig: &coreV1.PodDNSConfig{
+				Nameservers: []string{"1.2.3.4"},
+				Options:     []coreV1.PodDNSConfigOption{
+					{
+						Name: "edns0",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(
+				t,
+				options,
+				helmChartPath,
+				tc.Release,
+				[]string{"templates/worker-deployment.yaml"},
+			)
+			var deployments deploymentList
+
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for i := range deployments.Items {
+				deployment := deployments.Items[i]
+				require.Equal(t, tc.ExpectedDnsConfig, deployment.Spec.Template.Spec.DNSConfig)
 			}
 		})
 	}
@@ -942,6 +1198,48 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			},
 		},
 		{
+			CaseName: "enableWorkerLivenessProbe exec",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":               "echo",
+				"workers.worker1.command[1]":               "worker1",
+				"workers.worker1.livenessProbe.probeType":  "exec",
+				"workers.worker1.livenessProbe.command[0]": "echo",
+				"workers.worker1.livenessProbe.command[1]": "hello",
+				"workers.worker2.command[0]":               "echo",
+				"workers.worker2.command[1]":               "worker2",
+				"workers.worker2.livenessProbe.probeType":  "exec",
+				"workers.worker2.livenessProbe.command[0]": "echo",
+				"workers.worker2.livenessProbe.command[1]": "hello",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName: "production-worker1",
+					ExpectedCmd:  []string{"echo", "worker1"},
+					ExpectedLivenessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
+							},
+						},
+					},
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+				{
+					ExpectedName: "production-worker2",
+					ExpectedCmd:  []string{"echo", "worker2"},
+					ExpectedLivenessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
+							},
+						},
+					},
+					ExpectedReadinessProbe: defaultReadinessProbe(),
+				},
+			},
+		},
+		{
 			CaseName: "enableWorkerReadinessProbe",
 			Release:  "production",
 			Values: map[string]string{
@@ -997,6 +1295,48 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 										Value: "awesome",
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			CaseName: "enableWorkerReadinessProbe exec",
+			Release:  "production",
+			Values: map[string]string{
+				"workers.worker1.command[0]":                "echo",
+				"workers.worker1.command[1]":                "worker1",
+				"workers.worker1.readinessProbe.probeType":  "exec",
+				"workers.worker1.readinessProbe.command[0]": "echo",
+				"workers.worker1.readinessProbe.command[1]": "hello",
+				"workers.worker2.command[0]":                "echo",
+				"workers.worker2.command[1]":                "worker2",
+				"workers.worker2.readinessProbe.probeType":  "exec",
+				"workers.worker2.readinessProbe.command[0]": "echo",
+				"workers.worker2.readinessProbe.command[1]": "hello",
+			},
+			ExpectedDeployments: []workerDeploymentTestCase{
+				{
+					ExpectedName:          "production-worker1",
+					ExpectedCmd:           []string{"echo", "worker1"},
+					ExpectedLivenessProbe: defaultLivenessProbe(),
+					ExpectedReadinessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
+							},
+						},
+					},
+				},
+				{
+					ExpectedName:          "production-worker2",
+					ExpectedCmd:           []string{"echo", "worker2"},
+					ExpectedLivenessProbe: defaultLivenessProbe(),
+					ExpectedReadinessProbe: &coreV1.Probe{
+						ProbeHandler: coreV1.ProbeHandler{
+							Exec: &coreV1.ExecAction{
+								Command: []string{"echo", "hello"},
 							},
 						},
 					},

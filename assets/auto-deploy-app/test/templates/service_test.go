@@ -22,23 +22,42 @@ func TestServiceTemplate_ServiceType(t *testing.T) {
 		expectedType        string
 		expectedPort        coreV1.ServicePort
 		expectedErrorRegexp *regexp.Regexp
+		ExpectedAnnotations map[string]string
 	}{
 		{
 			name:         "defaults",
 			expectedType: "ClusterIP",
 			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), Protocol: "TCP", Name: "web"},
+			ExpectedAnnotations: nil,
 		},
 		{
 			name:         "with type NodePort but no nodePort value",
 			values:       map[string]string{"service.type": "NodePort"},
 			expectedType: "NodePort",
 			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 0, Protocol: "TCP", Name: "web"},
+			ExpectedAnnotations: nil,
 		},
 		{
 			name:         "with type NodePort and nodePort set",
 			values:       map[string]string{"service.type": "NodePort", "service.nodePort": "12345"},
 			expectedType: "NodePort",
 			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 12345, Protocol: "TCP", Name: "web"},
+			ExpectedAnnotations: nil,
+		},
+		{
+			name:         "with type NodePort and nodePort set",
+			values:       map[string]string{
+				"service.type": "NodePort",
+				"service.nodePort": "12345",
+				"service.annotations.key1": "value1",
+				"service.annotations.key2": "value2",
+			},
+			expectedType: "NodePort",
+			expectedPort: coreV1.ServicePort{Port: 5000, TargetPort: intstr.FromInt(5000), NodePort: 12345, Protocol: "TCP", Name: "web"},
+			ExpectedAnnotations: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
 		},
 	}
 
@@ -83,6 +102,22 @@ func TestServiceTemplate_DifferentTracks(t *testing.T) {
 			values:           map[string]string{"application.track": "canary"},
 			expectedName:     "production-canary-auto-deploy",
 			expectedLabels:   map[string]string{"app": "production-canary", "release": "production-canary", "track": "canary"},
+			expectedSelector: map[string]string{"app": "production-canary", "tier": "web", "track": "canary"},
+		},
+		{
+			name:             "with canary track and labels",
+			releaseName:      "production-canary",
+			values:           map[string]string{
+				"application.track": "canary",
+				"extraLabels.firstLabel": "expected-label",
+			},
+			expectedName:     "production-canary-auto-deploy",
+			expectedLabels:   map[string]string{
+				"app": "production-canary",
+				"release": "production-canary",
+				"track": "canary",
+				"firstLabel": "expected-label",
+			},
 			expectedSelector: map[string]string{"app": "production-canary", "tier": "web", "track": "canary"},
 		},
 	}

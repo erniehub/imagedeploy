@@ -23,13 +23,15 @@ func TestServiceAccountTemplate(t *testing.T) {
 
 		ExpectedName        string
 		ExpectedAnnotations map[string]string
+		ExpectedLabels      map[string]string
 	}{
 		{
 			CaseName: "not created by default",
 			Values:   map[string]string{},
 			ExpectedErrorRegexp: regexp.MustCompile(
 				"Error: could not find template templates/service-account.yaml in chart",
-			),
+			),	
+			ExpectedLabels: nil,
 		},
 		{
 			CaseName: "not created if createNew is set to false",
@@ -39,6 +41,7 @@ func TestServiceAccountTemplate(t *testing.T) {
 			ExpectedErrorRegexp: regexp.MustCompile(
 				"Error: could not find template templates/service-account.yaml in chart",
 			),
+			ExpectedLabels: nil,
 		},
 		{
 			CaseName: "no annotations",
@@ -48,6 +51,7 @@ func TestServiceAccountTemplate(t *testing.T) {
 			},
 			ExpectedName:        "anAccountName",
 			ExpectedAnnotations: nil,
+			ExpectedLabels: nil,
 		},
 		{
 			CaseName: "with annotations",
@@ -61,6 +65,20 @@ func TestServiceAccountTemplate(t *testing.T) {
 			ExpectedAnnotations: map[string]string{
 				"key1": "value1",
 				"key2": "value2",
+			},
+			ExpectedLabels: nil,
+		},
+		{
+			CaseName: "with labels",
+			Values: map[string]string{
+				"serviceAccount.createNew":        "true",
+				"serviceAccount.name":             "anAccountName",
+				"extraLabels.firstLabel":          "expected-label",
+			},
+			ExpectedName: "anAccountName",
+			ExpectedAnnotations: nil,
+			ExpectedLabels: map[string]string{
+				"firstLabel": "expected-label",
 			},
 		},
 	} {
@@ -99,6 +117,9 @@ func TestServiceAccountTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedName, serviceAccount.Name)
 			require.Equal(t, tc.ExpectedAnnotations, serviceAccount.Annotations)
+			for key, value := range tc.ExpectedLabels {
+				require.Equal(t, serviceAccount.ObjectMeta.Labels[key], value)
+			}
 		})
 	}
 }

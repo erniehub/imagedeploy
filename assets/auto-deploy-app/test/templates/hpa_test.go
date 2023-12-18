@@ -23,25 +23,47 @@ func TestHPA_AutoscalingV1(t *testing.T) {
 		expectedMinReplicas int32
 		expectedMaxReplicas int32
 		expectedTargetCPU   int32
+		ExpectedLabels      map[string]string
 
 		expectedErrorRegexp *regexp.Regexp
 	}{
 		{
 			name:                "defaults",
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/hpa.yaml in chart"),
+			ExpectedLabels:      nil,
 		},
 		{
 			name:                "with hpa enabled, no requests",
 			values:              map[string]string{"hpa.enabled": "true"},
 			expectedErrorRegexp: regexp.MustCompile("Error: could not find template templates/hpa.yaml in chart"),
+			ExpectedLabels:      nil,
 		},
 		{
 			name:                "with hpa enabled and requests defined",
-			values:              map[string]string{"hpa.enabled": "true", "resources.requests.cpu": "500"},
+			values:              map[string]string{
+				"hpa.enabled": "true",
+				"resources.requests.cpu": "500",
+			},
 			expectedName:        "hpa-test-auto-deploy",
 			expectedMinReplicas: 1,
 			expectedMaxReplicas: 5,
 			expectedTargetCPU:   80,
+			ExpectedLabels:      nil,
+		},
+		{
+			name:                "with hpa enabled and requests, label defined",
+			values:              map[string]string{
+				"hpa.enabled": "true",
+				"resources.requests.cpu": "500",
+				"extraLabels.firstLabel":    "expected-label",
+			},
+			expectedName:        "hpa-test-auto-deploy",
+			expectedMinReplicas: 1,
+			expectedMaxReplicas: 5,
+			expectedTargetCPU:   80,
+			ExpectedLabels:      map[string]string{
+				"firstLabel": "expected-label",
+			},
 		},
 	}
 
@@ -59,6 +81,9 @@ func TestHPA_AutoscalingV1(t *testing.T) {
 			require.Equal(t, tc.expectedMinReplicas, *hpa.Spec.MinReplicas)
 			require.Equal(t, tc.expectedMaxReplicas, hpa.Spec.MaxReplicas)
 			require.Equal(t, tc.expectedTargetCPU, *hpa.Spec.TargetCPUUtilizationPercentage)
+			for key, value := range tc.ExpectedLabels {
+				require.Equal(t, hpa.ObjectMeta.Labels[key], value)
+			}
 		})
 	}
 }

@@ -112,11 +112,10 @@ func TestIngressTemplate_DifferentTracks(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := renderTemplate(t, opts, tc.releaseName, templates, tc.expectedErrorRegexp)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -162,11 +161,10 @@ func TestIngressTemplate_TLS(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)

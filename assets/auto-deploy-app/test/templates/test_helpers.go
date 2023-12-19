@@ -4,8 +4,10 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
 	"testing"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/stretchr/testify/require"
@@ -40,10 +42,7 @@ func init() {
 	chartName = "auto-deploy-app-" + m["version"].(string)
 }
 
-func renderTemplate(t *testing.T, values map[string]string, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string, bool) {
-	opts := &helm.Options{
-		SetValues: values,
-	}
+func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string) {
 
 	output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
 	if expectedErrorRegexp != nil {
@@ -52,16 +51,25 @@ func renderTemplate(t *testing.T, values map[string]string, releaseName string, 
 		} else {
 			require.Regexp(t, expectedErrorRegexp, err.Error())
 		}
-		return "", false
+		return ""
 	}
 	if err != nil {
 		t.Error(err)
-		return "", false
+		return ""
 	}
 
-	require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+	cmd := exec.Command("yamllint", "-")
+	cmd.Stdin = strings.NewReader(output + "\n")
+	var out strings.Builder
+	cmd.Stdout = &out
+	err = cmd.Run()
 
-	return output, true
+	if err != nil {
+		t.Error(out.String())
+		return ""
+	}
+
+	return output
 }
 
 type workerDeploymentTestCase struct {

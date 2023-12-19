@@ -69,11 +69,10 @@ func TestHPA_AutoscalingV1(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
 			hpa := new(autoscalingV1.HorizontalPodAutoscaler)
 			helm.UnmarshalK8SYaml(t, output, hpa)

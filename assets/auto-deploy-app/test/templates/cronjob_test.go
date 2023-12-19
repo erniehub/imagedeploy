@@ -84,14 +84,7 @@ func TestCronjobMeta(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)

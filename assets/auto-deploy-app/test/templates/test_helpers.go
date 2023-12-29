@@ -54,20 +54,26 @@ func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templa
 		return ""
 	}
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("failed to render helm template: %s", err.Error())
 		return ""
 	}
 
-	cmd := exec.Command("yamllint", "-")
+	// yamllint with extra config
+	// check indenting of sequences, but don't enforce a particular style, since current style is very inconsistent
+	// disable trailing-space check, because sometimes we have empty variables and we don't want to use if blocks around every option
+	cmd := exec.Command("yamllint", "-s", "-d", "{extends: default, rules: {indentation: {indent-sequences: whatever}, trailing-spaces: disable}}", "-")
 	cmd.Stdin = strings.NewReader(output + "\n")
 	var out strings.Builder
 	cmd.Stdout = &out
 	err = cmd.Run()
 
 	if err != nil {
-		t.Error(out.String())
+		t.Fatalf("rendered template had yamllint errors: %s", out.String())
 		return ""
 	}
+
+	// needed, because yamllint does not detect empty lines containing spaces
+	require.NotRegexpf(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
 
 	return output
 }

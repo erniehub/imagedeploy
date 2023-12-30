@@ -42,12 +42,12 @@ func init() {
 	chartName = "auto-deploy-app-" + m["version"].(string)
 }
 
-func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp) (string) {
+func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp, extraHelmArgs ...string) (string) {
 
-	output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+	output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates, extraHelmArgs...)
 	if expectedErrorRegexp != nil {
 		if err == nil {
-			t.Error("Expected error but didn't happen")
+			t.Fatalf("Expected error but didn't happen")
 		} else {
 			require.Regexp(t, expectedErrorRegexp, err.Error())
 		}
@@ -61,7 +61,7 @@ func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templa
 	// yamllint with extra config
 	// check indenting of sequences, but don't enforce a particular style, since current style is very inconsistent
 	// disable trailing-space check, because sometimes we have empty variables and we don't want to use if blocks around every option
-	cmd := exec.Command("yamllint", "-s", "-d", "{extends: default, rules: {indentation: {indent-sequences: whatever}, trailing-spaces: disable}}", "-")
+	cmd := exec.Command("yamllint", "-s", "-d", "{extends: default, rules: {line-length: {max: 160}, indentation: {indent-sequences: whatever}, trailing-spaces: disable}}", "-")
 	cmd.Stdin = strings.NewReader(output + "\n")
 	var out strings.Builder
 	cmd.Stdout = &out

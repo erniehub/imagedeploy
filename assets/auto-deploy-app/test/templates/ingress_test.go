@@ -62,7 +62,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, "modsecurity-test-release", templates)
+			output := renderTemplate(t, opts, "modsecurity-test-release", templates, nil)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -225,22 +225,13 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
-			if tc.expectedErrorRegexp != nil {
-				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
-				return
+			if tc.expectedErrorRegexp == nil {
+				ingress := new(extensions.Ingress)
+				helm.UnmarshalK8SYaml(t, output, ingress)
+				require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
 			}
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
-
-			ingress := new(extensions.Ingress)
-			helm.UnmarshalK8SYaml(t, output, ingress)
-			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
 		})
 	}
 }
@@ -275,7 +266,7 @@ func TestIngressTemplate_HTTPPath(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			ingress := new(extensions.Ingress)
 
@@ -315,7 +306,7 @@ func TestIngressTemplate_TLSSecret(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			ingress := new(extensions.Ingress)
 
@@ -350,7 +341,7 @@ func TestIngressTemplate_NetworkingV1Beta1(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates, "--api-versions", "networking.k8s.io/v1beta1/Ingress")
+			output := renderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "networking.k8s.io/v1beta1/Ingress")
 			ingress := new(networkingv1beta.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, "networking.k8s.io/v1beta1", ingress.APIVersion)
@@ -386,7 +377,7 @@ func TestIngressTemplate_NetworkingV1(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates, "--api-versions", "networking.k8s.io/v1/Ingress")
+			output := renderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "networking.k8s.io/v1/Ingress")
 			ingress := new(networkingv1.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, "networking.k8s.io/v1", ingress.APIVersion)
@@ -406,7 +397,7 @@ func TestIngressTemplate_Extensions(t *testing.T) {
 	opts := &helm.Options{
 		SetValues: map[string]string{"ingress.enabled": "true"},
 	}
-	output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates, "--api-versions", "extensions/v1beta1/Ingress")
+	output := renderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "extensions/v1beta1/Ingress")
 	ingress := new(extensions.Ingress)
 	helm.UnmarshalK8SYaml(t, output, ingress)
 	require.Equal(t, "extensions/v1beta1", ingress.APIVersion)

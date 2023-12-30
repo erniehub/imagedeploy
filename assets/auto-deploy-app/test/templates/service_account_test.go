@@ -97,30 +97,17 @@ func TestServiceAccountTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(
-				t,
-				options,
-				helmChartPath,
-				release,
-				[]string{"templates/service-account.yaml"},
-			)
+			output := renderTemplate(t, options, release, []string{"templates/service-account.yaml"}, tc.ExpectedErrorRegexp)
 
-			if tc.ExpectedErrorRegexp != nil {
-				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
-				return
-			}
+			if tc.ExpectedErrorRegexp == nil {
+				var serviceAccount coreV1.ServiceAccount
+				helm.UnmarshalK8SYaml(t, output, &serviceAccount)
 
-			require.NoError(t, err)
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
-
-			var serviceAccount coreV1.ServiceAccount
-			helm.UnmarshalK8SYaml(t, output, &serviceAccount)
-
-			require.Equal(t, tc.ExpectedName, serviceAccount.Name)
-			require.Equal(t, tc.ExpectedAnnotations, serviceAccount.Annotations)
-			for key, value := range tc.ExpectedLabels {
-				require.Equal(t, serviceAccount.ObjectMeta.Labels[key], value)
+				require.Equal(t, tc.ExpectedName, serviceAccount.Name)
+				require.Equal(t, tc.ExpectedAnnotations, serviceAccount.Annotations)
+				for key, value := range tc.ExpectedLabels {
+					require.Equal(t, serviceAccount.ObjectMeta.Labels[key], value)
+				}
 			}
 		})
 	}

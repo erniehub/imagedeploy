@@ -74,14 +74,16 @@ func TestHPA_AutoscalingV1(t *testing.T) {
 			}
 			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
-			hpa := new(autoscalingV1.HorizontalPodAutoscaler)
-			helm.UnmarshalK8SYaml(t, output, hpa)
-			require.Equal(t, tc.expectedName, hpa.ObjectMeta.Name)
-			require.Equal(t, tc.expectedMinReplicas, *hpa.Spec.MinReplicas)
-			require.Equal(t, tc.expectedMaxReplicas, hpa.Spec.MaxReplicas)
-			require.Equal(t, tc.expectedTargetCPU, *hpa.Spec.TargetCPUUtilizationPercentage)
-			for key, value := range tc.ExpectedLabels {
-				require.Equal(t, hpa.ObjectMeta.Labels[key], value)
+			if tc.expectedErrorRegexp == nil {
+				hpa := new(autoscalingV1.HorizontalPodAutoscaler)
+				helm.UnmarshalK8SYaml(t, output, hpa)
+				require.Equal(t, tc.expectedName, hpa.ObjectMeta.Name)
+				require.Equal(t, tc.expectedMinReplicas, *hpa.Spec.MinReplicas)
+				require.Equal(t, tc.expectedMaxReplicas, hpa.Spec.MaxReplicas)
+				require.Equal(t, tc.expectedTargetCPU, *hpa.Spec.TargetCPUUtilizationPercentage)
+				for key, value := range tc.ExpectedLabels {
+					require.Equal(t, hpa.ObjectMeta.Labels[key], value)
+				}
 			}
 		})
 	}
@@ -137,29 +139,16 @@ resources:
 			f.WriteString(tc.values)
 
 			opts := &helm.Options{ValuesFiles: []string{f.Name()}}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
-			if tc.expectedErrorRegexp != nil {
-				if err == nil {
-					t.Error("Expected error but didn't happen")
-				} else {
-					require.Regexp(t, tc.expectedErrorRegexp, err.Error())
-				}
-				return
+			if tc.expectedErrorRegexp == nil {
+				hpa := new(autoscalingV2.HorizontalPodAutoscaler)
+				helm.UnmarshalK8SYaml(t, output, hpa)
+				require.Equal(t, tc.expectedName, hpa.ObjectMeta.Name)
+				require.Equal(t, tc.expectedMinReplicas, *hpa.Spec.MinReplicas)
+				require.Equal(t, tc.expectedMaxReplicas, hpa.Spec.MaxReplicas)
+				require.Equal(t, tc.expectedAverageUtilization, *hpa.Spec.Metrics[0].Resource.Target.AverageUtilization)
 			}
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
-
-			hpa := new(autoscalingV2.HorizontalPodAutoscaler)
-			helm.UnmarshalK8SYaml(t, output, hpa)
-			require.Equal(t, tc.expectedName, hpa.ObjectMeta.Name)
-			require.Equal(t, tc.expectedMinReplicas, *hpa.Spec.MinReplicas)
-			require.Equal(t, tc.expectedMaxReplicas, hpa.Spec.MaxReplicas)
-			require.Equal(t, tc.expectedAverageUtilization, *hpa.Spec.Metrics[0].Resource.Target.AverageUtilization)
 		})
 	}
 }

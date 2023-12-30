@@ -89,52 +89,43 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, tc.ExpectedErrorRegexp)
 
-			if tc.ExpectedErrorRegexp != nil {
-				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
-				return
+			if tc.ExpectedErrorRegexp == nil {
+				var deployment appsV1.Deployment
+				helm.UnmarshalK8SYaml(t, output, &deployment)
+
+				require.Equal(t, tc.ExpectedName, deployment.Name)
+				require.Equal(t, tc.ExpectedStrategyType, deployment.Spec.Strategy.Type)
+
+				require.Equal(t, map[string]string{
+					"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
+					"app.gitlab.com/env": "prod",
+				}, deployment.Annotations)
+
+				ExpectedLabels := map[string]string{
+					"app":                          tc.ExpectedName,
+					"chart":                        chartName,
+					"heritage":                     "Helm",
+					"release":                      tc.ExpectedRelease,
+					"tier":                         "web",
+					"track":                        "stable",
+					"app.kubernetes.io/name":       tc.ExpectedName,
+					"helm.sh/chart":                chartName,
+					"app.kubernetes.io/managed-by": "Helm",
+					"app.kubernetes.io/instance":   tc.ExpectedRelease,
+				}
+				mergeStringMap(ExpectedLabels, tc.ExpectedLabels)
+
+				require.Equal(t, ExpectedLabels, deployment.Labels)
+
+				require.Equal(t, map[string]string{
+					"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
+					"app.gitlab.com/env":           "prod",
+					"checksum/application-secrets": "",
+				}, deployment.Spec.Template.Annotations)
+				require.Equal(t, ExpectedLabels, deployment.Spec.Template.Labels)
 			}
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
-
-			var deployment appsV1.Deployment
-			helm.UnmarshalK8SYaml(t, output, &deployment)
-
-			require.Equal(t, tc.ExpectedName, deployment.Name)
-			require.Equal(t, tc.ExpectedStrategyType, deployment.Spec.Strategy.Type)
-
-			require.Equal(t, map[string]string{
-				"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
-				"app.gitlab.com/env": "prod",
-			}, deployment.Annotations)
-
-			ExpectedLabels := map[string]string{
-				"app":                          tc.ExpectedName,
-				"chart":                        chartName,
-				"heritage":                     "Helm",
-				"release":                      tc.ExpectedRelease,
-				"tier":                         "web",
-				"track":                        "stable",
-				"app.kubernetes.io/name":       tc.ExpectedName,
-				"helm.sh/chart":                chartName,
-				"app.kubernetes.io/managed-by": "Helm",
-				"app.kubernetes.io/instance":   tc.ExpectedRelease,
-			}
-			mergeStringMap(ExpectedLabels, tc.ExpectedLabels)
-
-			require.Equal(t, ExpectedLabels, deployment.Labels)
-
-			require.Equal(t, map[string]string{
-				"app.gitlab.com/app":           "auto-devops-examples/minimal-ruby-app",
-				"app.gitlab.com/env":           "prod",
-				"checksum/application-secrets": "",
-			}, deployment.Spec.Template.Annotations)
-			require.Equal(t, ExpectedLabels, deployment.Spec.Template.Labels)
 		})
 	}
 
@@ -178,7 +169,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -230,7 +221,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -270,7 +261,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -348,7 +339,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -418,7 +409,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -471,7 +462,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -534,13 +525,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(
-				t,
-				options,
-				helmChartPath,
-				tc.Release,
-				[]string{"templates/deployment.yaml"},
-			)
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -589,7 +574,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -781,7 +766,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -843,7 +828,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -898,7 +883,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -962,7 +947,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1169,7 +1154,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := renderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1246,14 +1231,7 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1410,14 +1388,7 @@ func TestDeploymentTemplateWithVolumeMounts(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1488,14 +1459,7 @@ func TestDeploymentDatabaseUrlEnvironmentVariable(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, releaseName, []string{tc.Template})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, options, releaseName, []string{tc.Template}, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1567,14 +1531,7 @@ func TestDeploymentTemplateWithExtraEnvFrom(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1610,14 +1567,7 @@ func TestDeploymentTemplateWithExtraEnv(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1649,14 +1599,7 @@ func TestDeploymentTemplateWithSecurityContext(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 
@@ -1691,14 +1634,7 @@ func TestDeploymentTemplateWithContainerSecurityContext(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 

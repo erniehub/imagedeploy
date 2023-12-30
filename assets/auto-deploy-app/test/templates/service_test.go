@@ -219,14 +219,7 @@ func TestServiceExtraPortsServiceDefinition(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
+			output := renderTemplate(t, opts, releaseName, templates, nil)
 
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)

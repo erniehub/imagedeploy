@@ -104,27 +104,18 @@ func TestNetworkPolicy(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
-			if tc.expectedErrorRegexp != nil {
-				require.Regexp(t, tc.expectedErrorRegexp, err.Error())
-				return
+			if tc.expectedErrorRegexp == nil {
+				policy := new(netV1.NetworkPolicy)
+				helm.UnmarshalK8SYaml(t, output, policy)
+
+				require.Equal(t, tc.meta, policy.ObjectMeta)
+				require.Equal(t, tc.podSelector, policy.Spec.PodSelector)
+				require.Equal(t, tc.policyTypes, policy.Spec.PolicyTypes)
+				require.Equal(t, tc.ingress, policy.Spec.Ingress)
+				require.Equal(t, tc.egress, policy.Spec.Egress)
 			}
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			require.NotRegexp(t, regexp.MustCompile("\n[[:space:]]*\n"), output, "found empty lines in output")
-
-			policy := new(netV1.NetworkPolicy)
-			helm.UnmarshalK8SYaml(t, output, policy)
-
-			require.Equal(t, tc.meta, policy.ObjectMeta)
-			require.Equal(t, tc.podSelector, policy.Spec.PodSelector)
-			require.Equal(t, tc.policyTypes, policy.Spec.PolicyTypes)
-			require.Equal(t, tc.ingress, policy.Spec.Ingress)
-			require.Equal(t, tc.egress, policy.Spec.Egress)
 		})
 	}
 }

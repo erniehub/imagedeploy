@@ -4,8 +4,12 @@ kind: Deployment
 metadata:
   name: {{ template "trackableappname" . }}
   annotations:
-    {{ if .Values.gitlab.app }}app.gitlab.com/app: {{ .Values.gitlab.app | quote }}{{ end }}
-    {{ if .Values.gitlab.env }}app.gitlab.com/env: {{ .Values.gitlab.env | quote }}{{ end }}
+    {{- if .Values.gitlab.app }}
+    app.gitlab.com/app: {{ .Values.gitlab.app | quote }}
+    {{- end }}
+    {{- if .Values.gitlab.env }}
+    app.gitlab.com/env: {{ .Values.gitlab.env | quote }}
+    {{- end }}
   labels:
     track: "{{ .Values.application.track }}"
     tier: "{{ .Values.application.tier }}"
@@ -26,8 +30,12 @@ spec:
     metadata:
       annotations:
         checksum/application-secrets: "{{ .Values.application.secretChecksum }}"
-        {{ if .Values.gitlab.app }}app.gitlab.com/app: {{ .Values.gitlab.app | quote }}{{ end }}
-        {{ if .Values.gitlab.env }}app.gitlab.com/env: {{ .Values.gitlab.env | quote }}{{ end }}
+        {{- if .Values.gitlab.app }}
+        app.gitlab.com/app: {{ .Values.gitlab.app | quote }}
+        {{- end }}
+        {{- if .Values.gitlab.env }}
+        app.gitlab.com/env: {{ .Values.gitlab.env | quote }}
+        {{- end }}
 {{- if .Values.podAnnotations }}
 {{- toYaml .Values.podAnnotations | nindent 8 }}
 {{- end }}
@@ -40,7 +48,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name | default .Values.serviceAccountName | quote }}
 {{- end }}
       imagePullSecrets:
-{{- toYaml .Values.image.secrets | nindent 10 }}
+{{- toYaml .Values.image.secrets | nindent 8 }}
 {{- if .Values.nodeSelector }}
       nodeSelector:
 {{- toYaml .Values.nodeSelector | nindent 8 }}
@@ -82,7 +90,7 @@ spec:
 {{- range $volume := .Values.persistence.volumes }}
         - name: {{ $volume.name | quote }}
           persistentVolumeClaim:
-            {{ $args := dict "context" $context "name" $volume.name }}
+            {{- $args := dict "context" $context "name" $volume.name }}
             claimName: {{ template "pvcName" $args }}
 {{- end }}
 {{- end }}
@@ -250,7 +258,7 @@ spec:
 {{- toYaml .Values.containerSecurityContext | nindent 10 }}
 {{- end }}
         resources:
-{{- toYaml .Values.resources | nindent 12 }}
+{{- toYaml .Values.resources | nindent 10 }}
 {{- if or (.Values.persistence.enabled) (.Values.extraVolumeMounts) }}
         volumeMounts:
 {{- if .Values.persistence.enabled }}

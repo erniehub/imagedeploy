@@ -55,8 +55,10 @@ items:
               track: "{{ $.Values.application.track }}"
               tier: cronjob
           spec:
+            {{- with $.Values.image.secrets }}
             imagePullSecrets:
-              {{- toYaml $.Values.image.secrets | nindent 14 }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
             restartPolicy: {{ default "OnFailure" $jobConfig.restartPolicy }}
             {{- with $nodeSelectorConfig := default $.Values.nodeSelector $jobConfig.nodeSelector -}}
             {{- if $nodeSelectorConfig  }}
@@ -73,7 +75,7 @@ items:
             {{- with $tolerationsConfig := default $.Values.tolerations $jobConfig.tolerations -}}
             {{- if $tolerationsConfig }}
             tolerations:
-            {{- toYaml $tolerationsConfig | nindent 14 }}
+            {{- toYaml $tolerationsConfig | nindent 12 }}
             {{- end }}
             {{- end }}
             {{- with $affinityConfig := default $.Values.affinity $jobConfig.affinity -}}
@@ -84,7 +86,7 @@ items:
             {{- end }}
             {{- if $jobConfig.extraVolumes }}
             volumes:
-            {{- toYaml $jobConfig.extraVolumes | nindent 14 }}
+            {{- toYaml $jobConfig.extraVolumes | nindent 12 }}
             {{- end }}
             containers:
             - name: {{ $.Chart.Name }}
@@ -198,7 +200,7 @@ items:
                 {{- toYaml $.Values.resources | nindent 16 }}
               {{- if $jobConfig.extraVolumeMounts }}
               volumeMounts:
-              {{- toYaml $jobConfig.extraVolumeMounts | nindent 16 }}
+              {{- toYaml $jobConfig.extraVolumeMounts | nindent 14 }}
               {{- end }}                
 {{- end -}}
 {{- end -}}

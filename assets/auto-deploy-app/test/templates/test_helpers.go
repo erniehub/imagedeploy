@@ -59,9 +59,9 @@ func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templa
 	}
 
 	// yamllint with extra config
-	// check indenting of sequences, but don't enforce a particular style, since current style is very inconsistent
+	// check indenting of sequences with the default k8s style
 	// disable trailing-space check, because sometimes we have empty variables and we don't want to use if blocks around every option
-	cmd := exec.Command("yamllint", "-s", "-d", "{extends: default, rules: {line-length: {max: 160}, indentation: {indent-sequences: whatever}, trailing-spaces: disable}}", "-")
+	cmd := exec.Command("yamllint", "-s", "-d", "{extends: default, rules: {line-length: {max: 160}, indentation: {indent-sequences: false}, trailing-spaces: disable}}", "-")
 	cmd.Stdin = strings.NewReader(output + "\n")
 	var out strings.Builder
 	cmd.Stdout = &out

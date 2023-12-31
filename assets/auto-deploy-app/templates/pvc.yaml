@@ -13,7 +13,7 @@ metadata:
 {{ include "sharedlabels" $context | indent 4 }}
 spec:
   accessModes:
-    - {{ $volume.claim.accessMode | quote }}
+  - {{ $volume.claim.accessMode | quote }}
   resources:
     requests:
       storage: {{ $volume.claim.size | quote }}

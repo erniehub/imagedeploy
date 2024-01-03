@@ -62,7 +62,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := renderTemplate(t, opts, "modsecurity-test-release", templates, nil)
+			output := mustRenderTemplate(t, opts, "modsecurity-test-release", templates, nil)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -115,7 +115,7 @@ func TestIngressTemplate_DifferentTracks(t *testing.T) {
 			opts := &helm.Options{
 				SetValues:   tc.values,
 			}
-			output := renderTemplate(t, opts, tc.releaseName, templates, tc.expectedErrorRegexp)
+			output := mustRenderTemplate(t, opts, tc.releaseName, templates, tc.expectedErrorRegexp)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -164,7 +164,7 @@ func TestIngressTemplate_TLS(t *testing.T) {
 			opts := &helm.Options{
 				SetValues:   tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -225,13 +225,15 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
-			if tc.expectedErrorRegexp == nil {
-				ingress := new(extensions.Ingress)
-				helm.UnmarshalK8SYaml(t, output, ingress)
-				require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
-			}
+			if tc.expectedErrorRegexp != nil {
+				return
+            }
+
+			ingress := new(extensions.Ingress)
+			helm.UnmarshalK8SYaml(t, output, ingress)
+			require.Equal(t, tc.expectedName, ingress.ObjectMeta.Name)
 		})
 	}
 }
@@ -266,7 +268,7 @@ func TestIngressTemplate_HTTPPath(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, nil)
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			ingress := new(extensions.Ingress)
 
@@ -306,7 +308,7 @@ func TestIngressTemplate_TLSSecret(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, nil)
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			ingress := new(extensions.Ingress)
 
@@ -341,7 +343,7 @@ func TestIngressTemplate_NetworkingV1Beta1(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "networking.k8s.io/v1beta1/Ingress")
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "networking.k8s.io/v1beta1/Ingress")
 			ingress := new(networkingv1beta.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, "networking.k8s.io/v1beta1", ingress.APIVersion)
@@ -377,7 +379,7 @@ func TestIngressTemplate_NetworkingV1(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "networking.k8s.io/v1/Ingress")
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "networking.k8s.io/v1/Ingress")
 			ingress := new(networkingv1.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
 			require.Equal(t, "networking.k8s.io/v1", ingress.APIVersion)
@@ -397,7 +399,7 @@ func TestIngressTemplate_Extensions(t *testing.T) {
 	opts := &helm.Options{
 		SetValues: map[string]string{"ingress.enabled": "true"},
 	}
-	output := renderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "extensions/v1beta1/Ingress")
+	output := mustRenderTemplate(t, opts, releaseName, templates, nil, "--api-versions", "extensions/v1beta1/Ingress")
 	ingress := new(extensions.Ingress)
 	helm.UnmarshalK8SYaml(t, output, ingress)
 	require.Equal(t, "extensions/v1beta1", ingress.APIVersion)

@@ -42,7 +42,7 @@ func init() {
 	chartName = "auto-deploy-app-" + m["version"].(string)
 }
 
-func renderTemplate(t *testing.T, opts *helm.Options, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp, extraHelmArgs ...string) (string) {
+func mustRenderTemplate(t *testing.T, opts *helm.Options, releaseName string, templates []string, expectedErrorRegexp *regexp.Regexp, extraHelmArgs ...string) (string) {
 
 	output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates, extraHelmArgs...)
 	if expectedErrorRegexp != nil {

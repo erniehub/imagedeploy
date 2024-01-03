@@ -97,17 +97,19 @@ func TestServiceAccountTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, release, []string{"templates/service-account.yaml"}, tc.ExpectedErrorRegexp)
+			output := mustRenderTemplate(t, options, release, []string{"templates/service-account.yaml"}, tc.ExpectedErrorRegexp)
 
-			if tc.ExpectedErrorRegexp == nil {
-				var serviceAccount coreV1.ServiceAccount
-				helm.UnmarshalK8SYaml(t, output, &serviceAccount)
+			if tc.ExpectedErrorRegexp != nil {
+				return
+            }
 
-				require.Equal(t, tc.ExpectedName, serviceAccount.Name)
-				require.Equal(t, tc.ExpectedAnnotations, serviceAccount.Annotations)
-				for key, value := range tc.ExpectedLabels {
-					require.Equal(t, serviceAccount.ObjectMeta.Labels[key], value)
-				}
+			var serviceAccount coreV1.ServiceAccount
+			helm.UnmarshalK8SYaml(t, output, &serviceAccount)
+
+			require.Equal(t, tc.ExpectedName, serviceAccount.Name)
+			require.Equal(t, tc.ExpectedAnnotations, serviceAccount.Annotations)
+			for key, value := range tc.ExpectedLabels {
+				require.Equal(t, serviceAccount.ObjectMeta.Labels[key], value)
 			}
 		})
 	}

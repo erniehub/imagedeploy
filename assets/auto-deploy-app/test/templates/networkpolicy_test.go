@@ -104,18 +104,20 @@ func TestNetworkPolicy(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := renderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
-			if tc.expectedErrorRegexp == nil {
-				policy := new(netV1.NetworkPolicy)
-				helm.UnmarshalK8SYaml(t, output, policy)
+			if tc.expectedErrorRegexp != nil {
+				return
+            }
+			
+			policy := new(netV1.NetworkPolicy)
+			helm.UnmarshalK8SYaml(t, output, policy)
 
-				require.Equal(t, tc.meta, policy.ObjectMeta)
-				require.Equal(t, tc.podSelector, policy.Spec.PodSelector)
-				require.Equal(t, tc.policyTypes, policy.Spec.PolicyTypes)
-				require.Equal(t, tc.ingress, policy.Spec.Ingress)
-				require.Equal(t, tc.egress, policy.Spec.Egress)
-			}
+			require.Equal(t, tc.meta, policy.ObjectMeta)
+			require.Equal(t, tc.podSelector, policy.Spec.PodSelector)
+			require.Equal(t, tc.policyTypes, policy.Spec.PolicyTypes)
+			require.Equal(t, tc.ingress, policy.Spec.Ingress)
+			require.Equal(t, tc.egress, policy.Spec.Egress)
 		})
 	}
 }

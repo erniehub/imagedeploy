@@ -50,7 +50,7 @@ func TestCustomResource(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, releaseName, []string{Template}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{Template}, nil)
 
 			var renderedObjects *unstructured.Unstructured
 			helm.UnmarshalK8SYaml(t, output, &renderedObjects)

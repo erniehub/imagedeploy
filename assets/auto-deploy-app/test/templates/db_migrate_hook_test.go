@@ -56,7 +56,7 @@ func TestMigrateDatabaseUrlEnvironmentVariable(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, releaseName, []string{tc.Template}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{tc.Template}, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -151,7 +151,7 @@ func TestMigrateDatabaseImagePullSecrets(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, releaseName, []string{tc.Template}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{tc.Template}, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -219,7 +219,7 @@ func TestMigrateDatabaseLabels(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, releaseName, []string{tc.Template}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{tc.Template}, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)

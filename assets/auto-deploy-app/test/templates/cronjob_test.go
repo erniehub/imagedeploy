@@ -84,7 +84,7 @@ func TestCronjobMeta(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -161,7 +161,7 @@ func TestCronjobSchedule(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -219,7 +219,7 @@ func TestCronjobImage(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -354,7 +354,7 @@ func TestCronjobLivenessAndReadiness(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -415,7 +415,7 @@ func TestCronjobNodeSelector(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -499,7 +499,7 @@ func TestCronjobTolerations(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -572,7 +572,7 @@ func TestCronjobResources(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -660,7 +660,7 @@ func TestCronjobTemplateWithVolumeMounts(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := renderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -769,7 +769,7 @@ func TestCronjobAffinity(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -839,7 +839,7 @@ func TestCronJobTemplateWithExtraEnvFrom(t *testing.T) {
 			options := &helm.Options{
 				SetValues: tc.values,
 			}
-			output := renderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -873,7 +873,7 @@ func TestCronJobTemplateWithSecurityContext(t *testing.T) {
 				SetValues: tc.values,
 			}
 
-			output := renderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -909,7 +909,7 @@ func TestCronJobTemplateWithContainerSecurityContext(t *testing.T) {
 				SetValues: tc.values,
 			}
 
-			output := renderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -1011,7 +1011,7 @@ func TestCronjobImagePullSecrets(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -1101,7 +1101,7 @@ func TestCronjobPodAnnotations(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)

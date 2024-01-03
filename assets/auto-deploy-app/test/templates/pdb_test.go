@@ -58,15 +58,17 @@ func TestPdbTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := renderTemplate(t, options, release, []string{"templates/pdb.yaml"}, tc.ExpectedErrorRegexp)
+			output := mustRenderTemplate(t, options, release, []string{"templates/pdb.yaml"}, tc.ExpectedErrorRegexp)
 
-			if tc.ExpectedErrorRegexp == nil {
-				var podDisruptionBudget v1beta1.PodDisruptionBudget
-				helm.UnmarshalK8SYaml(t, output, &podDisruptionBudget)
+			if tc.ExpectedErrorRegexp != nil {
+				return
+            }
+			
+			var podDisruptionBudget v1beta1.PodDisruptionBudget
+			helm.UnmarshalK8SYaml(t, output, &podDisruptionBudget)
 
-				require.Equal(t, tc.ExpectedName, podDisruptionBudget.Name)
-				require.Equal(t, tc.ExpectedSelector, podDisruptionBudget.Spec.Selector)
-			}
+			require.Equal(t, tc.ExpectedName, podDisruptionBudget.Name)
+			require.Equal(t, tc.ExpectedSelector, podDisruptionBudget.Spec.Selector)
 		})
 	}
 }

@@ -89,17 +89,12 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, tc.ExpectedErrorRegexp)
 
 			if tc.ExpectedErrorRegexp != nil {
-				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
 				return
-			}
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
+            }
+			
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
 
@@ -176,7 +171,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -228,7 +223,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -268,7 +263,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -346,7 +341,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -416,7 +411,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -469,7 +464,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -532,13 +527,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(
-				t,
-				options,
-				helmChartPath,
-				tc.Release,
-				[]string{"templates/deployment.yaml"},
-			)
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -587,7 +576,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -779,7 +768,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -841,7 +830,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -896,7 +885,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -960,7 +949,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1167,7 +1156,7 @@ func TestDeploymentTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/deployment.yaml"}, nil)
 
 			var deployment appsV1.Deployment
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1244,12 +1233,7 @@ func TestServiceExtraPortServicePortDefinition(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1406,12 +1390,7 @@ func TestDeploymentTemplateWithVolumeMounts(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1482,12 +1461,7 @@ func TestDeploymentDatabaseUrlEnvironmentVariable(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, releaseName, []string{tc.Template})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, releaseName, []string{tc.Template}, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, &deployment)
@@ -1559,12 +1533,7 @@ func TestDeploymentTemplateWithExtraEnvFrom(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1600,12 +1569,7 @@ func TestDeploymentTemplateWithExtraEnv(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 			helm.UnmarshalK8SYaml(t, output, deployment)
@@ -1637,12 +1601,7 @@ func TestDeploymentTemplateWithSecurityContext(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 
@@ -1677,12 +1636,7 @@ func TestDeploymentTemplateWithContainerSecurityContext(t *testing.T) {
 			opts := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			deployment := new(appsV1.Deployment)
 

@@ -84,12 +84,7 @@ func TestCronjobMeta(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -166,12 +161,7 @@ func TestCronjobSchedule(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -229,12 +219,7 @@ func TestCronjobImage(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -369,12 +354,7 @@ func TestCronjobLivenessAndReadiness(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -435,12 +415,7 @@ func TestCronjobNodeSelector(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -524,12 +499,7 @@ func TestCronjobTolerations(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -602,12 +572,7 @@ func TestCronjobResources(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -621,7 +586,6 @@ func TestCronjobResources(t *testing.T) {
 
 func TestCronjobTemplateWithVolumeMounts(t *testing.T) {
 	releaseName := "cronjob-with-volume-mounts-test"
-	templates := []string{"templates/cronjob.yaml"}
 
 	hostPathDirectoryType := coreV1.HostPathDirectory
 	configMapOptional := false
@@ -692,16 +656,11 @@ func TestCronjobTemplateWithVolumeMounts(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &helm.Options{
+			options := &helm.Options{
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -810,12 +769,7 @@ func TestCronjobAffinity(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -829,7 +783,6 @@ func TestCronjobAffinity(t *testing.T) {
 
 func TestCronJobTemplateWithExtraEnvFrom(t *testing.T) {
 	releaseName := "cronjob-with-extra-envfrom-test"
-	templates := []string{"templates/cronjob.yaml"}
 
 	tcs := []struct {
 		name            string
@@ -883,15 +836,10 @@ func TestCronJobTemplateWithExtraEnvFrom(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &helm.Options{
+			options := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -904,7 +852,6 @@ func TestCronJobTemplateWithExtraEnvFrom(t *testing.T) {
 
 func TestCronJobTemplateWithSecurityContext(t *testing.T) {
 	releaseName := "cronjob-with-security-context"
-	templates := []string{"templates/cronjob.yaml"}
 
 	tcs := []struct {
 		name                        string
@@ -922,15 +869,11 @@ func TestCronJobTemplateWithSecurityContext(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &helm.Options{
+			options := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
 
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -943,7 +886,6 @@ func TestCronJobTemplateWithSecurityContext(t *testing.T) {
 
 func TestCronJobTemplateWithContainerSecurityContext(t *testing.T) {
 	releaseName := "cronjob-with-container-security-context"
-	templates := []string{"templates/cronjob.yaml"}
 
 	tcs := []struct {
 		name                        				string
@@ -963,15 +905,11 @@ func TestCronJobTemplateWithContainerSecurityContext(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &helm.Options{
+			options := &helm.Options{
 				SetValues: tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
 
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, releaseName, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -1073,12 +1011,7 @@ func TestCronjobImagePullSecrets(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)
@@ -1168,12 +1101,7 @@ func TestCronjobPodAnnotations(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(t, options, helmChartPath, tc.Release, []string{"templates/cronjob.yaml"})
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, options, tc.Release, []string{"templates/cronjob.yaml"}, nil)
 
 			var cronjobs batchV1beta1.CronJobList
 			helm.UnmarshalK8SYaml(t, output, &cronjobs)

@@ -69,11 +69,14 @@ func TestHPA_AutoscalingV1(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
+
+			if tc.expectedErrorRegexp != nil {
+				return
+            }
 
 			hpa := new(autoscalingV1.HorizontalPodAutoscaler)
 			helm.UnmarshalK8SYaml(t, output, hpa)
@@ -138,20 +141,11 @@ resources:
 			f.WriteString(tc.values)
 
 			opts := &helm.Options{ValuesFiles: []string{f.Name()}}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
 			if tc.expectedErrorRegexp != nil {
-				if err == nil {
-					t.Error("Expected error but didn't happen")
-				} else {
-					require.Regexp(t, tc.expectedErrorRegexp, err.Error())
-				}
 				return
-			}
-			if err != nil {
-				t.Error(err)
-				return
-			}
+            }
 
 			hpa := new(autoscalingV2.HorizontalPodAutoscaler)
 			helm.UnmarshalK8SYaml(t, output, hpa)

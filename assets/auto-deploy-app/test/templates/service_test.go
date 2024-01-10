@@ -63,11 +63,10 @@ func TestServiceTemplate_ServiceType(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)
@@ -124,11 +123,10 @@ func TestServiceTemplate_DifferentTracks(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, tc.releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := mustRenderTemplate(t, opts, tc.releaseName, templates, tc.expectedErrorRegexp)
 
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)
@@ -171,11 +169,10 @@ func TestServiceTemplate_Disable(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			output, ret := renderTemplate(t, tc.values, releaseName, templates, tc.expectedErrorRegexp)
-
-			if ret == false {
-				return
+			opts := &helm.Options{
+				SetValues:   tc.values,
 			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, tc.expectedErrorRegexp)
 
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)
@@ -222,12 +219,7 @@ func TestServiceExtraPortsServiceDefinition(t *testing.T) {
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output, err := helm.RenderTemplateE(t, opts, helmChartPath, releaseName, templates)
-
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			output := mustRenderTemplate(t, opts, releaseName, templates, nil)
 
 			service := new(coreV1.Service)
 			helm.UnmarshalK8SYaml(t, output, service)

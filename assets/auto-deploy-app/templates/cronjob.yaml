@@ -12,12 +12,16 @@ items:
   metadata:
     name: "{{ template "trackableappname" $ }}-{{ $jobName}}"
     annotations:
-      {{ if $.Values.gitlab.app }}app.gitlab.com/app: {{ $.Values.gitlab.app | quote }}{{ end }}
-      {{ if $.Values.gitlab.env }}app.gitlab.com/env: {{ $.Values.gitlab.env | quote }}{{ end }}
+      {{- if $.Values.gitlab.app }}
+      app.gitlab.com/app: {{ $.Values.gitlab.app | quote }}
+      {{- end }}
+      {{- if $.Values.gitlab.env }}
+      app.gitlab.com/env: {{ $.Values.gitlab.env | quote }}
+      {{- end }}
     labels:
       track: "{{ $.Values.application.track }}"
       tier: "{{ $.Values.application.tier }}"
-      {{ include "sharedlabels" $ | nindent 6 }}
+      {{- include "sharedlabels" $ | nindent 6 }}
   spec:
     concurrencyPolicy: {{ default "Forbid" $jobConfig.concurrencyPolicy }}
     failedJobsHistoryLimit: {{ default 1 $jobConfig.failedJobsHistoryLimit }}
@@ -36,8 +40,12 @@ items:
           metadata:
             annotations:
               checksum/application-secrets: "{{ $.Values.application.secretChecksum }}"
-              {{ if $.Values.gitlab.app }}app.gitlab.com/app: {{ $.Values.gitlab.app | quote }}{{ end }}
-              {{ if $.Values.gitlab.env }}app.gitlab.com/env: {{ $.Values.gitlab.env | quote }}{{ end }}
+              {{- if $.Values.gitlab.app }}
+              app.gitlab.com/app: {{ $.Values.gitlab.app | quote }}
+              {{- end }}
+              {{- if $.Values.gitlab.env }}
+              app.gitlab.com/env: {{ $.Values.gitlab.env | quote }}
+              {{- end }}
               {{- if $.Values.podAnnotations }}
               {{- toYaml $.Values.podAnnotations | nindent 14 }}
               {{- end }}
@@ -47,8 +55,10 @@ items:
               track: "{{ $.Values.application.track }}"
               tier: cronjob
           spec:
+            {{- with $.Values.image.secrets }}
             imagePullSecrets:
-              {{- toYaml $.Values.image.secrets | nindent 14 }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
             restartPolicy: {{ default "OnFailure" $jobConfig.restartPolicy }}
             {{- with $nodeSelectorConfig := default $.Values.nodeSelector $jobConfig.nodeSelector -}}
             {{- if $nodeSelectorConfig  }}
@@ -65,7 +75,7 @@ items:
             {{- with $tolerationsConfig := default $.Values.tolerations $jobConfig.tolerations -}}
             {{- if $tolerationsConfig }}
             tolerations:
-            {{- toYaml $tolerationsConfig | nindent 14 }}
+            {{- toYaml $tolerationsConfig | nindent 12 }}
             {{- end }}
             {{- end }}
             {{- with $affinityConfig := default $.Values.affinity $jobConfig.affinity -}}
@@ -76,7 +86,7 @@ items:
             {{- end }}
             {{- if $jobConfig.extraVolumes }}
             volumes:
-            {{- toYaml $jobConfig.extraVolumes | nindent 14 }}
+            {{- toYaml $jobConfig.extraVolumes | nindent 12 }}
             {{- end }}
             containers:
             - name: {{ $.Chart.Name }}
@@ -190,7 +200,7 @@ items:
                 {{- toYaml $.Values.resources | nindent 16 }}
               {{- if $jobConfig.extraVolumeMounts }}
               volumeMounts:
-              {{- toYaml $jobConfig.extraVolumeMounts | nindent 16 }}
+              {{- toYaml $jobConfig.extraVolumeMounts | nindent 14 }}
               {{- end }}                
 {{- end -}}
 {{- end -}}

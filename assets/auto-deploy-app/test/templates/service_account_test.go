@@ -97,20 +97,11 @@ func TestServiceAccountTemplate(t *testing.T) {
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
-			output, err := helm.RenderTemplateE(
-				t,
-				options,
-				helmChartPath,
-				release,
-				[]string{"templates/service-account.yaml"},
-			)
+			output := mustRenderTemplate(t, options, release, []string{"templates/service-account.yaml"}, tc.ExpectedErrorRegexp)
 
 			if tc.ExpectedErrorRegexp != nil {
-				require.Regexp(t, tc.ExpectedErrorRegexp, err.Error())
 				return
-			}
-
-			require.NoError(t, err)
+            }
 
 			var serviceAccount coreV1.ServiceAccount
 			helm.UnmarshalK8SYaml(t, output, &serviceAccount)

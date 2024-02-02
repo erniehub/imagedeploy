@@ -22,7 +22,7 @@ func TestInitializeDatabaseUrlEnvironmentVariable(t *testing.T) {
 		Template            string
 	}{
 		{
-			CaseName: "present-db-intialize",
+			CaseName: "present-db-initialize",
 			Values: map[string]string{
 				"application.database_url":      "PRESENT",
 				"application.initializeCommand": "echo initialize",
@@ -97,7 +97,7 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 			CaseName: "present-secret",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"image.secrets[0].name": "expected-secret",
+				"image.secrets[0].name":         "expected-secret",
 			},
 			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
 				{
@@ -110,8 +110,8 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 			CaseName: "multiple-secrets",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"image.secrets[0].name": "expected-secret",
-				"image.secrets[1].name": "additional-secret",
+				"image.secrets[0].name":         "expected-secret",
+				"image.secrets[1].name":         "additional-secret",
 			},
 			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
 				{
@@ -127,10 +127,10 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 			CaseName: "missing-secret",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"image.secrets": "null",
+				"image.secrets":                 "null",
 			},
 			ExpectedImagePullSecrets: nil,
-			Template: "templates/db-initialize-job.yaml",
+			Template:                 "templates/db-initialize-job.yaml",
 		},
 	}
 
@@ -165,11 +165,11 @@ func TestInitializeDatabaseLabels(t *testing.T) {
 	releaseName := "initialize-application-database-labels"
 
 	for _, tc := range []struct {
-		CaseName        string
-		Values          map[string]string
-		Release 		string
-		ExpectedLabels  map[string]string
-		Template        string
+		CaseName       string
+		Values         map[string]string
+		Release        string
+		ExpectedLabels map[string]string
+		Template       string
 	}{
 		{
 			CaseName: "no label",
@@ -178,14 +178,14 @@ func TestInitializeDatabaseLabels(t *testing.T) {
 				"application.initializeCommand": "echo initialize",
 			},
 			ExpectedLabels: nil,
-			Template: "templates/db-initialize-job.yaml",
+			Template:       "templates/db-initialize-job.yaml",
 		},
 		{
 			CaseName: "one label",
 			Release:  "production",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"extraLabels.firstLabel":    "expected-label",
+				"extraLabels.firstLabel":        "expected-label",
 			},
 			ExpectedLabels: map[string]string{
 				"firstLabel": "expected-label",
@@ -197,11 +197,11 @@ func TestInitializeDatabaseLabels(t *testing.T) {
 			Release:  "production",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"extraLabels.firstLabel":    "expected-label",
-				"extraLabels.secondLabel":    "expected-label",
+				"extraLabels.firstLabel":        "expected-label",
+				"extraLabels.secondLabel":       "expected-label",
 			},
 			ExpectedLabels: map[string]string{
-				"firstLabel": "expected-label",
+				"firstLabel":  "expected-label",
 				"secondLabel": "expected-label",
 			},
 			Template: "templates/db-initialize-job.yaml",

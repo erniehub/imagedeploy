@@ -276,6 +276,7 @@ workers: {}
   #   - stop_worker
   #   extraVolumes: []
   #   extraVolumeMounts: []
+  #   extraEnv: []
   #   extraEnvFrom: []
 
 cronjobs: {}

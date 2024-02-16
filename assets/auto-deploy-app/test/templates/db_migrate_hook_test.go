@@ -231,3 +231,91 @@ func TestMigrateDatabaseLabels(t *testing.T) {
 		})
 	}
 }
+
+func TestMigrateDatabaseTemplateWithExtraEnvFrom(t *testing.T) {
+	releaseName := "migrate-application-database-extra-envfrom"
+	templates := []string{"templates/db-migrate-hook.yaml"}
+
+	tcs := []struct {
+		name            string
+		values          map[string]string
+		expectedEnvFrom coreV1.EnvFromSource
+	}{
+		{
+			name: "with extra envfrom secret test",
+			values: map[string]string{
+				"application.migrateCommand": "echo migrate",
+				"extraEnvFrom[0].secretRef.name": "secret-name-test",
+			},
+			expectedEnvFrom: coreV1.EnvFromSource{
+				SecretRef: &coreV1.SecretEnvSource{
+					LocalObjectReference: coreV1.LocalObjectReference{
+						Name: "secret-name-test",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			options := &helm.Options{
+				SetValues: tc.values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := mustRenderTemplate(t, options, releaseName, templates, nil)
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for _, deployment := range deployments.Items {
+				require.Contains(t, deployment.Spec.Template.Spec.Containers[0].EnvFrom, tc.expectedEnvFrom)
+			}
+		})
+	}
+}
+
+func TestMigrateDatabaseTemplateWithExtraEnv(t *testing.T) {
+	releaseName := "migrate-application-database-extra-env"
+	templates := []string{"templates/db-migrate-hook.yaml"}
+
+	tcs := []struct {
+		name        string
+		values      map[string]string
+		expectedEnv coreV1.EnvVar
+	}{
+		{
+			name: "with extra env secret test",
+			values: map[string]string{
+				"application.migrateCommand": "echo migrate",
+				"extraEnv[0].name":  "env-name-test",
+				"extraEnv[0].value": "test-value",
+			},
+			expectedEnv: coreV1.EnvVar{
+				Name:  "env-name-test",
+				Value: "test-value",
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			options := &helm.Options{
+				SetValues: tc.values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := mustRenderTemplate(t, options, releaseName, templates, nil)
+
+			var deployments deploymentAppsV1List
+			helm.UnmarshalK8SYaml(t, output, &deployments)
+			for _, deployment := range deployments.Items {
+				require.Contains(t, deployment.Spec.Template.Spec.Containers[0].Env, tc.expectedEnv)
+			}
+		})
+	}
+}

@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
-	//"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -16,8 +16,9 @@ func TestCustomResource(t *testing.T) {
 	Template := "templates/custom-resources.yaml" // Your template file path
 
 	tcs := []struct {
-		CaseName string
-		Values   map[string]string
+		CaseName     string
+		Values       map[string]string
+		expectedName string
 	}{
 		{
 			CaseName: "test-single-custom-resource",
@@ -26,8 +27,17 @@ func TestCustomResource(t *testing.T) {
 				"customResources[0].kind":          "IngressRoute",
 				"customResources[0].metadata.name": "ingress-route",
 			},
-/*		},
+		},
 		{
+			CaseName: "test-single-custom-resource-template",
+			Values: map[string]string{
+				"customResources[0].apiVersion":    "traefik.containo.us/v1alpha1",
+				"customResources[0].kind":          "IngressRoute",
+				"customResources[0].metadata.name": "ingress-route-{{ .Release.Name }}",
+			},
+			expectedName: "ingress-route-" + releaseName,
+		},
+		/*{
 			CaseName: "test-multiple-custom-resources",
 			Values: map[string]string{
 				"customResources[0].apiVersion":    "traefik.containo.us/v1alpha1",
@@ -36,8 +46,8 @@ func TestCustomResource(t *testing.T) {
 				"customResources[1].apiVersion":    "v1",
 				"customResources[1].kind":          "Pod",
 				"customResources[1].metadata.name": "my-pod",
-			},*/
-		},
+			},
+		},*/
 	}
 
 	for _, tc := range tcs {
@@ -55,8 +65,10 @@ func TestCustomResource(t *testing.T) {
 			var renderedObjects *unstructured.Unstructured
 			helm.UnmarshalK8SYaml(t, output, &renderedObjects)
 
-			// Check if at least one custom resource is present
-			//require.GreaterOrEqual(t, len(renderedObjects), 1)
+			// Check the name of the rendered object
+			if tc.expectedName != "" {
+				require.Equal(t, tc.expectedName, renderedObjects.GetName())
+			}
 		})
 	}
 }

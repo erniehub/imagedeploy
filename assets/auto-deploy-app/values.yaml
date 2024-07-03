@@ -219,7 +219,7 @@ extraVolumeMounts: [ ]
 
 extraEnvFrom: [ ]
 # - secretRef:
-#     name: {{ .Values.application.secretName }}
+#     name: "{{ .Values.application.secretName }}"
 
 extraEnv: [ ]
 # - name:  ENV_VAR

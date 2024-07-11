@@ -8,7 +8,7 @@ variables:
   DOCKER_DRIVER: overlay2
 
   # See https://gitlab.com/gitlab-org/cluster-integration/helm-install-image/container_registry
-  HELM_INSTALL_IMAGE_VERSION: v0.484-helm-3.15.2-kube-1.30.2-alpine-3.20.1
+  HELM_INSTALL_IMAGE_VERSION: v0.487-helm-3.15.3-kube-1.30.2-alpine-3.20.1
 
   BUILD_IMAGE_NAME: "$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
 

@@ -42,6 +42,8 @@ publish-dryrun:
     - npm install -g semantic-release @semantic-release/gitlab
     - git fetch origin refs/merge-requests/$CI_MERGE_REQUEST_IID/merge:$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     - git checkout $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - git diff master master
+    - git diff master origin/master
     # Overriding the variable that semantic-release runs on.
     # https://github.com/pvdlg/env-ci/blob/master/services/gitlab.js
     - export CI_COMMIT_REF_NAME=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME

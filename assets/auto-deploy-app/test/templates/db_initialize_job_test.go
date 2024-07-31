@@ -97,7 +97,7 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 			CaseName: "present-secret",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"image.secrets[0].name": "expected-secret",
+				"image.secrets[0].name":         "expected-secret",
 			},
 			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
 				{
@@ -110,8 +110,8 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 			CaseName: "multiple-secrets",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"image.secrets[0].name": "expected-secret",
-				"image.secrets[1].name": "additional-secret",
+				"image.secrets[0].name":         "expected-secret",
+				"image.secrets[1].name":         "additional-secret",
 			},
 			ExpectedImagePullSecrets: []coreV1.LocalObjectReference{
 				{
@@ -127,10 +127,10 @@ func TestInitializeDatabaseImagePullSecrets(t *testing.T) {
 			CaseName: "missing-secret",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"image.secrets": "null",
+				"image.secrets":                 "null",
 			},
 			ExpectedImagePullSecrets: nil,
-			Template: "templates/db-initialize-job.yaml",
+			Template:                 "templates/db-initialize-job.yaml",
 		},
 	}
 
@@ -165,11 +165,11 @@ func TestInitializeDatabaseLabels(t *testing.T) {
 	releaseName := "initialize-application-database-labels"
 
 	for _, tc := range []struct {
-		CaseName        string
-		Values          map[string]string
-		Release 		string
-		ExpectedLabels  map[string]string
-		Template        string
+		CaseName       string
+		Values         map[string]string
+		Release        string
+		ExpectedLabels map[string]string
+		Template       string
 	}{
 		{
 			CaseName: "no label",
@@ -178,14 +178,14 @@ func TestInitializeDatabaseLabels(t *testing.T) {
 				"application.initializeCommand": "echo initialize",
 			},
 			ExpectedLabels: nil,
-			Template: "templates/db-initialize-job.yaml",
+			Template:       "templates/db-initialize-job.yaml",
 		},
 		{
 			CaseName: "one label",
 			Release:  "production",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"extraLabels.firstLabel":    "expected-label",
+				"extraLabels.firstLabel":        "expected-label",
 			},
 			ExpectedLabels: map[string]string{
 				"firstLabel": "expected-label",
@@ -197,11 +197,11 @@ func TestInitializeDatabaseLabels(t *testing.T) {
 			Release:  "production",
 			Values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"extraLabels.firstLabel":    "expected-label",
-				"extraLabels.secondLabel":    "expected-label",
+				"extraLabels.firstLabel":        "expected-label",
+				"extraLabels.secondLabel":       "expected-label",
 			},
 			ExpectedLabels: map[string]string{
-				"firstLabel": "expected-label",
+				"firstLabel":  "expected-label",
 				"secondLabel": "expected-label",
 			},
 			Template: "templates/db-initialize-job.yaml",
@@ -244,13 +244,27 @@ func TestInitializeDatabaseTemplateWithExtraEnvFrom(t *testing.T) {
 		{
 			name: "with extra envfrom secret test",
 			values: map[string]string{
-				"application.initializeCommand": "echo initialize",
+				"application.initializeCommand":  "echo initialize",
 				"extraEnvFrom[0].secretRef.name": "secret-name-test",
 			},
 			expectedEnvFrom: coreV1.EnvFromSource{
 				SecretRef: &coreV1.SecretEnvSource{
 					LocalObjectReference: coreV1.LocalObjectReference{
 						Name: "secret-name-test",
+					},
+				},
+			},
+		},
+		{
+			name: "test with extra env from secret using templating values",
+			values: map[string]string{
+				"application.initializeCommand":  "echo initialize",
+				"extraEnvFrom[0].secretRef.name": "secret-name-{{ .Release.Name }}",
+			},
+			expectedEnvFrom: coreV1.EnvFromSource{
+				SecretRef: &coreV1.SecretEnvSource{
+					LocalObjectReference: coreV1.LocalObjectReference{
+						Name: "secret-name-" + releaseName,
 					},
 				},
 			},
@@ -262,7 +276,7 @@ func TestInitializeDatabaseTemplateWithExtraEnvFrom(t *testing.T) {
 			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
 
 			options := &helm.Options{
-				SetValues: tc.values,
+				SetValues:      tc.values,
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 
@@ -290,8 +304,8 @@ func TestInitializeDatabaseTemplateWithExtraEnv(t *testing.T) {
 			name: "with extra env secret test",
 			values: map[string]string{
 				"application.initializeCommand": "echo initialize",
-				"extraEnv[0].name":  "env-name-test",
-				"extraEnv[0].value": "test-value",
+				"extraEnv[0].name":              "env-name-test",
+				"extraEnv[0].value":             "test-value",
 			},
 			expectedEnv: coreV1.EnvVar{
 				Name:  "env-name-test",
@@ -305,7 +319,7 @@ func TestInitializeDatabaseTemplateWithExtraEnv(t *testing.T) {
 			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
 
 			options := &helm.Options{
-				SetValues: tc.values,
+				SetValues:      tc.values,
 				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
 			}
 

@@ -48,6 +48,9 @@ publish-dryrun:
     # https://github.com/pvdlg/env-ci/blob/master/services/gitlab.js
     - export CI_COMMIT_REF_NAME=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     - unset CI_MERGE_REQUEST_ID
+    - git remote -v
+    - git log master --oneline -10
+    - git log origin/master --oneline -10
   script:
     - semantic-release -d |tee output.log
     # Check if the bundled chart version matches the next auto-deploy-image version.

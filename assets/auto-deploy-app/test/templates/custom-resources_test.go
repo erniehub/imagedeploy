@@ -94,9 +94,7 @@ func TestCustomResourceWithTemplate(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, output, &renderedObjects)
 
 			// Check the name of the rendered object
-			if tc.expectedName != "" {
-				require.Equal(t, tc.expectedName, renderedObjects.GetName(), "The name of the custom resource should be %s as it is templated", tc.expectedName)
-			}
+			require.Equal(t, tc.expectedName, renderedObjects.GetName(), "The name of the custom resource should be %s as it is templated", tc.expectedName)
 		})
 	}
 }
